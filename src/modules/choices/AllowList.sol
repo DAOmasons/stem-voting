@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.13;
 
-import "../interfaces/IChoices.sol";
+import "../../interfaces/IChoices.sol";
 
 // Allow listed choice contract
-contract Choices is IChoices {
+contract AllowList is IChoices {
     struct ChoiceData {
         string uri;
         bytes data;
@@ -12,7 +12,7 @@ contract Choices is IChoices {
 
     mapping(bytes32 => ChoiceData) private choices;
     mapping(address => bool) public allowedAccounts;
-    
+
     address public owner;
 
     constructor(address[] memory _allowedAccounts) {
@@ -32,11 +32,17 @@ contract Choices is IChoices {
         _;
     }
 
-    function registerChoice(bytes32 choiceId, string calldata uri, bytes calldata data) external override onlyAllowed {
+    function registerChoice(
+        bytes32 choiceId,
+        string calldata uri,
+        bytes calldata data
+    ) external override onlyAllowed {
         choices[choiceId] = ChoiceData(uri, data);
     }
 
-    function getChoice(bytes32 choiceId) external view override returns (string memory, bytes memory) {
+    function getChoice(
+        bytes32 choiceId
+    ) external view override returns (string memory, bytes memory) {
         return (choices[choiceId].uri, choices[choiceId].data);
     }
 

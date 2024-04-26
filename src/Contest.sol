@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.13;
 
 import "./interfaces/IFinalizationStrategy.sol";
 import "./interfaces/IVotes.sol";
@@ -57,14 +57,14 @@ contract Contest is IContest {
         _;
     }
 
-    function claimPoints() virtual public onlyDuringVotingPeriod {
+    function claimPoints() public virtual onlyDuringVotingPeriod {
         pointsContract.claimPoints();
     }
 
     function vote(
         bytes32 choiceId,
         uint256 amount
-    ) virtual public onlyDuringVotingPeriod {
+    ) public virtual onlyDuringVotingPeriod {
         pointsContract.allocatePoints(msg.sender, amount);
         votesContract.vote(choiceId, amount);
 
@@ -78,7 +78,7 @@ contract Contest is IContest {
     function retractVote(
         bytes32 choiceId,
         uint256 amount
-    ) virtual public onlyDuringVotingPeriod {
+    ) public virtual onlyDuringVotingPeriod {
         pointsContract.releasePoints(msg.sender, amount);
         votesContract.retractVote(choiceId, amount);
     }
@@ -87,12 +87,12 @@ contract Contest is IContest {
         bytes32 oldChoiceId,
         bytes32 newChoiceId,
         uint256 amount
-    ) virtual public onlyDuringVotingPeriod {
+    ) public virtual onlyDuringVotingPeriod {
         retractVote(oldChoiceId, amount);
         vote(newChoiceId, amount);
     }
 
-    function finalize() virtual public onlyAfterEnd {
+    function finalize() public virtual onlyAfterEnd {
         bytes32[] memory winningChoices = finalizationStrategy.finalize(
             address(this),
             choiceList
@@ -106,7 +106,7 @@ contract Contest is IContest {
         emit ContestFinalized(winningChoices);
     }
 
-    function executeChoice(bytes32 choice) virtual internal {
+    function executeChoice(bytes32 choice) internal virtual {
         (, bytes memory data) = choicesContract.getChoice(choice);
         require(data.length > 0, "No executable data found");
 
