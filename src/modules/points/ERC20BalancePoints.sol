@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../interfaces/IERC20.sol";
-import "../interfaces/IPoints.sol"; 
+import "../../interfaces/IERC20.sol";
+import "../../interfaces/IPoints.sol";
 
 // ERC20 balanceOf Points contract
 contract Points is IPoints {
     IERC20 public token;
     uint256 public claimEndTime;
     address public contest;
-    mapping(address => uint256) public totalVotingPoints;       // Total points that a user can use for voting
-    mapping(address => uint256) public allocatedPoints;         // Points currently allocated for voting
+    mapping(address => uint256) public totalVotingPoints; // Total points that a user can use for voting
+    mapping(address => uint256) public allocatedPoints; // Points currently allocated for voting
 
     //TODO initializer, should take bytes to destructure
     function setUp(address _contest, IERC20 _token, uint256 duration) public {
@@ -36,13 +36,19 @@ contract Points is IPoints {
     }
 
     function allocatePoints(address voter, uint256 amount) public onlyContest {
-        require(totalVotingPoints[voter] >= amount, "Insufficient points available");
+        require(
+            totalVotingPoints[voter] >= amount,
+            "Insufficient points available"
+        );
         totalVotingPoints[voter] -= amount;
         allocatedPoints[voter] += amount;
     }
 
     function releasePoints(address voter, uint256 amount) public onlyContest {
-        require(allocatedPoints[voter] >= amount, "Insufficient points allocated");
+        require(
+            allocatedPoints[voter] >= amount,
+            "Insufficient points allocated"
+        );
         allocatedPoints[voter] -= amount;
         totalVotingPoints[voter] += amount;
     }

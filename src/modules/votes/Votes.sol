@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../interfaces/IVotes.sol";
+import "../../interfaces/IVotes.sol";
 
 contract Votes is IVotes {
     address public contest;
@@ -33,7 +33,6 @@ contract Votes is IVotes {
     }
 
     function vote(bytes32 choiceId, uint256 amount) public onlyContest {
-        
         votes[choiceId][msg.sender] += amount;
         totalVotesForChoice[choiceId] += amount; // Update the running total
         emit VoteCasted(msg.sender, choiceId, amount);
@@ -44,13 +43,15 @@ contract Votes is IVotes {
         require(votedAmount >= amount, "Insufficient votes allocated");
 
         votes[choiceId][msg.sender] -= amount;
-        totalVotesForChoice[choiceId] -= amount;  // Update the running total
+        totalVotesForChoice[choiceId] -= amount; // Update the running total
 
         votes[choiceId][msg.sender] -= amount;
         emit VoteRetracted(msg.sender, choiceId, amount);
     }
 
-    function getTotalVotesForChoice(bytes32 choiceId) public view returns (uint256) {
+    function getTotalVotesForChoice(
+        bytes32 choiceId
+    ) public view returns (uint256) {
         return totalVotesForChoice[choiceId];
     }
 }
