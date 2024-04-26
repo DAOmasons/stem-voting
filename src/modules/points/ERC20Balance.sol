@@ -5,7 +5,7 @@ import "../../interfaces/IERC20.sol";
 import "../../interfaces/IPoints.sol";
 
 // ERC20 balanceOf Points contract
-contract Points is IPoints {
+contract ERC20Balance is IPoints {
     IERC20 public token;
     uint256 public claimEndTime;
     address public contest;

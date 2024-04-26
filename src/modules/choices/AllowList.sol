@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../../interfaces/IChoices.sol";
 
 // Allow listed choice contract
-contract AllowListChoices is IChoices {
+contract AllowList is IChoices {
     struct ChoiceData {
         string uri;
         bytes data;

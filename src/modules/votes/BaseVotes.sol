@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../../interfaces/IVotes.sol";
 
-contract Votes is IVotes {
+contract BaseVotes is IVotes {
     address public contest;
 
     mapping(bytes32 => mapping(address => uint256)) public votes; // Mapping from choice to voter to vote count
