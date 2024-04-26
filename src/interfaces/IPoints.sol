@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.13;
 
 interface IPoints {
     /**
@@ -49,6 +49,4 @@ interface IPoints {
      * @return The current number of available voting points for the user.
      */
     function getPoints(address user) external view returns (uint256);
-
-
 }
