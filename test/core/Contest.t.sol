@@ -28,18 +28,8 @@ contract ContestTest is Test, Accounts {
     address[] internal _admins;
 
     function setUp() public {
-        // _votes = new BaseVotes();
-        // _admins[0] = admin1();
-        // Deploy modules
-        // Todo Refactor modules to be initialized after deployment with a factory
-        // _admins[0] = admin1();
-        // _admins[1] = admin2();
-        // _allowList = new AllowList(_admins);
-        // Contest contest = new Contest(
-        // );
+        // Set up stuff here
     }
-
-    // function test_Increment() public {}
 
     function test() public {}
 }

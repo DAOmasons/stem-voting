@@ -31,10 +31,8 @@ contract Contest is IContest {
         uint256 _startTime,
         uint256 _duration
     ) {
-        require(
-            _startTime >= block.timestamp,
-            "Start time must be in the future"
-        );
+        require(_startTime >= block.timestamp, "Start time must be in the future");
+
         votesContract = _votesContract;
         pointsContract = _pointsContract;
         choicesContract = _choicesContract;
@@ -45,10 +43,7 @@ contract Contest is IContest {
     }
 
     modifier onlyDuringVotingPeriod() {
-        require(
-            block.timestamp >= startTime && block.timestamp <= endTime,
-            "Voting is not active"
-        );
+        require(block.timestamp >= startTime && block.timestamp <= endTime, "Voting is not active");
         _;
     }
 
@@ -61,12 +56,13 @@ contract Contest is IContest {
         pointsContract.claimPoints();
     }
 
-    function vote(
-        bytes32 choiceId,
-        uint256 amount
-    ) public virtual onlyDuringVotingPeriod {
+    function vote(bytes32 choiceId, uint256 amount) public virtual onlyDuringVotingPeriod {
         pointsContract.allocatePoints(msg.sender, amount);
         votesContract.vote(choiceId, amount);
+
+        // Review: I'm not sure if we should create a new option if the choice ID doesn't exist
+        // I'm thinking that it might be a negative side effect if a user could just create a new options
+        // if there should be a constrained list of options
 
         // Add choice to list if not already present
         if (choicesIdx[choiceId] == 0) {
@@ -75,28 +71,22 @@ contract Contest is IContest {
         }
     }
 
-    function retractVote(
-        bytes32 choiceId,
-        uint256 amount
-    ) public virtual onlyDuringVotingPeriod {
+    function retractVote(bytes32 choiceId, uint256 amount) public virtual onlyDuringVotingPeriod {
         pointsContract.releasePoints(msg.sender, amount);
         votesContract.retractVote(choiceId, amount);
     }
 
-    function changeVote(
-        bytes32 oldChoiceId,
-        bytes32 newChoiceId,
-        uint256 amount
-    ) public virtual onlyDuringVotingPeriod {
+    function changeVote(bytes32 oldChoiceId, bytes32 newChoiceId, uint256 amount)
+        public
+        virtual
+        onlyDuringVotingPeriod
+    {
         retractVote(oldChoiceId, amount);
         vote(newChoiceId, amount);
     }
 
     function finalize() public virtual onlyAfterEnd {
-        bytes32[] memory winningChoices = finalizationStrategy.finalize(
-            address(this),
-            choiceList
-        );
+        bytes32[] memory winningChoices = finalizationStrategy.finalize(address(this), choiceList);
 
         // loop through winning choicesIdx and execute
         for (uint256 i = 0; i < winningChoices.length; i++) {
@@ -111,15 +101,13 @@ contract Contest is IContest {
         require(data.length > 0, "No executable data found");
 
         // Perform the delegatecall
-        (bool success, ) = address(this).delegatecall(data);
+        (bool success,) = address(this).delegatecall(data);
         require(success, "Execution failed");
     }
 
     // getters
 
-    function getTotalVotesForChoice(
-        bytes32 choiceId
-    ) public view override returns (uint256) {
+    function getTotalVotesForChoice(bytes32 choiceId) public view override returns (uint256) {
         return votesContract.getTotalVotesForChoice(choiceId);
     }
 
