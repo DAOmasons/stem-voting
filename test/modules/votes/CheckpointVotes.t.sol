@@ -7,8 +7,12 @@ import {Accounts} from "../../setup/Accounts.t.sol";
 import {CheckpointVoting} from "../../../src/modules/votes/CheckpointVotes.sol";
 import {Metadata} from "../../../src/core/Metadata.sol";
 
-contract CheckPointVotingTest is Test, Accounts {
+contract CheckpointVotingTest is Test, Accounts {
     CheckpointVoting checkpointVoting;
+
+    event Initialized(address contest, uint256 checkpointBlock, bool isRetractable);
+    event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
+    event VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
 
     uint256 _voteAmount = 10e18;
     Metadata _reason = Metadata(1, "reason");
@@ -127,13 +131,15 @@ contract CheckPointVotingTest is Test, Accounts {
         // Retracts 20e18
         _retract_some(_voteAmount * 2);
 
+        // total should be 25e18
         assertEq(checkpointVoting.getTotalVotesForChoice(choice1()), _voteAmount * 5 / 2);
     }
 
     function test_getChoiceVotesByVoter() public {
         _vote_retractable();
+        _vote_retractable();
 
-        assertEq(checkpointVoting.getChoiceVotesByVoter(choice1(), voter1()), _voteAmount);
+        assertEq(checkpointVoting.getChoiceVotesByVoter(choice1(), voter1()), _voteAmount * 2);
     }
 
     //////////////////////////////
@@ -143,12 +149,18 @@ contract CheckPointVotingTest is Test, Accounts {
     function _retract_some(uint256 _amount) private {
         _vote_retractable();
 
+        vm.expectEmit(true, false, false, true);
+        emit VoteRetracted(voter1(), choice1(), _amount, _reason);
+
         vm.prank(mockContest());
         checkpointVoting.retractVote(voter1(), choice1(), _amount, abi.encode(_reason));
     }
 
     function _retract() private {
         _vote_retractable();
+
+        vm.expectEmit(true, false, false, true);
+        emit VoteRetracted(voter1(), choice1(), _voteAmount, _reason);
 
         vm.prank(mockContest());
         checkpointVoting.retractVote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
@@ -157,6 +169,9 @@ contract CheckPointVotingTest is Test, Accounts {
     function _vote_retractable() private {
         _inititalize_retractable();
 
+        vm.expectEmit(true, false, false, true);
+        emit VoteCast(voter1(), choice1(), _voteAmount, _reason);
+
         vm.prank(mockContest());
         checkpointVoting.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
     }
@@ -164,16 +179,25 @@ contract CheckPointVotingTest is Test, Accounts {
     function _vote_nonretractable() private {
         _inititalize_nonretractable();
 
+        vm.expectEmit(true, false, false, true);
+        emit VoteCast(voter1(), choice1(), _voteAmount, _reason);
+
         vm.prank(mockContest());
         checkpointVoting.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
     }
 
     function _inititalize_retractable() private {
+        vm.expectEmit(true, false, false, true);
+        emit Initialized(mockContest(), block.number, true);
+
         bytes memory data = abi.encode(mockContest(), block.number, true);
         checkpointVoting.initialize(data);
     }
 
     function _inititalize_nonretractable() private {
+        vm.expectEmit(true, false, false, true);
+        emit Initialized(mockContest(), block.number, false);
+
         bytes memory data = abi.encode(mockContest(), block.number, false);
         checkpointVoting.initialize(data);
     }
