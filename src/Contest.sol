@@ -8,16 +8,33 @@ import "./interfaces/IChoices.sol";
 import "./interfaces/IContest.sol";
 
 contract Contest is IContest {
+    enum ContestStatus {
+        None,
+        Initialized,
+        Populating,
+        Voting,
+        Finalized
+    }
+    // Executed?
+
     IVotes public votesContract;
+
     IPoints public pointsContract;
+
     IChoices public choicesContract;
+
     IFinalizationStrategy public finalizationStrategy;
 
+    ContestStatus public contestStatus;
+
     uint256 public startTime;
+
     uint256 public endTime;
+
     bool public isFinalized;
 
     mapping(bytes32 => uint256) public choicesIdx;
+
     bytes32[] public choiceList;
 
     event ContestStarted(uint256 startTime, uint256 endTime);
@@ -51,6 +68,13 @@ contract Contest is IContest {
         require(block.timestamp > endTime, "Contest is still active");
         _;
     }
+
+    modifier onlyChoices() {
+        require(msg.sender == address(choicesContract), "Only choices contract");
+        _;
+    }
+
+    function acceptChoices() public onlyChoices {}
 
     function claimPoints() public virtual onlyDuringVotingPeriod {
         pointsContract.claimPoints();
