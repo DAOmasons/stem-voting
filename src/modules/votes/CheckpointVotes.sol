@@ -45,7 +45,7 @@ contract CheckpointVoting is IVotes {
         emit VoteCast(_voter, _choiceId, _amount, _reason);
     }
 
-    function retractVote(address _voter, bytes32 choiceId, uint256 amount, bytes memory _data) public {
+    function retractVote(address _voter, bytes32 choiceId, uint256 amount, bytes memory _data) public onlyContest {
         require(isRetractable, "Votes are not retractable");
 
         uint256 votedAmount = votes[choiceId][_voter];
@@ -61,5 +61,9 @@ contract CheckpointVoting is IVotes {
 
     function getTotalVotesForChoice(bytes32 choiceId) public view returns (uint256) {
         return totalVotesForChoice[choiceId];
+    }
+
+    function getChoiceVotesByVoter(bytes32 choiceId, address voter) public view returns (uint256) {
+        return votes[choiceId][voter];
     }
 }

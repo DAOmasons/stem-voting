@@ -17,6 +17,10 @@ contract CheckPointVotingTest is Test, Accounts {
         checkpointVoting = new CheckpointVoting();
     }
 
+    //////////////////////////////
+    // Base Functionality Tests
+    //////////////////////////////
+
     function test_initialize_retractable() public {
         _inititalize_retractable();
 
@@ -40,7 +44,32 @@ contract CheckPointVotingTest is Test, Accounts {
         assertEq(checkpointVoting.totalVotesForChoice(choice1()), _voteAmount);
     }
 
-    function testRevert_not_contest() public {
+    function test_vote_nonretractable() public {
+        _vote_nonretractable();
+
+        assertEq(checkpointVoting.votes(choice1(), address(voter1())), _voteAmount);
+        assertEq(checkpointVoting.totalVotesForChoice(choice1()), _voteAmount);
+    }
+
+    function test_retract() public {
+        _retract();
+
+        assertEq(checkpointVoting.votes(choice1(), address(voter1())), 0);
+        assertEq(checkpointVoting.totalVotesForChoice(choice1()), 0);
+    }
+
+    function test_retract_some() public {
+        _retract_some(_voteAmount / 2);
+
+        assertEq(checkpointVoting.votes(choice1(), address(voter1())), _voteAmount / 2);
+        assertEq(checkpointVoting.totalVotesForChoice(choice1()), _voteAmount / 2);
+    }
+
+    //////////////////////////////
+    // Reverts
+    //////////////////////////////
+
+    function testRevert_vote_not_contest() public {
         _inititalize_retractable();
 
         vm.startPrank(voter1());
@@ -49,7 +78,14 @@ contract CheckPointVotingTest is Test, Accounts {
         vm.stopPrank();
     }
 
-    function test_retract() public {}
+    function testRevert_retract_not_contest() public {
+        _vote_retractable();
+
+        vm.startPrank(voter1());
+        vm.expectRevert("Only contest");
+        checkpointVoting.retractVote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
+        vm.stopPrank();
+    }
 
     function testRevert_not_retractable() public {
         _inititalize_nonretractable();
@@ -59,28 +95,63 @@ contract CheckPointVotingTest is Test, Accounts {
         checkpointVoting.retractVote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
     }
 
+    function testRevert_retract_more_than_voted() public {
+        _vote_retractable();
+
+        vm.startPrank(mockContest());
+
+        vm.expectRevert("Insufficient votes allocated");
+        checkpointVoting.retractVote(voter1(), choice1(), _voteAmount * 2, abi.encode(_reason));
+
+        vm.expectRevert("Insufficient votes allocated");
+        checkpointVoting.retractVote(voter1(), choice1(), _voteAmount + 1, abi.encode(_reason));
+
+        vm.stopPrank();
+    }
+
+    //////////////////////////////
+    // Getters
+    //////////////////////////////
+
     function test_getTotalVotesForChoice() public {
+        // Votes 10e18
         _vote_retractable();
+        // Votes 10e18
+        _vote_retractable();
+        // Votes 10e18
+        // Retracts 5e18
+        _retract_some(_voteAmount / 2);
+        // Votes 10e18
+        _vote_retractable();
+        // Votes 10e18
+        // Retracts 20e18
+        _retract_some(_voteAmount * 2);
+
+        assertEq(checkpointVoting.getTotalVotesForChoice(choice1()), _voteAmount * 5 / 2);
+    }
+
+    function test_getChoiceVotesByVoter() public {
         _vote_retractable();
 
-        assertEq(checkpointVoting.getTotalVotesForChoice(choice1()), _voteAmount * 2);
+        assertEq(checkpointVoting.getChoiceVotesByVoter(choice1(), voter1()), _voteAmount);
     }
 
-    function test_vote_nonretractable() public {
-        _vote_nonretractable();
+    //////////////////////////////
+    // Helpers
+    //////////////////////////////
 
-        assertEq(checkpointVoting.votes(choice1(), address(voter1())), _voteAmount);
-        assertEq(checkpointVoting.totalVotesForChoice(choice1()), _voteAmount);
+    function _retract_some(uint256 _amount) private {
+        _vote_retractable();
+
+        vm.prank(mockContest());
+        checkpointVoting.retractVote(voter1(), choice1(), _amount, abi.encode(_reason));
     }
 
-    function _inititalize_retractable() private {
-        bytes memory data = abi.encode(mockContest(), block.number, true);
-        checkpointVoting.initialize(data);
-    }
+    function _retract() private {
+        _vote_retractable();
 
-    function _inititalize_nonretractable() private {
-        bytes memory data = abi.encode(mockContest(), block.number, false);
-        checkpointVoting.initialize(data);
+        vm.prank(mockContest());
+        checkpointVoting.retractVote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
     }
 
     function _vote_retractable() private {
@@ -95,5 +166,15 @@ contract CheckPointVotingTest is Test, Accounts {
 
         vm.prank(mockContest());
         checkpointVoting.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
+    }
+
+    function _inititalize_retractable() private {
+        bytes memory data = abi.encode(mockContest(), block.number, true);
+        checkpointVoting.initialize(data);
+    }
+
+    function _inititalize_nonretractable() private {
+        bytes memory data = abi.encode(mockContest(), block.number, false);
+        checkpointVoting.initialize(data);
     }
 }
