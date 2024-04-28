@@ -72,6 +72,10 @@ contract Accounts is StdCheats {
         return makeAddr("mock_contest");
     }
 
+    function mockDAOAddr() public returns (address) {
+        return makeAddr("mock_dao");
+    }
+
     //////////////////////
     // Choices
     //////////////////////

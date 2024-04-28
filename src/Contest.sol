@@ -112,7 +112,7 @@ contract Contest is IContest {
     // Review
     // Thinking that the execution logic should happen externally?
     function finalize() public virtual onlyAfterEnd {
-        bytes32[] memory winningChoices = finalizationStrategy.finalize(address(this), choiceList);
+        // bytes32[] memory winningChoices = finalizationStrategy.finalize(address(this), choiceList);
 
         // Review: I'm thinking maybe that we should perhaps handle this in some sort of
         // execution module. There we could more granular about how and what and how we execute
