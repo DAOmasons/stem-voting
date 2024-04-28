@@ -88,6 +88,9 @@ contract Contest is IContest {
     function finalize() public virtual onlyAfterEnd {
         bytes32[] memory winningChoices = finalizationStrategy.finalize(address(this), choiceList);
 
+        // Review: I'm thinking maybe that we should perhaps handle this in some sort of
+        // execution module. There we could more granular about how and what we execute
+
         // loop through winning choicesIdx and execute
         for (uint256 i = 0; i < winningChoices.length; i++) {
             executeChoice(winningChoices[i]);
