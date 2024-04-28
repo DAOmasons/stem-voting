@@ -6,7 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {HatsAllowList} from "../../../src/modules/choices/HatsAllowList.sol";
 import {HatsSetup} from "../../setup/hatsSetup.sol";
 
-contract HatsAllowListTest is HatsSetup, Test {
+contract HatsAllowListTest is HatsSetup {
     HatsAllowList hatsAllowList;
 
     function setUp() public {
