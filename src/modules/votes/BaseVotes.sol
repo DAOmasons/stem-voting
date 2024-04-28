@@ -23,13 +23,13 @@ contract BaseVotes is IVotes {
         contest = _contest;
     }
 
-    function vote(address _voter, bytes32 choiceId, uint256 amount) public onlyContest {
+    function vote(address _voter, bytes32 choiceId, uint256 amount, bytes memory) public onlyContest {
         votes[choiceId][_voter] += amount;
         totalVotesForChoice[choiceId] += amount; // Update the running total
         emit VoteCasted(_voter, choiceId, amount);
     }
 
-    function retractVote(address _voter, bytes32 choiceId, uint256 amount) public onlyContest {
+    function retractVote(address _voter, bytes32 choiceId, uint256 amount, bytes memory) public onlyContest {
         uint256 votedAmount = votes[choiceId][_voter];
         require(votedAmount >= amount, "Insufficient votes allocated");
 

@@ -2,9 +2,7 @@
 pragma solidity ^0.8.13;
 
 interface IContest {
-    function getTotalVotesForChoice(
-        bytes32 choiceId
-    ) external view returns (uint256);
+    function getTotalVotesForChoice(bytes32 choiceId) external view returns (uint256);
 
     function getChoices() external view returns (bytes32[] memory);
 
@@ -12,9 +10,9 @@ interface IContest {
 
     function claimPoints() external;
 
-    function vote(bytes32 choiceId, uint256 amount) external;
+    function vote(bytes32 choiceId, uint256 amount, bytes memory data) external;
 
-    function retractVote(bytes32 choiceId, uint256 amount) external;
+    function retractVote(bytes32 choiceId, uint256 amount, bytes memory data) external;
 
     function finalize() external;
 }

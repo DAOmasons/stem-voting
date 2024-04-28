@@ -11,6 +11,7 @@ contract CheckPointVotingTest is Test, Accounts {
     CheckpointVoting checkpointVoting;
 
     uint256 _voteAmount = 10e18;
+    Metadata _reason = Metadata(1, "reason");
 
     function setUp() public {
         checkpointVoting = new CheckpointVoting();
@@ -44,16 +45,18 @@ contract CheckPointVotingTest is Test, Accounts {
 
         vm.startPrank(voter1());
         vm.expectRevert("Only contest");
-        checkpointVoting.vote(voter1(), choice1(), _voteAmount);
+        checkpointVoting.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
         vm.stopPrank();
     }
+
+    function test_retract() public {}
 
     function testRevert_not_retractable() public {
         _inititalize_nonretractable();
 
         vm.prank(mockContest());
         vm.expectRevert("Votes are not retractable");
-        checkpointVoting.retractVote(voter1(), choice1(), _voteAmount);
+        checkpointVoting.retractVote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
     }
 
     function test_getTotalVotesForChoice() public {
@@ -84,13 +87,13 @@ contract CheckPointVotingTest is Test, Accounts {
         _inititalize_retractable();
 
         vm.prank(mockContest());
-        checkpointVoting.vote(voter1(), choice1(), _voteAmount);
+        checkpointVoting.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
     }
 
     function _vote_nonretractable() private {
         _inititalize_nonretractable();
 
         vm.prank(mockContest());
-        checkpointVoting.vote(voter1(), choice1(), _voteAmount);
+        checkpointVoting.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
     }
 }
