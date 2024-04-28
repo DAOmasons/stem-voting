@@ -8,22 +8,38 @@ import {Metadata} from "../../core/Metadata.sol";
 // so far is very similar to the BaseVotes contract
 
 contract CheckpointVoting is IVotes {
+    /// ===============================
+    /// ========== Events =============
+    /// ===============================
+
     event Initialized(address contest, bool isRetractable);
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
     event VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
 
+    /// ===============================
+    /// ========== Storage ============
+    /// ===============================
+
     address public contest;
     bool public isRetractable;
+
+    // choiceId => voter => amount
+    mapping(bytes32 => mapping(address => uint256)) public votes;
+    // choiceId => total votes
+    mapping(bytes32 => uint256) public totalVotesForChoice;
+
+    /// ===============================
+    /// ========== Storage ============
+    /// ===============================
 
     modifier onlyContest() {
         require(msg.sender == contest, "Only contest");
         _;
     }
 
-    // choiceId => voter => amount
-    mapping(bytes32 => mapping(address => uint256)) public votes;
-    // choiceId => total votes
-    mapping(bytes32 => uint256) public totalVotesForChoice;
+    /// ===============================
+    /// ========== Init ===============
+    /// ===============================
 
     constructor() {}
 
@@ -35,6 +51,10 @@ contract CheckpointVoting is IVotes {
 
         emit Initialized(_contest, _isRetractable);
     }
+
+    /// ===============================
+    /// ========== Setters ============
+    /// ===============================
 
     function vote(address _voter, bytes32 _choiceId, uint256 _amount, bytes memory _data) public onlyContest {
         votes[_choiceId][_voter] += _amount;
@@ -58,6 +78,10 @@ contract CheckpointVoting is IVotes {
 
         emit VoteRetracted(_voter, choiceId, amount, _reason);
     }
+
+    /// ===============================
+    /// ========== Getters ============
+    /// ===============================
 
     function getTotalVotesForChoice(bytes32 choiceId) public view returns (uint256) {
         return totalVotesForChoice[choiceId];
