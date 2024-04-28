@@ -8,12 +8,11 @@ import {Metadata} from "../../core/Metadata.sol";
 // so far is very similar to the BaseVotes contract
 
 contract CheckpointVoting is IVotes {
-    event Initialized(address contest, uint256 checkpointBlock, bool isRetractable);
+    event Initialized(address contest, bool isRetractable);
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
     event VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
 
     address public contest;
-    uint256 public checkpointBlock;
     bool public isRetractable;
 
     modifier onlyContest() {
@@ -29,14 +28,12 @@ contract CheckpointVoting is IVotes {
     constructor() {}
 
     function initialize(bytes memory _initParams) public {
-        (address _contest, uint256 _checkpointBlock, bool _isRetractable) =
-            abi.decode(_initParams, (address, uint256, bool));
+        (address _contest, bool _isRetractable) = abi.decode(_initParams, (address, bool));
 
         contest = _contest;
-        checkpointBlock = _checkpointBlock == 0 ? block.number : _checkpointBlock;
         isRetractable = _isRetractable;
 
-        emit Initialized(_contest, checkpointBlock, _isRetractable);
+        emit Initialized(_contest, _isRetractable);
     }
 
     function vote(address _voter, bytes32 _choiceId, uint256 _amount, bytes memory _data) public onlyContest {

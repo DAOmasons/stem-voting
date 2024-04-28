@@ -10,7 +10,7 @@ import {Metadata} from "../../../src/core/Metadata.sol";
 contract CheckpointVotingTest is Test, Accounts {
     CheckpointVoting checkpointVoting;
 
-    event Initialized(address contest, uint256 checkpointBlock, bool isRetractable);
+    event Initialized(address contest, bool isRetractable);
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
     event VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
 
@@ -29,7 +29,6 @@ contract CheckpointVotingTest is Test, Accounts {
         _inititalize_retractable();
 
         assertEq(checkpointVoting.contest(), mockContest());
-        assertEq(checkpointVoting.checkpointBlock(), block.number);
         assertTrue(checkpointVoting.isRetractable());
     }
 
@@ -37,7 +36,6 @@ contract CheckpointVotingTest is Test, Accounts {
         _inititalize_nonretractable();
 
         assertEq(checkpointVoting.contest(), mockContest());
-        assertEq(checkpointVoting.checkpointBlock(), block.number);
         assertFalse(checkpointVoting.isRetractable());
     }
 
@@ -188,7 +186,7 @@ contract CheckpointVotingTest is Test, Accounts {
 
     function _inititalize_retractable() private {
         vm.expectEmit(true, false, false, true);
-        emit Initialized(mockContest(), block.number, true);
+        emit Initialized(mockContest(), true);
 
         bytes memory data = abi.encode(mockContest(), block.number, true);
         checkpointVoting.initialize(data);
@@ -196,7 +194,7 @@ contract CheckpointVotingTest is Test, Accounts {
 
     function _inititalize_nonretractable() private {
         vm.expectEmit(true, false, false, true);
-        emit Initialized(mockContest(), block.number, false);
+        emit Initialized(mockContest(), false);
 
         bytes memory data = abi.encode(mockContest(), block.number, false);
         checkpointVoting.initialize(data);
