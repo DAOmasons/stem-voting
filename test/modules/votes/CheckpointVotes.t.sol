@@ -188,7 +188,7 @@ contract CheckpointVotingTest is Test, Accounts {
         vm.expectEmit(true, false, false, true);
         emit Initialized(mockContest(), true);
 
-        bytes memory data = abi.encode(mockContest(), block.number, true);
+        bytes memory data = abi.encode(mockContest(), true);
         checkpointVoting.initialize(data);
     }
 
@@ -196,7 +196,7 @@ contract CheckpointVotingTest is Test, Accounts {
         vm.expectEmit(true, false, false, true);
         emit Initialized(mockContest(), false);
 
-        bytes memory data = abi.encode(mockContest(), block.number, false);
+        bytes memory data = abi.encode(mockContest(), false);
         checkpointVoting.initialize(data);
     }
 }
