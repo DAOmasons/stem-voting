@@ -10,17 +10,8 @@ contract BaseVotes is IVotes {
     mapping(bytes32 => uint256) public totalVotesForChoice; // Total votes per choice
 
     event VoteCasted(address indexed voter, bytes32 choiceId, uint256 amount);
-    event VoteRetracted(
-        address indexed voter,
-        bytes32 choiceId,
-        uint256 amount
-    );
-    event VoteChanged(
-        address indexed voter,
-        bytes32 oldChoiceId,
-        bytes32 newChoiceId,
-        uint256 amount
-    );
+    event VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount);
+    event VoteChanged(address indexed voter, bytes32 oldChoiceId, bytes32 newChoiceId, uint256 amount);
 
     modifier onlyContest() {
         require(msg.sender == contest, "Only contest");
@@ -32,26 +23,24 @@ contract BaseVotes is IVotes {
         contest = _contest;
     }
 
-    function vote(bytes32 choiceId, uint256 amount) public onlyContest {
-        votes[choiceId][msg.sender] += amount;
+    function vote(address _voter, bytes32 choiceId, uint256 amount) public onlyContest {
+        votes[choiceId][_voter] += amount;
         totalVotesForChoice[choiceId] += amount; // Update the running total
-        emit VoteCasted(msg.sender, choiceId, amount);
+        emit VoteCasted(_voter, choiceId, amount);
     }
 
-    function retractVote(bytes32 choiceId, uint256 amount) public onlyContest {
-        uint256 votedAmount = votes[choiceId][msg.sender];
+    function retractVote(address _voter, bytes32 choiceId, uint256 amount) public onlyContest {
+        uint256 votedAmount = votes[choiceId][_voter];
         require(votedAmount >= amount, "Insufficient votes allocated");
 
-        votes[choiceId][msg.sender] -= amount;
+        votes[choiceId][_voter] -= amount;
         totalVotesForChoice[choiceId] -= amount; // Update the running total
 
-        votes[choiceId][msg.sender] -= amount;
-        emit VoteRetracted(msg.sender, choiceId, amount);
+        votes[choiceId][_voter] -= amount;
+        emit VoteRetracted(_voter, choiceId, amount);
     }
 
-    function getTotalVotesForChoice(
-        bytes32 choiceId
-    ) public view returns (uint256) {
+    function getTotalVotesForChoice(bytes32 choiceId) public view returns (uint256) {
         return totalVotesForChoice[choiceId];
     }
 }

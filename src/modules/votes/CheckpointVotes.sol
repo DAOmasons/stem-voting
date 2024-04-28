@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../../interfaces/IVotes.sol";
+import {Metadata} from "../../core/Metadata.sol";
 
 // Note: I may not need this contract as the functionality required
 // so far is very similar to the BaseVotes contract
@@ -32,21 +33,25 @@ contract CheckpointVoting is IVotes {
         isRetractable = _isRetractable;
     }
 
-    function vote(bytes32 _choiceId, uint256 _amount) public onlyContest {
-        votes[_choiceId][msg.sender] += _amount;
+    function vote(address _voter, bytes32 _choiceId, uint256 _amount, bytes memory _data) public onlyContest {
+        votes[_choiceId][_voter] += _amount;
         totalVotesForChoice[_choiceId] += _amount;
+
+        (Metadata memory _reason) = abi.decode(_data, (Metadata));
 
         // emit VoteCasted(msg.sender, _choiceId, _amount);
     }
 
-    function retractVote(bytes32 choiceId, uint256 amount) public {
-        // require(isRetractable, "Votes are not retractable");
+    function retractVote(address _voter, bytes32 choiceId, uint256 amount, bytes memory _data) public {
+        require(isRetractable, "Votes are not retractable");
 
-        // uint256 votedAmount = votes[choiceId][msg.sender];
-        // require(votedAmount >= amount, "Insufficient votes allocated");
+        uint256 votedAmount = votes[choiceId][_voter];
+        require(votedAmount >= amount, "Insufficient votes allocated");
 
-        // votes[choiceId][msg.sender] -= amount;
-        // totalVotesForChoice[choiceId] -= amount;
+        votes[choiceId][_voter] -= amount;
+        totalVotesForChoice[choiceId] -= amount;
+
+        (Metadata memory _reason) = abi.decode(_data, (Metadata));
 
         // emit VoteRetracted(msg.sender, choiceId, amount);
     }

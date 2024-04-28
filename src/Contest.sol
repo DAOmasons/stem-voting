@@ -58,7 +58,7 @@ contract Contest is IContest {
 
     function vote(bytes32 choiceId, uint256 amount) public virtual onlyDuringVotingPeriod {
         pointsContract.allocatePoints(msg.sender, amount);
-        votesContract.vote(choiceId, amount);
+        votesContract.vote(msg.sender, choiceId, amount);
 
         // Review: I'm not sure if we should create a new option if the choice ID doesn't exist
         // I'm thinking that it might be a negative side effect if a user could just create a new options
@@ -73,7 +73,7 @@ contract Contest is IContest {
 
     function retractVote(bytes32 choiceId, uint256 amount) public virtual onlyDuringVotingPeriod {
         pointsContract.releasePoints(msg.sender, amount);
-        votesContract.retractVote(choiceId, amount);
+        votesContract.retractVote(msg.sender, choiceId, amount);
     }
 
     function changeVote(bytes32 oldChoiceId, bytes32 newChoiceId, uint256 amount)
