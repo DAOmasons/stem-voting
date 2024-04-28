@@ -188,15 +188,15 @@ contract CheckpointVotingTest is Test, Accounts {
         vm.expectEmit(true, false, false, true);
         emit Initialized(mockContest(), true);
 
-        bytes memory data = abi.encode(mockContest(), true);
-        checkpointVoting.initialize(data);
+        bytes memory data = abi.encode(true);
+        checkpointVoting.initialize(mockContest(), data);
     }
 
     function _inititalize_nonretractable() private {
         vm.expectEmit(true, false, false, true);
         emit Initialized(mockContest(), false);
 
-        bytes memory data = abi.encode(mockContest(), false);
-        checkpointVoting.initialize(data);
+        bytes memory data = abi.encode(false);
+        checkpointVoting.initialize(mockContest(), data);
     }
 }

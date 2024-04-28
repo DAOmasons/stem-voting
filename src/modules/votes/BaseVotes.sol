@@ -18,8 +18,7 @@ contract BaseVotes is IVotes {
         _;
     }
 
-    //TODO initializer, should take bytes to destructure
-    function setUp(address _contest) public {
+    function initialize(address _contest, bytes memory) public {
         contest = _contest;
     }
 

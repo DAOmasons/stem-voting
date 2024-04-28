@@ -21,7 +21,7 @@ contract Contest is IContest {
     bytes32[] public choiceList;
 
     event ContestStarted(uint256 startTime, uint256 endTime);
-    event ContestFinalized(bytes32[] winningChoices);
+    event ContestFinalized();
 
     constructor(
         IVotes _votesContract,
@@ -85,28 +85,30 @@ contract Contest is IContest {
         vote(newChoiceId, amount, _data);
     }
 
+    // Review
+    // Thinking that the execution logic should happen externally?
     function finalize() public virtual onlyAfterEnd {
         bytes32[] memory winningChoices = finalizationStrategy.finalize(address(this), choiceList);
 
         // Review: I'm thinking maybe that we should perhaps handle this in some sort of
-        // execution module. There we could more granular about how and what we execute
+        // execution module. There we could more granular about how and what and how we execute
 
         // loop through winning choicesIdx and execute
-        for (uint256 i = 0; i < winningChoices.length; i++) {
-            executeChoice(winningChoices[i]);
-        }
+        // for (uint256 i = 0; i < winningChoices.length; i++) {
+        //     executeChoice(winningChoices[i]);
+        // }
         isFinalized = true;
-        emit ContestFinalized(winningChoices);
+        emit ContestFinalized();
     }
 
-    function executeChoice(bytes32 choice) internal virtual {
-        (, bytes memory data) = choicesContract.getChoice(choice);
-        require(data.length > 0, "No executable data found");
+    // function executeChoice(bytes32 choice) internal virtual {
+    //     (, bytes memory data) = choicesContract.getChoice(choice);
+    //     require(data.length > 0, "No executable data found");
 
-        // Perform the delegatecall
-        (bool success,) = address(this).delegatecall(data);
-        require(success, "Execution failed");
-    }
+    //     // Perform the delegatecall
+    //     (bool success,) = address(this).delegatecall(data);
+    //     require(success, "Execution failed");
+    // }
 
     // getters
 

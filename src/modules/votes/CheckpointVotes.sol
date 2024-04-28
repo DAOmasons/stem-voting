@@ -6,7 +6,6 @@ import {Metadata} from "../../core/Metadata.sol";
 
 // Note: I may not need this contract as the functionality required
 // so far is very similar to the BaseVotes contract
-
 contract CheckpointVoting is IVotes {
     /// ===============================
     /// ========== Events =============
@@ -43,8 +42,8 @@ contract CheckpointVoting is IVotes {
 
     constructor() {}
 
-    function initialize(bytes memory _initParams) public {
-        (address _contest, bool _isRetractable) = abi.decode(_initParams, (address, bool));
+    function initialize(address _contest, bytes memory _initParams) public {
+        (bool _isRetractable) = abi.decode(_initParams, (bool));
 
         contest = _contest;
         isRetractable = _isRetractable;

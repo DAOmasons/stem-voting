@@ -15,13 +15,6 @@ contract AllowList is IChoices {
 
     address public owner;
 
-    constructor(address[] memory _allowedAccounts) {
-        owner = msg.sender;
-        for (uint i = 0; i < _allowedAccounts.length; i++) {
-            allowedAccounts[_allowedAccounts[i]] = true;
-        }
-    }
-
     modifier onlyAllowed() {
         require(allowedAccounts[msg.sender], "Caller is not allowed");
         _;
@@ -32,17 +25,31 @@ contract AllowList is IChoices {
         _;
     }
 
-    function registerChoice(
-        bytes32 choiceId,
-        string calldata uri,
-        bytes calldata data
-    ) external override onlyAllowed {
-        choices[choiceId] = ChoiceData(uri, data);
+    constructor() {}
+
+    function initialize(address _contest, bytes calldata _initData) external override {
+        owner = _contest;
+
+        (address[] memory _allowedAccounts) = abi.decode(_initData, (address[]));
+
+        for (uint256 i = 0; i < _allowedAccounts.length; i++) {
+            allowedAccounts[_allowedAccounts[i]] = true;
+        }
     }
 
-    function getChoice(
-        bytes32 choiceId
-    ) external view override returns (string memory, bytes memory) {
+    function registerChoice(bytes32 choiceId, bytes calldata _data) external override onlyAllowed {
+        (string memory _uri, bytes memory _choiceData) = abi.decode(_data, (string, bytes));
+
+        choices[choiceId] = ChoiceData(_uri, _choiceData);
+    }
+
+    function removeChoice(bytes32 choiceId, bytes calldata _data) external override onlyAllowed {
+        (string memory _uri, bytes memory _choiceData) = abi.decode(_data, (string, bytes));
+
+        choices[choiceId] = ChoiceData(_uri, _choiceData);
+    }
+
+    function getChoice(bytes32 choiceId) external view returns (string memory, bytes memory) {
         return (choices[choiceId].uri, choices[choiceId].data);
     }
 
