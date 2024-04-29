@@ -6,16 +6,22 @@ import "../../interfaces/IChoices.sol";
 import {IHats} from "hats-protocol/Interfaces/IHats.sol"; // Path: node_modules/@hats-finance/hats-protocol/contracts/Hats.sol
 import {IContest} from "../../interfaces/IContest.sol";
 
+// Todo
+// - [] Discuss and review procedural status pattern
+// - [] Check that contest is in voting state
+// - [] Wrap that check in a modifier and apply to write functions except initialize
+// - [] Write a way for all choice modules to update the contest status
+
 contract HatsAllowList is IChoices {
     /// ===============================
     /// ========== Events =============
     /// ===============================
 
-    event initialized(address contest, address hats, uint256 hatId);
+    event Initialized(address contest, address hatsAddress, uint256 hatId);
 
-    event ChoiceRegistered(bytes32 choiceId, ChoiceData choiceData, address sender);
+    event Registered(bytes32 choiceId, ChoiceData choiceData);
 
-    event ChoiceRemoved(bytes32 choiceId, address sender);
+    event Removed(bytes32 choiceId);
 
     /// ===============================
     /// ========== Struct =============
@@ -77,6 +83,8 @@ contract HatsAllowList is IChoices {
                 }
             }
         }
+
+        emit Initialized(_contest, _hats, _hatId);
     }
 
     /// ===============================
@@ -91,6 +99,8 @@ contract HatsAllowList is IChoices {
         (bytes memory _choiceData, Metadata memory _metadata) = abi.decode(_data, (bytes, Metadata));
 
         choices[choiceId] = ChoiceData(_metadata, _choiceData, true);
+
+        emit Registered(choiceId, choices[choiceId]);
     }
 
     function removeChoice(bytes32 choiceId, bytes calldata) external onlyTrustedWearer {
@@ -99,6 +109,13 @@ contract HatsAllowList is IChoices {
         require(isValidChoice(choiceId), "Choice does not exist");
 
         delete choices[choiceId];
+
+        emit Removed(choiceId);
+    }
+
+    function choiceSetComplete() external onlyTrustedWearer {
+        // Review: Discuss setting choice set complete
+        // Cons: Setting contest state from a module
     }
 
     /// ===============================

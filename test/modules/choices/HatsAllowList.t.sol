@@ -8,6 +8,12 @@ import {HatsSetup} from "../../setup/hatsSetup.sol";
 import {Metadata} from "../../../src/core/Metadata.sol";
 
 contract HatsAllowListTest is HatsSetup {
+    event Initialized(address contest, address hatsAddress, uint256 hatId);
+
+    event Registered(bytes32 choiceId, HatsAllowList.ChoiceData choiceData);
+
+    event Removed(bytes32 choiceId);
+
     HatsAllowList hatsAllowList;
 
     Metadata metadata = Metadata(1, "QmWmyoMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWeVdD");
@@ -278,6 +284,9 @@ contract HatsAllowListTest is HatsSetup {
     function _register_choice() internal {
         _initialize();
 
+        vm.expectEmit(true, false, false, true);
+        emit Registered(choice1(), HatsAllowList.ChoiceData(metadata, choiceData, true));
+
         vm.startPrank(facilitator1().wearer);
         hatsAllowList.registerChoice(choice1(), abi.encode(choiceData, metadata));
         vm.stopPrank();
@@ -295,7 +304,11 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     function _initialize() internal {
+        vm.expectEmit(true, false, false, true);
+        emit Initialized(address(this), address(hats()), facilitator1().id);
+
         bytes memory data = abi.encode(address(hats()), facilitator1().id, "");
+
         hatsAllowList.initialize(address(this), data);
     }
 }
