@@ -6,9 +6,9 @@ import {Metadata} from "../core/Metadata.sol";
 interface IChoices {
     // Note: Edited to remove uri as we can incorporate that into data param
 
-    function registerChoice(bytes32 choiceId, bytes calldata data) external;
+    function registerChoice(bytes32 choiceId, bytes memory data) external;
 
-    function removeChoice(bytes32 choiceId, bytes calldata data) external;
+    function removeChoice(bytes32 choiceId, bytes memory data) external;
 
     function initialize(address _contest, bytes calldata initData) external;
     // Note: Thinking that we should allow the module author to decide how to return the data

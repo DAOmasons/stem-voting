@@ -31,19 +31,29 @@ contract HatsAllowList is IChoices {
     constructor() {}
 
     function initialize(address _contest, bytes calldata _initData) external override {
-        (address _hats, uint256 _facilitatorHatId) = abi.decode(_initData, (address, uint256));
+        (address _hats, uint256 _facilitatorHatId, bytes[] memory _prepopulatedChoices) =
+            abi.decode(_initData, (address, uint256, bytes[]));
 
         contest = IContest(_contest);
 
         hats = IHats(_hats);
         facilitatorHatId = _facilitatorHatId;
+
+        if (_prepopulatedChoices.length > 0) {
+            for (uint256 i = 0; i < _prepopulatedChoices.length;) {
+                (bytes32 choiceId, bytes memory _data) = abi.decode(_prepopulatedChoices[i], (bytes32, bytes));
+                registerChoice(choiceId, _data);
+
+                unchecked {
+                    i++;
+                }
+            }
+        }
     }
 
-    function registerChoice(bytes32 choiceId, bytes calldata _data) external onlyTrustedFacilitator {
+    function registerChoice(bytes32 choiceId, bytes memory _data) public onlyTrustedFacilitator {
         (bytes memory _choiceData, Metadata memory _metadata) = abi.decode(_data, (bytes, Metadata));
 
-        // should overwrite?
-        // Todo: Definitely not once voting starts. Update once I decide on a pattern
         choices[choiceId] = ChoiceData(_metadata, _choiceData, true);
     }
 
@@ -53,6 +63,12 @@ contract HatsAllowList is IChoices {
         require(isValidChoice(choiceId), "Choice does not exist");
 
         delete choices[choiceId];
+    }
+
+    function getChoice(bytes32 choiceId) external view returns (ChoiceData memory) {
+        require(isValidChoice(choiceId), "Choice does not exist");
+
+        return choices[choiceId];
     }
 
     function isValidChoice(bytes32 choiceId) public view returns (bool) {

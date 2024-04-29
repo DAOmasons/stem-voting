@@ -65,6 +65,14 @@ contract Accounts is StdCheats {
     }
 
     // //////////////////////
+    // Outsiders
+    // //////////////////////
+
+    function someGuy() public returns (address) {
+        return makeAddr("some_guy");
+    }
+
+    // //////////////////////
     // Mocks
     // //////////////////////
 
