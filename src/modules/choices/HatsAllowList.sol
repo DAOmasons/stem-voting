@@ -42,7 +42,7 @@ contract HatsAllowList is IChoices {
         if (_prepopulatedChoices.length > 0) {
             for (uint256 i = 0; i < _prepopulatedChoices.length;) {
                 (bytes32 choiceId, bytes memory _data) = abi.decode(_prepopulatedChoices[i], (bytes32, bytes));
-                registerChoice(choiceId, _data);
+                _registerChoice(choiceId, _data);
 
                 unchecked {
                     i++;
@@ -51,7 +51,11 @@ contract HatsAllowList is IChoices {
         }
     }
 
-    function registerChoice(bytes32 choiceId, bytes memory _data) public onlyTrustedFacilitator {
+    function registerChoice(bytes32 choiceId, bytes memory _data) external onlyTrustedFacilitator {
+        _registerChoice(choiceId, _data);
+    }
+
+    function _registerChoice(bytes32 choiceId, bytes memory _data) private {
         (bytes memory _choiceData, Metadata memory _metadata) = abi.decode(_data, (bytes, Metadata));
 
         choices[choiceId] = ChoiceData(_metadata, _choiceData, true);
@@ -63,12 +67,6 @@ contract HatsAllowList is IChoices {
         require(isValidChoice(choiceId), "Choice does not exist");
 
         delete choices[choiceId];
-    }
-
-    function getChoice(bytes32 choiceId) external view returns (ChoiceData memory) {
-        require(isValidChoice(choiceId), "Choice does not exist");
-
-        return choices[choiceId];
     }
 
     function isValidChoice(bytes32 choiceId) public view returns (bool) {

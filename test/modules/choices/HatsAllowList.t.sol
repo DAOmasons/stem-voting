@@ -11,7 +11,12 @@ contract HatsAllowListTest is HatsSetup {
     HatsAllowList hatsAllowList;
 
     Metadata metadata = Metadata(1, "QmWmyoMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWeVdD");
+    Metadata metadata2 = Metadata(2, "QmBa4oMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWe2zF");
+    Metadata metadata3 = Metadata(3, "QmHi23fctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWzt32");
+
     bytes choiceData = "choice1";
+    bytes choiceData2 = "choice2";
+    bytes choiceData3 = "choice3";
 
     function setUp() public {
         hatsAllowList = new HatsAllowList();
@@ -79,6 +84,33 @@ contract HatsAllowListTest is HatsSetup {
         assertEq(_metadata.pointer, "");
         assertEq(_choiceData, "");
         assertFalse(_exists);
+    }
+
+    function test_init_and_prepopulate() public {
+        _initialize_and_populate_choices();
+
+        (Metadata memory _metadata1, bytes memory _choiceData1, bool _1exists) = hatsAllowList.choices(choice1());
+        (Metadata memory _metadata2, bytes memory _choiceData2, bool _2exists) = hatsAllowList.choices(choice2());
+        (Metadata memory _metadata3, bytes memory _choiceData3, bool _3exists) = hatsAllowList.choices(choice3());
+
+        assertEq(address(hats()), address(hatsAllowList.hats()));
+        assertEq(facilitator1().id, hatsAllowList.facilitatorHatId());
+        assertEq(address(this), address(hatsAllowList.contest()));
+
+        assertEq(_metadata1.protocol, metadata.protocol);
+        assertEq(_metadata1.pointer, metadata.pointer);
+        assertEq(_choiceData1, choiceData);
+        assertTrue(_1exists);
+
+        assertEq(_metadata2.protocol, metadata2.protocol);
+        assertEq(_metadata2.pointer, metadata2.pointer);
+        assertEq(_choiceData2, choiceData2);
+        assertTrue(_2exists);
+
+        assertEq(_metadata3.protocol, metadata3.protocol);
+        assertEq(_metadata3.pointer, metadata3.pointer);
+        assertEq(_choiceData3, choiceData3);
+        assertTrue(_3exists);
     }
 
     //////////////////////////////
@@ -238,8 +270,19 @@ contract HatsAllowListTest is HatsSetup {
         vm.stopPrank();
     }
 
+    function _initialize_and_populate_choices() internal {
+        bytes[] memory prePopChoiceData = new bytes[](3);
+
+        prePopChoiceData[0] = abi.encode(choice1(), abi.encode(choiceData, metadata));
+        prePopChoiceData[1] = abi.encode(choice2(), abi.encode(choiceData2, metadata2));
+        prePopChoiceData[2] = abi.encode(choice3(), abi.encode(choiceData3, metadata3));
+
+        bytes memory data = abi.encode(address(hats()), facilitator1().id, prePopChoiceData);
+        hatsAllowList.initialize(address(this), data);
+    }
+
     function _initialize() internal {
-        bytes memory data = abi.encode(address(hats()), facilitator1().id);
+        bytes memory data = abi.encode(address(hats()), facilitator1().id, "");
         hatsAllowList.initialize(address(this), data);
     }
 }
