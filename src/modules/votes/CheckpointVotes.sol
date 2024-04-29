@@ -12,7 +12,9 @@ contract CheckpointVoting is IVotes {
     /// ===============================
 
     event Initialized(address contest, bool isRetractable);
+
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
+
     event VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
 
     /// ===============================
@@ -20,10 +22,12 @@ contract CheckpointVoting is IVotes {
     /// ===============================
 
     address public contest;
+
     bool public isRetractable;
 
     // choiceId => voter => amount
     mapping(bytes32 => mapping(address => uint256)) public votes;
+
     // choiceId => total votes
     mapping(bytes32 => uint256) public totalVotesForChoice;
 
