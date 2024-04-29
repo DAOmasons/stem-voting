@@ -250,6 +250,19 @@ contract HatsAllowListTest is HatsSetup {
     // Getters
     //////////////////////////////
 
+    function test_isValidChoice() public {
+        _initialize_and_populate_choices();
+
+        assertTrue(hatsAllowList.isValidChoice(choice1()));
+        assertTrue(hatsAllowList.isValidChoice(choice2()));
+        assertTrue(hatsAllowList.isValidChoice(choice3()));
+        assertFalse(hatsAllowList.isValidChoice(choice4()));
+
+        _remove_choice();
+
+        assertFalse(hatsAllowList.isValidChoice(choice1()));
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
