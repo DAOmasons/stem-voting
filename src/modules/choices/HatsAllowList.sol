@@ -7,37 +7,65 @@ import {IHats} from "hats-protocol/Interfaces/IHats.sol"; // Path: node_modules/
 import {IContest} from "../../interfaces/IContest.sol";
 
 contract HatsAllowList is IChoices {
+    /// ===============================
+    /// ========== Events =============
+    /// ===============================
+
+    event initialized(address contest, address hats, uint256 hatId);
+
+    event ChoiceRegistered(bytes32 choiceId, ChoiceData choiceData, address sender);
+
+    event ChoiceRemoved(bytes32 choiceId, address sender);
+
+    /// ===============================
+    /// ========== Struct =============
+    /// ===============================
+
     struct ChoiceData {
         Metadata metadata;
         bytes data;
         bool exists;
     }
 
+    /// ===============================
+    /// ========== Storage ============
+    /// ===============================
+
     IHats public hats;
-    uint256 public facilitatorHatId;
+
+    uint256 public hatId;
 
     IContest public contest;
 
+    // choiceId => ChoiceData
     mapping(bytes32 => ChoiceData) public choices;
 
-    modifier onlyTrustedFacilitator() {
+    /// ===============================
+    /// ========== Modifiers ==========
+    /// ===============================
+
+    modifier onlyTrustedWearer() {
         require(
-            hats.isWearerOfHat(msg.sender, facilitatorHatId) && hats.isInGoodStanding(msg.sender, facilitatorHatId),
-            "Caller is not facilitator or in good standing"
+            hats.isWearerOfHat(msg.sender, hatId) && hats.isInGoodStanding(msg.sender, hatId),
+            "Caller is not wearer or in good standing"
         );
         _;
     }
 
+    /// ===============================
+    /// ========== Init ===============
+    /// ===============================
+
     constructor() {}
 
     function initialize(address _contest, bytes calldata _initData) external override {
-        (address _hats, uint256 _facilitatorHatId, bytes[] memory _prepopulatedChoices) =
+        (address _hats, uint256 _hatId, bytes[] memory _prepopulatedChoices) =
             abi.decode(_initData, (address, uint256, bytes[]));
 
         contest = IContest(_contest);
 
         hats = IHats(_hats);
-        facilitatorHatId = _facilitatorHatId;
+        hatId = _hatId;
 
         if (_prepopulatedChoices.length > 0) {
             for (uint256 i = 0; i < _prepopulatedChoices.length;) {
@@ -51,7 +79,11 @@ contract HatsAllowList is IChoices {
         }
     }
 
-    function registerChoice(bytes32 choiceId, bytes memory _data) external onlyTrustedFacilitator {
+    /// ===============================
+    /// ========== Setters ============
+    /// ===============================
+
+    function registerChoice(bytes32 choiceId, bytes memory _data) external onlyTrustedWearer {
         _registerChoice(choiceId, _data);
     }
 
@@ -61,13 +93,17 @@ contract HatsAllowList is IChoices {
         choices[choiceId] = ChoiceData(_metadata, _choiceData, true);
     }
 
-    function removeChoice(bytes32 choiceId, bytes calldata) external onlyTrustedFacilitator {
+    function removeChoice(bytes32 choiceId, bytes calldata) external onlyTrustedWearer {
         // Review Any consequences to deleting like this?
 
         require(isValidChoice(choiceId), "Choice does not exist");
 
         delete choices[choiceId];
     }
+
+    /// ===============================
+    /// ========== Getters ============
+    /// ===============================
 
     function isValidChoice(bytes32 choiceId) public view returns (bool) {
         return choices[choiceId].exists;

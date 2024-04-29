@@ -32,7 +32,7 @@ contract CheckpointVoting is IVotes {
     mapping(bytes32 => uint256) public totalVotesForChoice;
 
     /// ===============================
-    /// ========== Storage ============
+    /// ========== Modifiers ==========
     /// ===============================
 
     modifier onlyContest() {

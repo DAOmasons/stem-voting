@@ -24,8 +24,8 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     // -[x] test hats permissions
-    // -[ ] test correct status
-    // -[ ] test does choice exist
+    // -[ ] test correct status Todo: Implement after status discussion
+    // -[x] test does choice exist
 
     //////////////////////////////
     // Base Functionality Tests
@@ -35,7 +35,7 @@ contract HatsAllowListTest is HatsSetup {
         _initialize();
 
         assertEq(address(hats()), address(hatsAllowList.hats()));
-        assertEq(facilitator1().id, hatsAllowList.facilitatorHatId());
+        assertEq(facilitator1().id, hatsAllowList.hatId());
         assertEq(address(this), address(hatsAllowList.contest()));
     }
 
@@ -94,7 +94,7 @@ contract HatsAllowListTest is HatsSetup {
         (Metadata memory _metadata3, bytes memory _choiceData3, bool _3exists) = hatsAllowList.choices(choice3());
 
         assertEq(address(hats()), address(hatsAllowList.hats()));
-        assertEq(facilitator1().id, hatsAllowList.facilitatorHatId());
+        assertEq(facilitator1().id, hatsAllowList.hatId());
         assertEq(address(this), address(hatsAllowList.contest()));
 
         assertEq(_metadata1.protocol, metadata.protocol);
@@ -124,7 +124,7 @@ contract HatsAllowListTest is HatsSetup {
         hatsAllowList.registerChoice(choice1(), abi.encode(choiceData, metadata));
         vm.stopPrank();
 
-        vm.expectRevert("Caller is not facilitator or in good standing");
+        vm.expectRevert("Caller is not wearer or in good standing");
 
         vm.startPrank(someGuy());
         hatsAllowList.registerChoice(choice2(), abi.encode(choiceData, metadata));
@@ -134,7 +134,7 @@ contract HatsAllowListTest is HatsSetup {
     function testRevert_remove_notFacilitator() public {
         _register_choice();
 
-        vm.expectRevert("Caller is not facilitator or in good standing");
+        vm.expectRevert("Caller is not wearer or in good standing");
 
         vm.startPrank(someGuy());
         hatsAllowList.removeChoice(choice1(), "");
@@ -154,7 +154,7 @@ contract HatsAllowListTest is HatsSetup {
         vm.stopPrank();
 
         // Facilitator should fail to register choice when ineligible
-        vm.expectRevert("Caller is not facilitator or in good standing");
+        vm.expectRevert("Caller is not wearer or in good standing");
         vm.startPrank(facilitator1().wearer);
         hatsAllowList.registerChoice(choice1(), abi.encode(choiceData, metadata));
         vm.stopPrank();
@@ -180,7 +180,7 @@ contract HatsAllowListTest is HatsSetup {
         vm.stopPrank();
 
         // Facilitator should fail to remove choice when ineligible
-        vm.expectRevert("Caller is not facilitator or in good standing");
+        vm.expectRevert("Caller is not wearer or in good standing");
         vm.startPrank(facilitator1().wearer);
         hatsAllowList.removeChoice(choice1(), "");
         vm.stopPrank();
@@ -211,7 +211,7 @@ contract HatsAllowListTest is HatsSetup {
         vm.stopPrank();
 
         // Facilitator should fail when registering choice since they do not have the hat
-        vm.expectRevert("Caller is not facilitator or in good standing");
+        vm.expectRevert("Caller is not wearer or in good standing");
         vm.prank(facilitator1().wearer);
         hatsAllowList.registerChoice(choice2(), abi.encode(choiceData, metadata));
         vm.stopPrank();
@@ -231,7 +231,7 @@ contract HatsAllowListTest is HatsSetup {
         vm.stopPrank();
 
         // Facilitator should fail when removing choice since they do not have the hat
-        vm.expectRevert("Caller is not facilitator or in good standing");
+        vm.expectRevert("Caller is not wearer or in good standing");
         vm.prank(facilitator1().wearer);
         hatsAllowList.removeChoice(choice1(), "");
         vm.stopPrank();
