@@ -2,11 +2,11 @@
 pragma solidity ^0.8.13;
 
 interface IVotes {
-    function vote(bytes32 choiceId, uint256 amount) external;
+    function initialize(address contest, bytes calldata initData) external;
 
-    function retractVote(bytes32 choiceId, uint256 amount) external;
+    function vote(address voter, bytes32 choiceId, uint256 amount, bytes memory data) external;
 
-    function getTotalVotesForChoice(
-        bytes32 choiceId
-    ) external view returns (uint256);
+    function retractVote(address voter, bytes32 choiceId, uint256 amount, bytes memory data) external;
+
+    function getTotalVotesForChoice(bytes32 choiceId) external view returns (uint256);
 }

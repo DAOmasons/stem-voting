@@ -8,20 +8,37 @@ import "./interfaces/IChoices.sol";
 import "./interfaces/IContest.sol";
 
 contract Contest is IContest {
+    enum ContestStatus {
+        None,
+        Initialized,
+        Populating,
+        Voting,
+        Finalized
+    }
+    // Executed?
+
     IVotes public votesContract;
+
     IPoints public pointsContract;
+
     IChoices public choicesContract;
+
     IFinalizationStrategy public finalizationStrategy;
 
+    ContestStatus public contestStatus;
+
     uint256 public startTime;
+
     uint256 public endTime;
+
     bool public isFinalized;
 
     mapping(bytes32 => uint256) public choicesIdx;
+
     bytes32[] public choiceList;
 
     event ContestStarted(uint256 startTime, uint256 endTime);
-    event ContestFinalized(bytes32[] winningChoices);
+    event ContestFinalized();
 
     constructor(
         IVotes _votesContract,
@@ -31,10 +48,8 @@ contract Contest is IContest {
         uint256 _startTime,
         uint256 _duration
     ) {
-        require(
-            _startTime >= block.timestamp,
-            "Start time must be in the future"
-        );
+        require(_startTime >= block.timestamp, "Start time must be in the future");
+
         votesContract = _votesContract;
         pointsContract = _pointsContract;
         choicesContract = _choicesContract;
@@ -45,10 +60,7 @@ contract Contest is IContest {
     }
 
     modifier onlyDuringVotingPeriod() {
-        require(
-            block.timestamp >= startTime && block.timestamp <= endTime,
-            "Voting is not active"
-        );
+        require(block.timestamp >= startTime && block.timestamp <= endTime, "Voting is not active");
         _;
     }
 
@@ -57,16 +69,24 @@ contract Contest is IContest {
         _;
     }
 
+    modifier onlyChoices() {
+        require(msg.sender == address(choicesContract), "Only choices contract");
+        _;
+    }
+
+    function acceptChoices() public onlyChoices {}
+
     function claimPoints() public virtual onlyDuringVotingPeriod {
         pointsContract.claimPoints();
     }
 
-    function vote(
-        bytes32 choiceId,
-        uint256 amount
-    ) public virtual onlyDuringVotingPeriod {
+    function vote(bytes32 choiceId, uint256 amount, bytes memory _data) public virtual onlyDuringVotingPeriod {
         pointsContract.allocatePoints(msg.sender, amount);
-        votesContract.vote(choiceId, amount);
+        votesContract.vote(msg.sender, choiceId, amount, _data);
+
+        // Review: I'm not sure if we should create a new option if the choice ID doesn't exist
+        // I'm thinking that it might be a negative side effect if a user could just create a new options
+        // if there should be a constrained list of options
 
         // Add choice to list if not already present
         if (choicesIdx[choiceId] == 0) {
@@ -75,51 +95,48 @@ contract Contest is IContest {
         }
     }
 
-    function retractVote(
-        bytes32 choiceId,
-        uint256 amount
-    ) public virtual onlyDuringVotingPeriod {
+    function retractVote(bytes32 choiceId, uint256 amount, bytes memory _data) public virtual onlyDuringVotingPeriod {
         pointsContract.releasePoints(msg.sender, amount);
-        votesContract.retractVote(choiceId, amount);
+        votesContract.retractVote(msg.sender, choiceId, amount, _data);
     }
 
-    function changeVote(
-        bytes32 oldChoiceId,
-        bytes32 newChoiceId,
-        uint256 amount
-    ) public virtual onlyDuringVotingPeriod {
-        retractVote(oldChoiceId, amount);
-        vote(newChoiceId, amount);
+    function changeVote(bytes32 oldChoiceId, bytes32 newChoiceId, uint256 amount, bytes memory _data)
+        public
+        virtual
+        onlyDuringVotingPeriod
+    {
+        retractVote(oldChoiceId, amount, _data);
+        vote(newChoiceId, amount, _data);
     }
 
+    // Review
+    // Thinking that the execution logic should happen externally?
     function finalize() public virtual onlyAfterEnd {
-        bytes32[] memory winningChoices = finalizationStrategy.finalize(
-            address(this),
-            choiceList
-        );
+        // bytes32[] memory winningChoices = finalizationStrategy.finalize(address(this), choiceList);
+
+        // Review: I'm thinking maybe that we should perhaps handle this in some sort of
+        // execution module. There we could more granular about how and what and how we execute
 
         // loop through winning choicesIdx and execute
-        for (uint256 i = 0; i < winningChoices.length; i++) {
-            executeChoice(winningChoices[i]);
-        }
+        // for (uint256 i = 0; i < winningChoices.length; i++) {
+        //     executeChoice(winningChoices[i]);
+        // }
         isFinalized = true;
-        emit ContestFinalized(winningChoices);
+        emit ContestFinalized();
     }
 
-    function executeChoice(bytes32 choice) internal virtual {
-        (, bytes memory data) = choicesContract.getChoice(choice);
-        require(data.length > 0, "No executable data found");
+    // function executeChoice(bytes32 choice) internal virtual {
+    //     (, bytes memory data) = choicesContract.getChoice(choice);
+    //     require(data.length > 0, "No executable data found");
 
-        // Perform the delegatecall
-        (bool success, ) = address(this).delegatecall(data);
-        require(success, "Execution failed");
-    }
+    //     // Perform the delegatecall
+    //     (bool success,) = address(this).delegatecall(data);
+    //     require(success, "Execution failed");
+    // }
 
     // getters
 
-    function getTotalVotesForChoice(
-        bytes32 choiceId
-    ) public view override returns (uint256) {
+    function getTotalVotesForChoice(bytes32 choiceId) public view override returns (uint256) {
         return votesContract.getTotalVotesForChoice(choiceId);
     }
 

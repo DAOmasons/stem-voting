@@ -63,4 +63,52 @@ contract Accounts is StdCheats {
     function voter10() public returns (address) {
         return makeAddr("voter_10");
     }
+
+    // //////////////////////
+    // Outsiders
+    // //////////////////////
+
+    function someGuy() public returns (address) {
+        return makeAddr("some_guy");
+    }
+
+    // //////////////////////
+    // Mocks
+    // //////////////////////
+
+    function mockContest() public returns (address) {
+        return makeAddr("mock_contest");
+    }
+
+    function mockDAOAddr() public returns (address) {
+        return makeAddr("mock_dao");
+    }
+
+    //////////////////////
+    // Choices
+    //////////////////////
+
+    function choice1() public pure returns (bytes32) {
+        return keccak256(abi.encodePacked("choiceId"));
+    }
+
+    function choice2() public pure returns (bytes32) {
+        return keccak256(abi.encodePacked("choiceId2"));
+    }
+
+    function choice3() public pure returns (bytes32) {
+        return keccak256(abi.encodePacked("choiceId3"));
+    }
+
+    function choice4() public pure returns (bytes32) {
+        return keccak256(abi.encodePacked("choiceId4"));
+    }
+
+    function choice5() public pure returns (bytes32) {
+        return keccak256(abi.encodePacked("choiceId5"));
+    }
+
+    function choice6() public pure returns (bytes32) {
+        return keccak256(abi.encodePacked("choiceId6"));
+    }
 }
