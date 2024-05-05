@@ -188,6 +188,30 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
         pointsModule.releasePoints(voter0(), voteAmount);
     }
 
+    function testRevertRelease_nonZero() public {
+        _initialize();
+
+        vm.expectRevert("Amount must be greater than 0");
+        pointsModule.releasePoints(voter0(), 0);
+    }
+
+    function testRevertRelease_insufficient() public {
+        _initialize();
+
+        vm.expectRevert("Insufficient points allocated");
+        pointsModule.releasePoints(voter0(), voteAmount + 1);
+
+        vm.expectRevert("Insufficient points allocated");
+        pointsModule.releasePoints(someGuy(), voteAmount);
+    }
+
+    function testRevertClaimPoints() public {
+        _initialize();
+
+        vm.expectRevert("This contract does not require users to claim points.");
+        pointsModule.claimPoints();
+    }
+
     //////////////////////////////
     // Adversarial
     //////////////////////////////
@@ -270,6 +294,7 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
     function _initialize() internal {
         _setupVotes();
         bytes memory initData = abi.encode(address(arbToken()), snapshotBlock);
+
         pointsModule.initialize(address(this), initData);
     }
 

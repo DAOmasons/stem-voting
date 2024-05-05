@@ -5,6 +5,8 @@ import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.s
 import {IPoints} from "../../interfaces/IPoints.sol";
 
 contract ERC20VotesPoints is IPoints {
+    event Initialized(address contest, address token, uint256 votingCheckpoint);
+
     IVotes public voteToken;
     uint256 public votingCheckpoint;
     address public contest;
@@ -24,6 +26,8 @@ contract ERC20VotesPoints is IPoints {
         votingCheckpoint = _votingCheckpoint;
         voteToken = IVotes(_token);
         contest = _contest;
+
+        emit Initialized(_contest, _token, _votingCheckpoint);
     }
 
     function getAllocatedPoints(address _user) public view returns (uint256) {
