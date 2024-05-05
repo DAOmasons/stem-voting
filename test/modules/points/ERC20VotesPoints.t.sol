@@ -17,14 +17,16 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
 
     ERC20VotesPoints pointsModule;
 
-    // uint256
-
     function setUp() public {
         vm.createSelectFork({blockNumber: startBlock, urlOrAlias: "arbitrumOne"});
         __setupArbToken();
 
         pointsModule = new ERC20VotesPoints();
     }
+
+    //////////////////////////////
+    // Token Setup Tests
+    //////////////////////////////
 
     function test_setup() public view {
         uint256 whaleBalance = arbToken().balanceOf(arbWhale());
@@ -69,6 +71,10 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
         }
     }
 
+    //////////////////////////////
+    // Base Functionality Tests
+    //////////////////////////////
+
     function test_initialize() public {
         _initialize();
 
@@ -81,7 +87,10 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
         _allocatePoints(0);
 
         uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
+
         assertEq(allocatedPoints, voteAmount);
+        assertEq(pointsLeft, 0);
     }
 
     function test_allocatePoints_partial() public {
@@ -90,14 +99,124 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
         pointsModule.allocatePoints(_voters[0], voteAmount / 2);
 
         uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
+
+        assertEq(pointsLeft, voteAmount / 2);
         assertEq(allocatedPoints, voteAmount / 2);
 
         pointsModule.allocatePoints(_voters[0], voteAmount / 2);
 
         allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        pointsLeft = pointsModule.getPoints(_voters[0]);
 
         assertEq(allocatedPoints, voteAmount);
+        assertEq(pointsLeft, 0);
     }
+
+    function test_releasePoints_total() public {
+        _releasePoints(0);
+
+        uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
+
+        assertEq(allocatedPoints, 0);
+        assertEq(pointsLeft, voteAmount);
+    }
+
+    function test_releasePoints_partial() public {
+        _allocatePoints(0);
+
+        pointsModule.releasePoints(_voters[0], voteAmount / 2);
+
+        uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
+
+        assertEq(allocatedPoints, voteAmount / 2);
+        assertEq(pointsLeft, voteAmount / 2);
+
+        pointsModule.releasePoints(_voters[0], voteAmount / 2);
+
+        allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        pointsLeft = pointsModule.getPoints(_voters[0]);
+
+        assertEq(allocatedPoints, 0);
+        assertEq(pointsLeft, voteAmount);
+    }
+
+    //////////////////////////////
+    // Reverts
+    //////////////////////////////
+
+    function testRevertAllocate_nonContest() public {
+        _initialize();
+
+        vm.prank(voter0());
+        vm.expectRevert("Only contest");
+        pointsModule.allocatePoints(voter0(), voteAmount);
+
+        vm.expectRevert("Only contest");
+        vm.prank(someGuy());
+        pointsModule.allocatePoints(voter0(), voteAmount);
+    }
+
+    function testRevertAllocate_nonZero() public {
+        _initialize();
+
+        vm.expectRevert("Amount must be greater than 0");
+        pointsModule.allocatePoints(voter0(), 0);
+    }
+
+    function testRevertAllocate_insufficient() public {
+        _initialize();
+
+        vm.expectRevert("Insufficient points available");
+        pointsModule.allocatePoints(voter0(), voteAmount + 1);
+
+        vm.expectRevert("Insufficient points available");
+        pointsModule.allocatePoints(someGuy(), voteAmount);
+    }
+
+    function testRevertRelease_nonContest() public {
+        _initialize();
+
+        vm.prank(voter0());
+        vm.expectRevert("Only contest");
+        pointsModule.releasePoints(voter0(), voteAmount);
+
+        vm.expectRevert("Only contest");
+        vm.prank(someGuy());
+        pointsModule.releasePoints(voter0(), voteAmount);
+    }
+
+    //////////////////////////////
+    // Adversarial
+    //////////////////////////////
+
+    function testRevertAllocate_doublespend() public {
+        _initialize();
+
+        pointsModule.allocatePoints(voter0(), voteAmount);
+
+        vm.expectRevert("Insufficient points available");
+        pointsModule.allocatePoints(voter0(), voteAmount);
+    }
+
+    function testRevertAllocate_doublespend_transfer() public {
+        _initialize();
+
+        pointsModule.allocatePoints(voter0(), voteAmount);
+
+        vm.startPrank(voter0());
+        arbToken().transfer(someGuy(), voteAmount);
+        vm.stopPrank();
+
+        vm.expectRevert("Insufficient points available");
+        pointsModule.allocatePoints(someGuy(), voteAmount);
+    }
+
+    //////////////////////////////
+    // Getters
+    //////////////////////////////
 
     // function test_getAllocatedPoints() public {
     //     _initialize();
@@ -108,6 +227,10 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
     //     }
     // }
 
+    //////////////////////////////
+    // Helpers
+    //////////////////////////////
+
     function _airdrop() internal {
         _voters.push(voter0());
         _voters.push(voter1());
@@ -116,7 +239,6 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
         vm.startPrank(arbWhale());
 
         for (uint256 i = 0; i < _voters.length;) {
-            _arbToken.approve(_voters[i], voteAmount);
             _arbToken.transfer(_voters[i], voteAmount);
 
             unchecked {
@@ -155,5 +277,10 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
         _initialize();
 
         pointsModule.allocatePoints(_voters[_voter], voteAmount);
+    }
+
+    function _releasePoints(uint256 _voter) internal {
+        _allocatePoints(_voter);
+        pointsModule.releasePoints(_voters[_voter], voteAmount);
     }
 }
