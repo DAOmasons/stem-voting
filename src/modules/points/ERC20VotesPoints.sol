@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {ERC20Votes} from "@openzeppelin/token/ERC20/extensions/ERC20Votes.sol";
+import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.sol";
 import {IPoints} from "../../interfaces/IPoints.sol";
 
 contract ERC20VotesPoints is IPoints {
-    ERC20Votes public voteToken;
+    IVotes public voteToken;
     uint256 public votingCheckpoint;
     address public contest;
 
@@ -22,7 +22,7 @@ contract ERC20VotesPoints is IPoints {
         (address _token, uint256 _votingCheckpoint) = abi.decode(_initData, (address, uint256));
 
         votingCheckpoint = _votingCheckpoint;
-        voteToken = ERC20Votes(_token);
+        voteToken = IVotes(_token);
         contest = _contest;
     }
 
@@ -42,12 +42,14 @@ contract ERC20VotesPoints is IPoints {
     }
 
     function allocatePoints(address _user, uint256 _amount) external onlyContest {
+        require(_amount > 0, "Amount must be greater than 0");
         require(hasVotingPoints(_user, _amount), "Insufficient points available");
 
         allocatedPoints[_user] += _amount;
     }
 
     function releasePoints(address _user, uint256 _amount) external onlyContest {
+        require(_amount > 0, "Amount must be greater than 0");
         require(allocatedPoints[_user] >= _amount, "Insufficient points allocated");
 
         allocatedPoints[_user] -= _amount;

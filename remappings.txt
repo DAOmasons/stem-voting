@@ -7,5 +7,4 @@ solbase/=lib/hats-protocol/lib/solbase/src/
 utils/=lib/hats-protocol/lib/utils/
 lib/ERC1155/=lib/hats-protocol/lib/ERC1155/
 @arb-gov/=lib/governance/src/
-@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
-@openzeppelin=lib/openzeppelin-contracts/contracts/
+openzeppelin-contracts/=lib/openzeppelin-contracts/

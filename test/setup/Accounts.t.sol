@@ -24,6 +24,10 @@ contract Accounts is StdCheats {
     // Voters
     // //////////////////////
 
+    function voter0() public returns (address) {
+        return makeAddr("voter_0");
+    }
+
     function voter1() public returns (address) {
         return makeAddr("voter_1");
     }
