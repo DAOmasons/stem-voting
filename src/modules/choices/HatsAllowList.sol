@@ -7,8 +7,7 @@ import {IHats} from "hats-protocol/Interfaces/IHats.sol"; // Path: node_modules/
 import {IContest} from "../../interfaces/IContest.sol";
 
 // Todo
-// - [] Discuss and review procedural status pattern
-// - [] Check that contest is in voting state
+// - [] Check that contest is in choices state
 // - [] Wrap that check in a modifier and apply to write functions except initialize
 // - [] Write a way for all choice modules to update the contest status
 

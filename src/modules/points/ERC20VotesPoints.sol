@@ -5,7 +5,15 @@ import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.s
 import {IPoints} from "../../interfaces/IPoints.sol";
 
 contract ERC20VotesPoints is IPoints {
+    /// ===============================
+    /// ========== Events =============
+    /// ===============================
+
     event Initialized(address contest, address token, uint256 votingCheckpoint);
+
+    /// ===============================
+    /// ========== Storage ============
+    /// ===============================
 
     IVotes public voteToken;
     uint256 public votingCheckpoint;
@@ -13,10 +21,18 @@ contract ERC20VotesPoints is IPoints {
 
     mapping(address => uint256) public allocatedPoints;
 
+    /// ===============================
+    /// ========== Modifiers ==========
+    /// ===============================
+
     modifier onlyContest() {
         require(msg.sender == contest, "Only contest");
         _;
     }
+
+    /// ===============================
+    /// ========== Init ===============
+    /// ===============================
 
     constructor() {}
 
@@ -30,20 +46,9 @@ contract ERC20VotesPoints is IPoints {
         emit Initialized(_contest, _token, _votingCheckpoint);
     }
 
-    function getAllocatedPoints(address _user) public view returns (uint256) {
-        return allocatedPoints[_user];
-    }
-
-    function getPoints(address _user) public view returns (uint256) {
-        uint256 totalVotingPoints = voteToken.getPastVotes(_user, votingCheckpoint);
-        uint256 allocatedVotingPoints = allocatedPoints[_user];
-
-        return totalVotingPoints - allocatedVotingPoints;
-    }
-
-    function hasVotingPoints(address _user, uint256 _amount) public view returns (bool) {
-        return getPoints(_user) >= _amount;
-    }
+    /// ===============================
+    /// ========== Setters ============
+    /// ===============================
 
     function allocatePoints(address _user, uint256 _amount) external onlyContest {
         require(_amount > 0, "Amount must be greater than 0");
@@ -65,5 +70,24 @@ contract ERC20VotesPoints is IPoints {
 
     function claimPoints() public pure {
         revert("This contract does not require users to claim points.");
+    }
+
+    /// ===============================
+    /// ========== Getters ============
+    /// ===============================
+
+    function getAllocatedPoints(address _user) public view returns (uint256) {
+        return allocatedPoints[_user];
+    }
+
+    function getPoints(address _user) public view returns (uint256) {
+        uint256 totalVotingPoints = voteToken.getPastVotes(_user, votingCheckpoint);
+        uint256 allocatedVotingPoints = allocatedPoints[_user];
+
+        return totalVotingPoints - allocatedVotingPoints;
+    }
+
+    function hasVotingPoints(address _user, uint256 _amount) public view returns (bool) {
+        return getPoints(_user) >= _amount;
     }
 }
