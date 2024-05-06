@@ -91,4 +91,8 @@ contract ERC20VotesPoints is IPoints {
     function hasVotingPoints(address _user, uint256 _amount) public view returns (bool) {
         return getPoints(_user) >= _amount;
     }
+
+    function hasAllocatedPoints(address _user, uint256 _amount) public view returns (bool) {
+        return getAllocatedPoints(_user) >= _amount;
+    }
 }

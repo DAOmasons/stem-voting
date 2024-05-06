@@ -96,13 +96,23 @@ contract Contest {
     }
 
     function vote(bytes32 choiceId, uint256 amount, bytes memory _data) public virtual onlyVotingPeriod {
+        // check
+        require(pointsModule.hasVotingPoints(msg.sender, amount), "Insufficient points available");
+        //effects
+
+        //interactions
         pointsModule.allocatePoints(msg.sender, amount);
         votesModule.vote(msg.sender, choiceId, amount, _data);
     }
 
     function retractVote(bytes32 choiceId, uint256 amount, bytes memory _data) public virtual onlyVotingPeriod {
+        // check
         require(isRetractable, "Votes are not retractable");
+        require(pointsModule.hasAllocatedPoints(msg.sender, amount), "User has not voted");
 
+        // effects
+
+        // interactions
         pointsModule.releasePoints(msg.sender, amount);
         votesModule.retractVote(msg.sender, choiceId, amount, _data);
     }
@@ -112,8 +122,14 @@ contract Contest {
         virtual
         onlyVotingPeriod
     {
+        // check
         require(isRetractable, "Votes are not retractable");
+        require(pointsModule.hasVotingPoints(msg.sender, amount), "Insufficient points available");
+        require(pointsModule.hasAllocatedPoints(msg.sender, amount), "User has not voted");
 
+        // effects
+
+        // interactions
         retractVote(oldChoiceId, amount, _data);
         vote(newChoiceId, amount, _data);
     }

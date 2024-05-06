@@ -19,7 +19,9 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     uint256 constant DELEGATE_BLOCK = START_BLOCK + 10;
     uint256 constant SNAPSHOT_BLOCK = DELEGATE_BLOCK + 15;
     uint256 constant VOTE_BLOCK = DELEGATE_BLOCK + 20;
-    uint256 constant TW0_WEEKS = 1209600;
+    uint256 constant TWO_WEEKS = 1209600;
+
+    address signalOnly = makeAddr("signal-only");
 
     ERC20VotesPoints _pointsModule;
     TimedVotes _votesModule;
@@ -41,7 +43,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         assertEq(block.number, VOTE_BLOCK);
 
         // setup modules & contest without factory pattern
-        // __rawDog_init_contest();
+        __rawDog_init_contest();
     }
 
     function _setupVoters() internal {
@@ -85,25 +87,25 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     function __rawDog_init_contest() public {
         // setup choice module
         bytes memory _choiceInitData = abi.encode(address(hats()), facilitator1().id, new bytes[](0));
-        choiceModule().initialize(address(contest()), _choiceInitData);
+        choicesModule().initialize(address(contest()), _choiceInitData);
 
         // setup points module
         bytes memory _pointsInitData = abi.encode(address(arbToken()), SNAPSHOT_BLOCK);
         pointsModule().initialize(address(contest()), _pointsInitData);
 
         // setup votes module
-        bytes memory _votesInitData = abi.encode(true);
+        bytes memory _votesInitData = abi.encode(TWO_WEEKS);
         votesModule().initialize(address(contest()), _votesInitData);
 
-        // setup contest
+        // // setup contest
         bytes memory _contestInitData = abi.encode(
-            address(votesModule()), address(pointsModule()), address(choiceModule()), makeAddr("signal-only"), false
+            address(votesModule()), address(pointsModule()), address(choicesModule()), signalOnly, false, false
         );
 
         contest().initialize(_contestInitData);
     }
 
-    function choiceModule() public view returns (HatsAllowList) {
+    function choicesModule() public view returns (HatsAllowList) {
         return _choiceModule;
     }
 
