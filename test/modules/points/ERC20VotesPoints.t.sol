@@ -242,14 +242,44 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
     // Getters
     //////////////////////////////
 
-    // function test_getAllocatedPoints() public {
-    //     _initialize();
+    function test_getAllocatedPoints() public {
+        _initialize();
 
-    //     for (uint256 i = 0; i < _voters.length; i++) {
-    //         uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[i]);
-    //         assertEq(allocatedPoints, 0);
-    //     }
-    // }
+        for (uint256 i = 0; i < _voters.length; i++) {
+            uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[i]);
+            assertEq(allocatedPoints, 0);
+
+            pointsModule.allocatePoints(_voters[i], voteAmount);
+            allocatedPoints = pointsModule.getAllocatedPoints(_voters[i]);
+            assertEq(allocatedPoints, voteAmount);
+        }
+    }
+
+    function test_getPoints() public {
+        _initialize();
+
+        for (uint256 i = 0; i < _voters.length; i++) {
+            uint256 points = pointsModule.getPoints(_voters[i]);
+            assertEq(points, voteAmount);
+
+            pointsModule.allocatePoints(_voters[i], voteAmount);
+            points = pointsModule.getPoints(_voters[i]);
+            assertEq(points, 0);
+        }
+    }
+
+    function test_hasVotingPoints() public {
+        _initialize();
+
+        for (uint256 i = 0; i < _voters.length; i++) {
+            bool hasPoints = pointsModule.hasVotingPoints(_voters[i], voteAmount);
+            assertTrue(hasPoints);
+
+            pointsModule.allocatePoints(_voters[i], voteAmount);
+            hasPoints = pointsModule.hasVotingPoints(_voters[i], voteAmount);
+            assertFalse(hasPoints);
+        }
+    }
 
     //////////////////////////////
     // Helpers
