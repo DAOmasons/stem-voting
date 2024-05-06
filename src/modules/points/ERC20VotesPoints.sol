@@ -19,6 +19,7 @@ contract ERC20VotesPoints is IPoints {
     uint256 public votingCheckpoint;
     address public contest;
 
+    // voter => points
     mapping(address => uint256) public allocatedPoints;
 
     /// ===============================

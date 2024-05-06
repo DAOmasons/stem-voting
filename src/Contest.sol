@@ -40,25 +40,6 @@ contract Contest is IContest {
     event ContestStarted(uint256 startTime, uint256 endTime);
     event ContestFinalized();
 
-    constructor(
-        IVotes _votesContract,
-        IPoints _pointsContract,
-        IChoices _choicesContract,
-        IFinalizationStrategy _finalizationStrategy,
-        uint256 _startTime,
-        uint256 _duration
-    ) {
-        require(_startTime >= block.timestamp, "Start time must be in the future");
-
-        votesContract = _votesContract;
-        pointsContract = _pointsContract;
-        choicesContract = _choicesContract;
-        finalizationStrategy = _finalizationStrategy;
-
-        startTime = _startTime;
-        endTime = _startTime + _duration;
-    }
-
     modifier onlyDuringVotingPeriod() {
         require(block.timestamp >= startTime && block.timestamp <= endTime, "Voting is not active");
         _;
@@ -72,6 +53,28 @@ contract Contest is IContest {
     modifier onlyChoices() {
         require(msg.sender == address(choicesContract), "Only choices contract");
         _;
+    }
+
+    constructor() {}
+
+    function initialize(bytes memory _initData) public {
+        (
+            address _votesContract,
+            address _pointsContract,
+            address _choicesContract,
+            address _finalizationStrategy,
+            uint256 _startTime,
+            uint256 _duration
+        ) = abi.decode(_initData, (address, address, address, address, uint256, uint256));
+        require(_startTime >= block.timestamp, "Start time must be in the future");
+
+        votesContract = IVotes(_votesContract);
+        pointsContract = IPoints(_pointsContract);
+        choicesContract = IChoices(_choicesContract);
+        finalizationStrategy = IFinalizationStrategy(_finalizationStrategy);
+
+        startTime = _startTime;
+        endTime = _startTime + _duration;
     }
 
     function acceptChoices() public onlyChoices {}

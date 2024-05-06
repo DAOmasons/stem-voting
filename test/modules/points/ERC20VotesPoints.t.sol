@@ -2,10 +2,11 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {ARBTokenSetupLive} from "../../setup/VotesTokenSetup.sol";
+import {ARBTokenSetupLive} from "../../setup/VotesTokenSetup.t.sol";
 import {ERC20VotesPoints} from "../../../src/modules/points/ERC20VotesPoints.sol";
+import {Accounts} from "../../setup/Accounts.t.sol";
 
-contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
+contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
     event Initialized(address contest, address token, uint256 votingCheckpoint);
     event PointsAllocated(address indexed user, uint256 amount);
     event PointsReleased(address indexed user, uint256 amount);

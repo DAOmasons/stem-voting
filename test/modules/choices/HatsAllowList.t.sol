@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {Test, console} from "forge-std/Test.sol";
 
 import {HatsAllowList} from "../../../src/modules/choices/HatsAllowList.sol";
-import {HatsSetup} from "../../setup/hatsSetup.sol";
+import {HatsSetup} from "../../setup/hatsSetup.t.sol";
 import {Metadata} from "../../../src/core/Metadata.sol";
 
 contract HatsAllowListTest is HatsSetup {
