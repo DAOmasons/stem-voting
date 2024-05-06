@@ -50,6 +50,8 @@ contract ERC20VotesPoints is IPoints {
         require(hasVotingPoints(_user, _amount), "Insufficient points available");
 
         allocatedPoints[_user] += _amount;
+
+        emit PointsAllocated(_user, _amount);
     }
 
     function releasePoints(address _user, uint256 _amount) external onlyContest {
@@ -57,6 +59,8 @@ contract ERC20VotesPoints is IPoints {
         require(allocatedPoints[_user] >= _amount, "Insufficient points allocated");
 
         allocatedPoints[_user] -= _amount;
+
+        emit PointsReleased(_user, _amount);
     }
 
     function claimPoints() public pure {

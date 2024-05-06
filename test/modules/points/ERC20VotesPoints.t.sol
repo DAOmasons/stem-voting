@@ -6,6 +6,10 @@ import {ARBTokenSetupLive} from "../../setup/VotesTokenSetup.sol";
 import {ERC20VotesPoints} from "../../../src/modules/points/ERC20VotesPoints.sol";
 
 contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
+    event Initialized(address contest, address token, uint256 votingCheckpoint);
+    event PointsAllocated(address indexed user, uint256 amount);
+    event PointsReleased(address indexed user, uint256 amount);
+
     address[] _voters;
 
     uint256 startBlock = 208213640;
@@ -330,12 +334,17 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive {
 
     function _allocatePoints(uint256 _voter) internal {
         _initialize();
-
+        vm.expectEmit(true, false, false, true);
+        emit PointsAllocated(_voters[_voter], voteAmount);
         pointsModule.allocatePoints(_voters[_voter], voteAmount);
     }
 
     function _releasePoints(uint256 _voter) internal {
         _allocatePoints(_voter);
+
+        vm.expectEmit(true, false, false, true);
+        emit PointsReleased(_voters[_voter], voteAmount);
+
         pointsModule.releasePoints(_voters[_voter], voteAmount);
     }
 }
