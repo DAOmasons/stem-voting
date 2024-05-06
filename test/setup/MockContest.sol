@@ -27,7 +27,7 @@ contract MockContest {
     }
 
     function finalizeChoices() external {
-        contestStatus = ContestStatus.Finalized;
+        contestStatus = ContestStatus.Voting;
     }
 }
 

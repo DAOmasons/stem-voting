@@ -10,6 +10,7 @@ import {ContestStatus} from "../../core/ContestStatus.sol";
 // Todo
 // - [] Wrap that check in a modifier and apply to write functions except initialize
 
+// Not continuous enabled
 contract HatsAllowList is IChoices {
     /// ===============================
     /// ========== Events =============

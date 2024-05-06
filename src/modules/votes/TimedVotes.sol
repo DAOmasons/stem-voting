@@ -9,8 +9,7 @@ import {Contest} from "../../Contest.sol";
 
 import {ContestStatus} from "../../core/ContestStatus.sol";
 
-// Note: I may not need this contract as the functionality required
-// so far is very similar to the BaseVotes contract
+// Not continuous enabled
 contract TimedVotes is IVotes {
     /// ===============================
     /// ========== Events =============

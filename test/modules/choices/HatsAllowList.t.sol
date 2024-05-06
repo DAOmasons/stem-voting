@@ -33,10 +33,6 @@ contract HatsAllowListTest is HatsSetup {
         __setupHats();
     }
 
-    // -[x] test hats permissions
-    // -[x] test correct status Todo: Implement after status discussion
-    // -[x] test does choice exist
-
     //////////////////////////////
     // Base Functionality Tests
     //////////////////////////////
@@ -125,6 +121,46 @@ contract HatsAllowListTest is HatsSetup {
 
     function test_finalize() public {
         _finalizeChoices();
+
+        (Metadata memory _metadata2, bytes memory _choiceData2, bool _2exists) = hatsAllowList.choices(choice2());
+        (Metadata memory _metadata3, bytes memory _choiceData3, bool _3exists) = hatsAllowList.choices(choice3());
+
+        assertEq(_metadata2.protocol, metadata2.protocol);
+        assertEq(_metadata2.pointer, metadata2.pointer);
+        assertEq(_choiceData2, choiceData2);
+        assertTrue(_2exists);
+
+        assertEq(_metadata3.protocol, metadata3.protocol);
+        assertEq(_metadata3.pointer, metadata3.pointer);
+        assertEq(_choiceData3, choiceData3);
+        assertTrue(_3exists);
+
+        assertTrue(mockContest.isStatus(ContestStatus.Voting));
+    }
+
+    function test_prepopulate_finalize() public {
+        _initialize_and_populate_choices();
+
+        (Metadata memory _metadata2, bytes memory _choiceData2, bool _2exists) = hatsAllowList.choices(choice2());
+        (Metadata memory _metadata3, bytes memory _choiceData3, bool _3exists) = hatsAllowList.choices(choice3());
+
+        assertEq(_metadata2.protocol, metadata2.protocol);
+        assertEq(_metadata2.pointer, metadata2.pointer);
+        assertEq(_choiceData2, choiceData2);
+        assertTrue(_2exists);
+
+        assertEq(_metadata3.protocol, metadata3.protocol);
+        assertEq(_metadata3.pointer, metadata3.pointer);
+        assertEq(_choiceData3, choiceData3);
+        assertTrue(_3exists);
+
+        mockContest.cheatStatus(ContestStatus.Populating);
+
+        vm.startPrank(facilitator1().wearer);
+        hatsAllowList.finalizeChoices();
+        vm.stopPrank();
+
+        assertTrue(mockContest.isStatus(ContestStatus.Voting));
     }
 
     //////////////////////////////
@@ -282,6 +318,34 @@ contract HatsAllowListTest is HatsSetup {
         vm.expectRevert("Contest is not in populating state");
         vm.startPrank(facilitator1().wearer);
         hatsAllowList.registerChoice(choice1(), abi.encode(choiceData, metadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_finalize_notWearer() public {
+        _initialize_and_populate_choices();
+
+        mockContest.cheatStatus(ContestStatus.Populating);
+
+        vm.expectRevert("Caller is not wearer or in good standing");
+        vm.startPrank(someGuy());
+        hatsAllowList.finalizeChoices();
+        vm.stopPrank();
+    }
+
+    function testRevert_finalize_populationOver() public {
+        _finalizeChoices();
+
+        vm.startPrank(facilitator1().wearer);
+
+        vm.expectRevert("Contest is not in populating state");
+        hatsAllowList.registerChoice(choice4(), abi.encode(choiceData, metadata));
+
+        vm.expectRevert("Contest is not in populating state");
+        hatsAllowList.removeChoice(choice2(), "");
+
+        vm.expectRevert("Contest is not in populating state");
+        hatsAllowList.finalizeChoices();
+
         vm.stopPrank();
     }
 
