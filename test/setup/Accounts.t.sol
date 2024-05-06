@@ -80,9 +80,9 @@ contract Accounts is StdCheats {
     // Mocks
     // //////////////////////
 
-    function mockContest() public returns (address) {
-        return makeAddr("mock_contest");
-    }
+    // function mockContest() public returns (address) {
+    //     return makeAddr("mock_contest");
+    // }
 
     function mockDAOAddr() public returns (address) {
         return makeAddr("mock_dao");

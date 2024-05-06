@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "forge-std/Test.sol";
+
 import "../../interfaces/IVotes.sol";
 import {Metadata} from "../../core/Metadata.sol";
 import {Contest} from "../../Contest.sol";
@@ -15,6 +17,8 @@ contract CheckpointVoting is IVotes {
     /// ===============================
 
     event Initialized(address contest, uint256 duration);
+
+    event VotingStarted(uint256 startTime, uint256 endTime);
 
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
 
@@ -49,7 +53,7 @@ contract CheckpointVoting is IVotes {
     }
 
     modifier onlyDuringVotingPeriod() {
-        require(block.timestamp >= startTime && block.timestamp <= endTime, "Must Vote Within Voting Period");
+        require(block.timestamp >= startTime && block.timestamp <= endTime, "Must vote within voting period");
         _;
     }
 
@@ -72,17 +76,21 @@ contract CheckpointVoting is IVotes {
     /// ========== Setters ============
     /// ===============================
 
-    function startVoting(uint256 _startTime) public {
+    function setVotingTime(uint256 _startTime) public {
         require(contest.isStatus(ContestStatus.Voting), "Contest is not in voting state");
+        require(startTime == 0, "Voting has already started");
 
-        if (startTime == 0) {
+        if (_startTime == 0) {
             startTime = block.timestamp;
         } else {
-            require(block.timestamp > startTime, "Start time must be in the future");
+            require(_startTime > block.timestamp, "Start time must be in the future");
+
             startTime = _startTime;
         }
 
         endTime = startTime + duration;
+
+        emit VotingStarted(startTime, endTime);
     }
 
     function vote(address _voter, bytes32 _choiceId, uint256 _amount, bytes memory _data)
@@ -98,20 +106,20 @@ contract CheckpointVoting is IVotes {
         emit VoteCast(_voter, _choiceId, _amount, _reason);
     }
 
-    function retractVote(address _voter, bytes32 choiceId, uint256 amount, bytes memory _data)
+    function retractVote(address _voter, bytes32 choiceId, uint256 _amount, bytes memory _data)
         public
         onlyContest
         onlyDuringVotingPeriod
     {
         uint256 votedAmount = votes[choiceId][_voter];
-        require(votedAmount >= amount, "Insufficient votes allocated");
+        require(votedAmount >= _amount, "Retracted amount exceeds vote amount");
 
-        votes[choiceId][_voter] -= amount;
-        totalVotesForChoice[choiceId] -= amount;
+        votes[choiceId][_voter] -= _amount;
+        totalVotesForChoice[choiceId] -= _amount;
 
         (Metadata memory _reason) = abi.decode(_data, (Metadata));
 
-        emit VoteRetracted(_voter, choiceId, amount, _reason);
+        emit VoteRetracted(_voter, choiceId, _amount, _reason);
     }
 
     /// ===============================
