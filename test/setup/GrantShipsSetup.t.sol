@@ -2,6 +2,8 @@
 pragma solidity ^0.8.13;
 
 import {HatsSetup} from "./hatsSetup.t.sol";
+import {console} from "forge-std/Test.sol";
+
 import {ARBTokenSetupLive} from "./VotesTokenSetup.t.sol";
 
 import {ERC20VotesPoints} from "../../src/modules/points/ERC20VotesPoints.sol";
@@ -17,6 +19,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     uint256 constant DELEGATE_BLOCK = START_BLOCK + 10;
     uint256 constant SNAPSHOT_BLOCK = DELEGATE_BLOCK + 15;
     uint256 constant VOTE_BLOCK = DELEGATE_BLOCK + 20;
+    uint256 constant TW0_WEEKS = 1209600;
 
     ERC20VotesPoints _pointsModule;
     CheckpointVoting _votesModule;
@@ -24,6 +27,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     Contest _contest;
 
     function __setupGrantShips() internal {
+        vm.createSelectFork({blockNumber: START_BLOCK, urlOrAlias: "arbitrumOne"});
         __setupHats();
         __setupArbToken();
         _setupVoters();
@@ -33,7 +37,11 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         _votesModule = new CheckpointVoting();
         _contest = new Contest();
 
-        _rawDog_init();
+        // ensure fork block number is synchronized with test environment block number
+        assertEq(block.number, VOTE_BLOCK);
+
+        // setup modules & contest without factory pattern
+        __rawDog_init_contest();
     }
 
     function _setupVoters() internal {
@@ -74,5 +82,49 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         vm.roll(VOTE_BLOCK);
     }
 
-    function _rawDog_init() public {}
+    function __rawDog_init_contest() public {
+        // setup choice module
+        bytes memory _choiceInitData = abi.encode(address(hats()), facilitator1().id, new bytes[](0));
+        choiceModule().initialize(address(contest()), _choiceInitData);
+
+        // setup points module
+        bytes memory _pointsInitData = abi.encode(address(arbToken()), SNAPSHOT_BLOCK);
+        pointsModule().initialize(address(contest()), _pointsInitData);
+
+        // setup votes module
+        bytes memory _votesInitData = abi.encode(true);
+        votesModule().initialize(address(contest()), _votesInitData);
+
+        // setup contest
+        bytes memory _contestInitData = abi.encode(
+            address(votesModule()),
+            address(pointsModule()),
+            address(choiceModule()),
+            makeAddr("signal-only"),
+            block.timestamp,
+            TW0_WEEKS
+        );
+
+        contest().initialize(_contestInitData);
+    }
+
+    function choiceModule() public view returns (HatsAllowList) {
+        return _choiceModule;
+    }
+
+    function pointsModule() public view returns (ERC20VotesPoints) {
+        return _pointsModule;
+    }
+
+    function votesModule() public view returns (CheckpointVoting) {
+        return _votesModule;
+    }
+
+    function contest() public view returns (Contest) {
+        return _contest;
+    }
+
+    function arbVoter(uint256 _index) public view returns (address) {
+        return _voters[_index];
+    }
 }
