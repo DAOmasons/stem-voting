@@ -4,13 +4,13 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 
 import {Accounts} from "../../setup/Accounts.t.sol";
-import {CheckpointVoting} from "../../../src/modules/votes/CheckpointVotes.sol";
+import {TimedVotes} from "../../../src/modules/votes/TimedVotes.sol";
 import {Metadata} from "../../../src/core/Metadata.sol";
 import {MockContestSetup} from "../../setup/MockContest.sol";
 import {ContestStatus} from "../../../src/core/ContestStatus.sol";
 
 contract CheckpointVotingTest is Test, Accounts, MockContestSetup {
-    CheckpointVoting checkpointVoting;
+    TimedVotes checkpointVoting;
 
     event Initialized(address contest, uint256 duration);
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
@@ -27,7 +27,7 @@ contract CheckpointVotingTest is Test, Accounts, MockContestSetup {
 
     function setUp() public {
         __setupMockContest();
-        checkpointVoting = new CheckpointVoting();
+        checkpointVoting = new TimedVotes();
 
         // Forge block.timestamp starts at 0
         // warp into the future so we can test
@@ -256,6 +256,13 @@ contract CheckpointVotingTest is Test, Accounts, MockContestSetup {
     //////////////////////////////
     // Helpers
     //////////////////////////////
+
+    // function _finalizeVoting() private {
+    //     vm.expectEmit(true, false, false, true);
+    //     emit VotingStarted(block.timestamp, block.timestamp + TWO_WEEKS);
+
+    //     checkpointVoting.finalizeVoting();
+    // }
 
     function _retract() private {
         _vote();

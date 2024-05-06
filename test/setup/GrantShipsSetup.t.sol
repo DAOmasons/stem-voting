@@ -7,7 +7,7 @@ import {console} from "forge-std/Test.sol";
 import {ARBTokenSetupLive} from "./VotesTokenSetup.t.sol";
 
 import {ERC20VotesPoints} from "../../src/modules/points/ERC20VotesPoints.sol";
-import {CheckpointVoting} from "../../src/modules/votes/CheckpointVotes.sol";
+import {TimedVotes} from "../../src/modules/votes/TimedVotes.sol";
 import {HatsAllowList} from "../../src/modules/choices/HatsAllowList.sol";
 import {Contest} from "../../src/Contest.sol";
 
@@ -22,7 +22,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     uint256 constant TW0_WEEKS = 1209600;
 
     ERC20VotesPoints _pointsModule;
-    CheckpointVoting _votesModule;
+    TimedVotes _votesModule;
     HatsAllowList _choiceModule;
     Contest _contest;
 
@@ -34,7 +34,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
 
         _choiceModule = new HatsAllowList();
         _pointsModule = new ERC20VotesPoints();
-        _votesModule = new CheckpointVoting();
+        _votesModule = new TimedVotes();
         _contest = new Contest();
 
         // ensure fork block number is synchronized with test environment block number
@@ -111,7 +111,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         return _pointsModule;
     }
 
-    function votesModule() public view returns (CheckpointVoting) {
+    function votesModule() public view returns (TimedVotes) {
         return _votesModule;
     }
 

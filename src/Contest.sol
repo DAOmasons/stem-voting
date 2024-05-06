@@ -122,7 +122,7 @@ contract Contest {
         contestStatus = ContestStatus.Voting;
     }
 
-    function finalizeVotes() external onlyVotingPeriod onlyVotingModule {
+    function finalizeVoting() external onlyVotingPeriod onlyVotingModule {
         contestStatus = ContestStatus.Finalized;
     }
 

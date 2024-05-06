@@ -21,6 +21,10 @@ contract MockContest {
     function isStatus(ContestStatus _status) public view returns (bool) {
         return contestStatus == _status;
     }
+
+    function finalizeVoting() public {
+        contestStatus = ContestStatus.Finalized;
+    }
 }
 
 contract MockContestSetup {

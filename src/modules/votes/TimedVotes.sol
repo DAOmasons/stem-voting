@@ -11,7 +11,7 @@ import {ContestStatus} from "../../core/ContestStatus.sol";
 
 // Note: I may not need this contract as the functionality required
 // so far is very similar to the BaseVotes contract
-contract CheckpointVoting is IVotes {
+contract TimedVotes is IVotes {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -19,6 +19,8 @@ contract CheckpointVoting is IVotes {
     event Initialized(address contest, uint256 duration);
 
     event VotingStarted(uint256 startTime, uint256 endTime);
+
+    event VotingComplete(uint256 endTime);
 
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
 
@@ -91,6 +93,13 @@ contract CheckpointVoting is IVotes {
         endTime = startTime + duration;
 
         emit VotingStarted(startTime, endTime);
+    }
+
+    function finalizeVoting() public {
+        require(contest.isStatus(ContestStatus.Voting), "Contest is not in voting state");
+        require(block.timestamp > endTime, "Voting period has not ended");
+
+        contest.finalizeVoting();
     }
 
     function vote(address _voter, bytes32 _choiceId, uint256 _amount, bytes memory _data)
