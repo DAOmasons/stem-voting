@@ -6,6 +6,8 @@ import {Test, console} from "forge-std/Test.sol";
 import {HatsAllowList} from "../../../src/modules/choices/HatsAllowList.sol";
 import {HatsSetup} from "../../setup/hatsSetup.t.sol";
 import {Metadata} from "../../../src/core/Metadata.sol";
+import {MockContest} from "../../setup/MockContest.sol";
+import {ContestStatus} from "../../../src/core/ContestStatus.sol";
 
 contract HatsAllowListTest is HatsSetup {
     event Initialized(address contest, address hatsAddress, uint256 hatId);
@@ -15,6 +17,7 @@ contract HatsAllowListTest is HatsSetup {
     event Removed(bytes32 choiceId);
 
     HatsAllowList hatsAllowList;
+    MockContest mockContest;
 
     Metadata metadata = Metadata(1, "QmWmyoMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWeVdD");
     Metadata metadata2 = Metadata(2, "QmBa4oMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWe2zF");
@@ -26,11 +29,12 @@ contract HatsAllowListTest is HatsSetup {
 
     function setUp() public {
         hatsAllowList = new HatsAllowList();
+        mockContest = new MockContest(ContestStatus.None);
         __setupHats();
     }
 
     // -[x] test hats permissions
-    // -[ ] test correct status Todo: Implement after status discussion
+    // -[x] test correct status Todo: Implement after status discussion
     // -[x] test does choice exist
 
     //////////////////////////////
@@ -42,7 +46,7 @@ contract HatsAllowListTest is HatsSetup {
 
         assertEq(address(hats()), address(hatsAllowList.hats()));
         assertEq(facilitator1().id, hatsAllowList.hatId());
-        assertEq(address(this), address(hatsAllowList.contest()));
+        assertEq(address(mockContest), address(hatsAllowList.contest()));
     }
 
     function test_register_choice() public {
@@ -101,7 +105,7 @@ contract HatsAllowListTest is HatsSetup {
 
         assertEq(address(hats()), address(hatsAllowList.hats()));
         assertEq(facilitator1().id, hatsAllowList.hatId());
-        assertEq(address(this), address(hatsAllowList.contest()));
+        assertEq(address(mockContest), address(hatsAllowList.contest()));
 
         assertEq(_metadata1.protocol, metadata.protocol);
         assertEq(_metadata1.pointer, metadata.pointer);
@@ -119,12 +123,27 @@ contract HatsAllowListTest is HatsSetup {
         assertTrue(_3exists);
     }
 
+    function test_finalize() public {
+        _finalizeChoices();
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
 
+    function testRevert_register_notPopulating() public {
+        _initialize();
+
+        vm.expectRevert("Contest is not in populating state");
+        vm.startPrank(facilitator1().wearer);
+        hatsAllowList.registerChoice(choice1(), abi.encode(choiceData, metadata));
+        vm.stopPrank();
+    }
+
     function testRevert_register_notFacilitator() public {
         _initialize();
+
+        mockContest.cheatStatus(ContestStatus.Populating);
 
         vm.startPrank(facilitator1().wearer);
         hatsAllowList.registerChoice(choice1(), abi.encode(choiceData, metadata));
@@ -153,6 +172,7 @@ contract HatsAllowListTest is HatsSetup {
 
     function testRevert_register_notGoodStanding() public {
         _initialize();
+        mockContest.cheatStatus(ContestStatus.Populating);
 
         // Top Hat sets ineligible
         vm.startPrank(topHat().wearer);
@@ -206,6 +226,8 @@ contract HatsAllowListTest is HatsSetup {
     function testRevert_register_notWearer() public {
         _initialize();
 
+        mockContest.cheatStatus(ContestStatus.Populating);
+
         // Top Hat gives removes facilitator's hat and gives it to some guy
         vm.startPrank(topHat().wearer);
         hats().transferHat(facilitator1().id, facilitator1().wearer, someGuy());
@@ -252,6 +274,17 @@ contract HatsAllowListTest is HatsSetup {
         vm.stopPrank();
     }
 
+    function testRevert_remove_notPopulating() public {
+        _register_choice();
+
+        mockContest.cheatStatus(ContestStatus.Voting);
+
+        vm.expectRevert("Contest is not in populating state");
+        vm.startPrank(facilitator1().wearer);
+        hatsAllowList.registerChoice(choice1(), abi.encode(choiceData, metadata));
+        vm.stopPrank();
+    }
+
     //////////////////////////////
     // Getters
     //////////////////////////////
@@ -273,6 +306,20 @@ contract HatsAllowListTest is HatsSetup {
     // Helpers
     //////////////////////////////
 
+    function _finalizeChoices() internal {
+        _register_choice();
+        _remove_choice();
+
+        vm.startPrank(facilitator1().wearer);
+
+        hatsAllowList.registerChoice(choice2(), abi.encode(choiceData2, metadata2));
+        hatsAllowList.registerChoice(choice3(), abi.encode(choiceData3, metadata3));
+
+        hatsAllowList.finalizeChoices();
+
+        vm.stopPrank();
+    }
+
     function _remove_choice() internal {
         _register_choice();
 
@@ -283,6 +330,8 @@ contract HatsAllowListTest is HatsSetup {
 
     function _register_choice() internal {
         _initialize();
+
+        mockContest.cheatStatus(ContestStatus.Populating);
 
         vm.expectEmit(true, false, false, true);
         emit Registered(choice1(), HatsAllowList.ChoiceData(metadata, choiceData, true));
@@ -300,15 +349,15 @@ contract HatsAllowListTest is HatsSetup {
         prePopChoiceData[2] = abi.encode(choice3(), abi.encode(choiceData3, metadata3));
 
         bytes memory data = abi.encode(address(hats()), facilitator1().id, prePopChoiceData);
-        hatsAllowList.initialize(address(this), data);
+        hatsAllowList.initialize(address(mockContest), data);
     }
 
     function _initialize() internal {
         vm.expectEmit(true, false, false, true);
-        emit Initialized(address(this), address(hats()), facilitator1().id);
+        emit Initialized(address(mockContest), address(hats()), facilitator1().id);
 
         bytes memory data = abi.encode(address(hats()), facilitator1().id, "");
 
-        hatsAllowList.initialize(address(this), data);
+        hatsAllowList.initialize(address(mockContest), data);
     }
 }

@@ -22,7 +22,11 @@ contract MockContest {
         return contestStatus == _status;
     }
 
-    function finalizeVoting() public {
+    function finalizeVoting() external {
+        contestStatus = ContestStatus.Finalized;
+    }
+
+    function finalizeChoices() external {
         contestStatus = ContestStatus.Finalized;
     }
 }
