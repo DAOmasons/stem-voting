@@ -97,7 +97,7 @@ contract TimedVotes is IVotes {
 
     function finalizeVoting() public {
         require(contest.isStatus(ContestStatus.Voting), "Contest is not in voting state");
-        require(block.timestamp > endTime, "Voting period has not ended");
+        require(endTime != 0 && block.timestamp > endTime, "Voting period has not ended");
 
         contest.finalizeVoting();
     }
