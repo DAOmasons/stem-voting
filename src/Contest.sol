@@ -18,9 +18,14 @@ contract Contest {
 
     ContestStatus public contestStatus;
 
+    // Review
+    // Will we need to use this?
+    // If we do, will we need access to its interface?
     address public executionContract;
 
     bool public isContinuous;
+
+    bool public isRetractable;
 
     mapping(bytes32 => uint256) public choicesIdx;
 
@@ -67,13 +72,15 @@ contract Contest {
             address _pointsContract,
             address _choicesContract,
             address _executionContract,
-            bool _isContinuous
-        ) = abi.decode(_initData, (address, address, address, address, bool));
+            bool _isContinuous,
+            bool _isRetractable
+        ) = abi.decode(_initData, (address, address, address, address, bool, bool));
 
         votesModule = IVotes(_votesContract);
         pointsModule = IPoints(_pointsContract);
         choicesModule = IChoices(_choicesContract);
         executionContract = _executionContract;
+        isRetractable = _isRetractable;
 
         if (isContinuous) {
             contestStatus = ContestStatus.Continuous;
@@ -94,6 +101,8 @@ contract Contest {
     }
 
     function retractVote(bytes32 choiceId, uint256 amount, bytes memory _data) public virtual onlyVotingPeriod {
+        require(isRetractable, "Votes are not retractable");
+
         pointsModule.releasePoints(msg.sender, amount);
         votesModule.retractVote(msg.sender, choiceId, amount, _data);
     }
@@ -103,6 +112,8 @@ contract Contest {
         virtual
         onlyVotingPeriod
     {
+        require(isRetractable, "Votes are not retractable");
+
         retractVote(oldChoiceId, amount, _data);
         vote(newChoiceId, amount, _data);
     }
@@ -117,5 +128,13 @@ contract Contest {
 
     function execute() public virtual onlyFinalized {
         contestStatus = ContestStatus.Executed;
+    }
+
+    function getStatus() public view returns (ContestStatus) {
+        return contestStatus;
+    }
+
+    function isStatus(ContestStatus _status) public view returns (bool) {
+        return contestStatus == _status;
     }
 }

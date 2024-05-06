@@ -41,7 +41,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         assertEq(block.number, VOTE_BLOCK);
 
         // setup modules & contest without factory pattern
-        __rawDog_init_contest();
+        // __rawDog_init_contest();
     }
 
     function _setupVoters() internal {
@@ -97,12 +97,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
 
         // setup contest
         bytes memory _contestInitData = abi.encode(
-            address(votesModule()),
-            address(pointsModule()),
-            address(choiceModule()),
-            makeAddr("signal-only"),
-            block.timestamp,
-            TW0_WEEKS
+            address(votesModule()), address(pointsModule()), address(choiceModule()), makeAddr("signal-only"), false
         );
 
         contest().initialize(_contestInitData);
