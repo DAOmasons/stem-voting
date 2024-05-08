@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import {ReentrancyGuard} from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+
 import "./interfaces/IFinalizationStrategy.sol";
 import "./interfaces/IVotes.sol";
 import "./interfaces/IPoints.sol";
@@ -9,19 +11,16 @@ import "./interfaces/IContest.sol";
 
 import {ContestStatus} from "./core/ContestStatus.sol";
 
-contract Contest {
+contract Contest is ReentrancyGuard {
     IVotes public votesModule;
 
     IPoints public pointsModule;
 
     IChoices public choicesModule;
 
-    ContestStatus public contestStatus;
+    address public executionModule;
 
-    // Review
-    // Will we need to use this?
-    // If we do, will we need access to its interface?
-    address public executionContract;
+    ContestStatus public contestStatus;
 
     bool public isContinuous;
 
@@ -33,16 +32,6 @@ contract Contest {
 
     event ContestStarted(uint256 startTime, uint256 endTime);
 
-    modifier onlyChoicesModule() {
-        require(msg.sender == address(choicesModule), "Only choices contract");
-        _;
-    }
-
-    modifier onlyVotingModule() {
-        require(msg.sender == address(votesModule), "Only votes contract");
-        _;
-    }
-
     modifier onlyVotingPeriod() {
         require(
             contestStatus == ContestStatus.Voting || (contestStatus == ContestStatus.Continuous && isContinuous),
@@ -51,16 +40,23 @@ contract Contest {
         _;
     }
 
-    modifier onlyPopulatingPeriod() {
-        require(
-            contestStatus == ContestStatus.Populating || (contestStatus == ContestStatus.Continuous && isContinuous),
-            "Contest is not in populating state"
-        );
+    modifier onlyValidChoice(bytes32 choiceId) {
+        require(choicesModule.isValidChoice(choiceId), "Choice does not exist");
         _;
     }
 
-    modifier onlyFinalized() {
-        require(contestStatus == ContestStatus.Finalized, "Contest is not finalized");
+    modifier onlyCanAllocate(address _voter, uint256 _amount) {
+        require(pointsModule.hasVotingPoints(_voter, _amount), "Insufficient points available");
+        _;
+    }
+
+    modifier onlyHasAllocated(address _voter, uint256 _amount) {
+        require(pointsModule.hasAllocatedPoints(_voter, _amount), "Insufficient points allocated");
+        _;
+    }
+
+    modifier onlyContestRetractable() {
+        require(isRetractable, "Votes are not retractable");
         _;
     }
 
@@ -79,7 +75,8 @@ contract Contest {
         votesModule = IVotes(_votesContract);
         pointsModule = IPoints(_pointsContract);
         choicesModule = IChoices(_choicesContract);
-        executionContract = _executionContract;
+        // Todo: discuss
+        executionModule = _executionContract;
         isRetractable = _isRetractable;
 
         if (isContinuous) {
@@ -95,54 +92,124 @@ contract Contest {
         pointsModule.claimPoints();
     }
 
-    function vote(bytes32 choiceId, uint256 amount, bytes memory _data) public virtual onlyVotingPeriod {
-        // check
-        require(pointsModule.hasVotingPoints(msg.sender, amount), "Insufficient points available");
-        //effects
-
-        //interactions
-        pointsModule.allocatePoints(msg.sender, amount);
-        votesModule.vote(msg.sender, choiceId, amount, _data);
+    function vote(bytes32 choiceId, uint256 amount, bytes memory _data)
+        public
+        virtual
+        nonReentrant
+        onlyVotingPeriod
+        onlyValidChoice(choiceId)
+        onlyCanAllocate(msg.sender, amount)
+    {
+        _vote(choiceId, amount, _data);
     }
 
-    function retractVote(bytes32 choiceId, uint256 amount, bytes memory _data) public virtual onlyVotingPeriod {
-        // check
-        require(isRetractable, "Votes are not retractable");
-        require(pointsModule.hasAllocatedPoints(msg.sender, amount), "User has not voted");
-
-        // effects
-
-        // interactions
-        pointsModule.releasePoints(msg.sender, amount);
-        votesModule.retractVote(msg.sender, choiceId, amount, _data);
+    function retractVote(bytes32 choiceId, uint256 amount, bytes memory _data)
+        public
+        virtual
+        nonReentrant
+        onlyVotingPeriod
+        onlyContestRetractable
+        onlyValidChoice(choiceId)
+        onlyHasAllocated(msg.sender, amount)
+    {
+        _retractVote(choiceId, amount, _data);
     }
 
     function changeVote(bytes32 oldChoiceId, bytes32 newChoiceId, uint256 amount, bytes memory _data)
         public
         virtual
+        nonReentrant
         onlyVotingPeriod
+        onlyContestRetractable
+        onlyCanAllocate(msg.sender, amount)
+        onlyHasAllocated(msg.sender, amount)
     {
-        // check
-        require(isRetractable, "Votes are not retractable");
-        require(pointsModule.hasVotingPoints(msg.sender, amount), "Insufficient points available");
-        require(pointsModule.hasAllocatedPoints(msg.sender, amount), "User has not voted");
-
-        // effects
-
-        // interactions
-        retractVote(oldChoiceId, amount, _data);
-        vote(newChoiceId, amount, _data);
+        _retractVote(oldChoiceId, amount, _data);
+        _vote(newChoiceId, amount, _data);
     }
 
-    function finalizeChoices() external onlyPopulatingPeriod onlyChoicesModule {
+    function batchVote(bytes32[] memory choiceIds, uint256[] memory amounts, bytes[] memory _data, uint256 _totalAmount)
+        public
+        virtual
+        nonReentrant
+        onlyVotingPeriod
+        onlyCanAllocate(msg.sender, _totalAmount)
+    {
+        require(
+            choiceIds.length == amounts.length && choiceIds.length == _data.length,
+            "Array mismatch: Invalid input length"
+        );
+
+        uint256 totalAmount = 0;
+
+        for (uint256 i = 0; i < choiceIds.length;) {
+            require(choicesModule.isValidChoice(choiceIds[i]), "Choice does not exist");
+            totalAmount += amounts[i];
+
+            _vote(choiceIds[i], amounts[i], _data[i]);
+
+            unchecked {
+                i++;
+            }
+        }
+
+        require(totalAmount == _totalAmount, "Invalid total amount");
+    }
+
+    function batchRetractVote(
+        bytes32[] memory choiceIds,
+        uint256[] memory amounts,
+        bytes[] memory _data,
+        uint256 _totalAmount
+    ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable onlyHasAllocated(msg.sender, _totalAmount) {
+        require(
+            choiceIds.length == amounts.length && choiceIds.length == _data.length,
+            "Array mismatch: Invalid input length"
+        );
+
+        uint256 totalAmount = 0;
+
+        for (uint256 i = 0; i < choiceIds.length;) {
+            require(choicesModule.isValidChoice(choiceIds[i]), "Choice does not exist");
+            totalAmount += amounts[i];
+
+            _retractVote(choiceIds[i], amounts[i], _data[i]);
+
+            unchecked {
+                i++;
+            }
+        }
+
+        require(totalAmount == _totalAmount, "Invalid total amount");
+    }
+
+    function _vote(bytes32 choiceId, uint256 amount, bytes memory _data) internal {
+        pointsModule.allocatePoints(msg.sender, amount);
+        votesModule.vote(msg.sender, choiceId, amount, _data);
+    }
+
+    function _retractVote(bytes32 choiceId, uint256 amount, bytes memory _data) internal {
+        pointsModule.releasePoints(msg.sender, amount);
+        votesModule.retractVote(msg.sender, choiceId, amount, _data);
+    }
+
+    function finalizeChoices() external {
+        require(
+            contestStatus == ContestStatus.Populating || (contestStatus == ContestStatus.Continuous && isContinuous),
+            "Contest is not in populating state"
+        );
+        require(msg.sender == address(choicesModule), "Only choices module");
         contestStatus = ContestStatus.Voting;
     }
 
-    function finalizeVoting() external onlyVotingPeriod onlyVotingModule {
+    function finalizeVoting() external onlyVotingPeriod {
+        require(msg.sender == address(votesModule), "Only votes module");
         contestStatus = ContestStatus.Finalized;
     }
 
-    function execute() public virtual onlyFinalized {
+    function execute() public virtual {
+        require(contestStatus == ContestStatus.Finalized, "Contest is not finalized");
+        require(msg.sender == address(executionModule), "Only execution module");
         contestStatus = ContestStatus.Executed;
     }
 

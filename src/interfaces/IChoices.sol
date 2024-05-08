@@ -11,7 +11,6 @@ interface IChoices {
     function removeChoice(bytes32 choiceId, bytes memory data) external;
 
     function initialize(address _contest, bytes calldata initData) external;
-    // Note: Thinking that we should allow the module author to decide how to return the data
-    // as the structure of it may differ between modules
-    // function getChoice(bytes32 choiceId) external view returns (string memory uri, bytes memory data);
+
+    function isValidChoice(bytes32 choiceId) external view returns (bool);
 }

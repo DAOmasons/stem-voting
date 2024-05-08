@@ -28,7 +28,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     HatsAllowList _choiceModule;
     Contest _contest;
 
-    function __setupGrantShips() internal {
+    function __setupGrantShipsBasic() internal {
         vm.createSelectFork({blockNumber: START_BLOCK, urlOrAlias: "arbitrumOne"});
         __setupHats();
         __setupArbToken();
