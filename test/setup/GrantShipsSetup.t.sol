@@ -117,6 +117,10 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         return _votesModule;
     }
 
+    function executionModule() public view returns (address) {
+        return signalOnly;
+    }
+
     function contest() public view returns (Contest) {
         return _contest;
     }
