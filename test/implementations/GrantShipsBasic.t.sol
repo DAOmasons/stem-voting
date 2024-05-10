@@ -20,6 +20,10 @@ contract GrantShipsBasic is GrantShipsSetup {
         __setupGrantShipsBasic();
     }
 
+    //////////////////////////////
+    // Base Functionality Tests
+    //////////////////////////////
+
     function test_setup() public view {
         // Check that the votes module is set up correctly
 
@@ -43,7 +47,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         assertEq(address(contest().votesModule()), address(votesModule()));
         assertEq(address(contest().pointsModule()), address(pointsModule()));
         assertEq(address(contest().choicesModule()), address(choicesModule()));
-        assertEq(contest().executionContract(), signalOnly);
+        assertEq(contest().executionModule(), signalOnly);
         assertEq(contest().isContinuous(), false);
         assertEq(contest().isRetractable(), false);
 
@@ -76,6 +80,182 @@ contract GrantShipsBasic is GrantShipsSetup {
         assertEq(choice3Metadata.pointer, metadata3.pointer);
         assertEq(choice3bytesData, choiceData3);
         assertTrue(choice3exists);
+    }
+
+    function testFinalizeChoices() public {
+        _populate();
+        _finalizeChoices();
+
+        assertEq(uint8(contest().contestStatus()), uint8(ContestStatus.Voting));
+    }
+
+    function testStartVoting() public {
+        _populate();
+        _finalizeChoices();
+        _setVoting_immediate();
+
+        assertEq(votesModule().startTime(), block.timestamp);
+        assertEq(votesModule().endTime(), block.timestamp + TWO_WEEKS);
+    }
+
+    function testStartVoting_future() public {
+        _populate();
+        _finalizeChoices();
+        _setVoting_future();
+
+        assertEq(votesModule().startTime(), block.timestamp + TWO_WEEKS);
+        assertEq(votesModule().endTime(), block.timestamp + TWO_WEEKS + TWO_WEEKS);
+    }
+
+    function testVote_single() public {
+        _populate();
+        _finalizeChoices();
+        _setVoting_immediate();
+        _vote_single(0, choice1());
+
+        // assertEq(arbToken().balanceOf(address(contest()), VOTE_AMOUNT), VOTE_AMOUNT);
+        // assertEq(arbToken().balanceOf(address(facilitator1().wearer), 0);
+    }
+
+    //////////////////////////////
+    // Reverts
+    //////////////////////////////
+
+    function testRevert_finalizeChoices_notPopulating() public {
+        _populate();
+        _finalizeChoices();
+
+        vm.expectRevert("Contest is not in populating state");
+        _finalizeChoices();
+
+        vm.expectRevert("Contest is not in populating state");
+        vm.prank(facilitator1().wearer);
+        choicesModule().registerChoice(choice1(), abi.encode(choiceData, metadata));
+    }
+
+    function testRevert_setVotingTime_Immediate_beforeVotingPeriod() public {
+        _populate();
+
+        vm.expectRevert("Contest is not in voting state");
+        _setVoting_immediate();
+
+        _finalizeChoices();
+        _setVoting_immediate();
+    }
+
+    // usually module specific functions are tested in the module test
+    // and they are, but I'm doing some extra test for setVotingTime
+    // to ensure that flow of interaction between modules is correct
+
+    function testRevert_setVotingTime_Future_beforeVotingPeriod() public {
+        _populate();
+
+        vm.expectRevert("Contest is not in voting state");
+        _setVoting_future();
+
+        _finalizeChoices();
+        _setVoting_future();
+    }
+
+    function testRevert_setVotingTime_votingAlreadyStarted() public {
+        _populate();
+        _finalizeChoices();
+        _setVoting_immediate();
+
+        vm.expectRevert("Voting has already started");
+        _setVoting_future();
+
+        vm.expectRevert("Voting has already started");
+        _setVoting_immediate();
+    }
+
+    function testRevert_setVotingTime_future_startTimeMustBeInFuture() public {
+        _populate();
+        _finalizeChoices();
+
+        vm.prank(facilitator1().wearer);
+        vm.expectRevert("Start time must be in the future");
+        votesModule().setVotingTime(block.timestamp - 1);
+    }
+
+    function testRevert_vote_notVotingPeriod() public {
+        _populate();
+
+        vm.startPrank(arbVoter(0));
+
+        vm.expectRevert("Contest is not in voting state");
+        contest().vote(choice1(), VOTE_AMOUNT, abi.encode(metadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_notValidChoice() public {
+        _populate();
+        _finalizeChoices();
+        _setVoting_immediate();
+
+        vm.startPrank(arbVoter(0));
+
+        vm.expectRevert("Choice does not exist");
+        contest().vote("0x0", VOTE_AMOUNT, abi.encode(metadata));
+
+        vm.expectRevert("Choice does not exist");
+        contest().vote(choice4(), VOTE_AMOUNT, abi.encode(metadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_overspend() public {
+        _populate();
+        _finalizeChoices();
+        _setVoting_immediate();
+
+        vm.startPrank(arbVoter(0));
+
+        vm.expectRevert("Insufficient points available");
+        contest().vote(choice1(), VOTE_AMOUNT + 1, abi.encode(metadata));
+
+        contest().vote(choice1(), VOTE_AMOUNT, abi.encode(metadata));
+
+        vm.expectRevert("Insufficient points available");
+        contest().vote(choice1(), 1, abi.encode(metadata));
+        vm.stopPrank();
+    }
+
+    //////////////////////////////
+    // Adversarial
+    //////////////////////////////
+
+    // reentrancy
+    // double spend
+    // transfer double-spend
+    // overflow
+    // vote/transfer/retract/vote
+
+    //////////////////////////////
+    // Getters
+    //////////////////////////////
+
+    //////////////////////////////
+    // Helpers
+    //////////////////////////////
+
+    function _vote_single(uint8 voter, bytes32 choiceId) internal {
+        vm.prank(arbVoter(voter));
+        contest().vote(choiceId, VOTE_AMOUNT, abi.encode(metadata));
+    }
+
+    function _setVoting_immediate() internal {
+        vm.prank(facilitator1().wearer);
+        votesModule().setVotingTime(0);
+    }
+
+    function _setVoting_future() internal {
+        vm.prank(facilitator1().wearer);
+        votesModule().setVotingTime(block.timestamp + TWO_WEEKS);
+    }
+
+    function _finalizeChoices() internal {
+        vm.prank(facilitator1().wearer);
+        choicesModule().finalizeChoices();
     }
 
     function _populate() internal {

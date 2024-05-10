@@ -75,7 +75,6 @@ contract Contest is ReentrancyGuard {
         votesModule = IVotes(_votesContract);
         pointsModule = IPoints(_pointsContract);
         choicesModule = IChoices(_choicesContract);
-        // Todo: discuss
         executionModule = _executionContract;
         isRetractable = _isRetractable;
 
