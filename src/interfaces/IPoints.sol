@@ -49,4 +49,8 @@ interface IPoints {
      * @return The current number of available voting points for the user.
      */
     function getPoints(address user) external view returns (uint256);
+
+    function hasVotingPoints(address user, uint256 amount) external view returns (bool);
+
+    function hasAllocatedPoints(address user, uint256 amount) external view returns (bool);
 }

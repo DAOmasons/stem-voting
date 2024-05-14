@@ -24,6 +24,10 @@ contract Accounts is StdCheats {
     // Voters
     // //////////////////////
 
+    function voter0() public returns (address) {
+        return makeAddr("voter_0");
+    }
+
     function voter1() public returns (address) {
         return makeAddr("voter_1");
     }
@@ -76,9 +80,9 @@ contract Accounts is StdCheats {
     // Mocks
     // //////////////////////
 
-    function mockContest() public returns (address) {
-        return makeAddr("mock_contest");
-    }
+    // function mockContest() public returns (address) {
+    //     return makeAddr("mock_contest");
+    // }
 
     function mockDAOAddr() public returns (address) {
         return makeAddr("mock_dao");

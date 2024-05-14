@@ -60,4 +60,8 @@ contract AllowList is IChoices {
     function removeAllowedAccount(address account) external onlyOwner {
         allowedAccounts[account] = false;
     }
+
+    function isValidChoice(bytes32 choiceId) external view override returns (bool) {
+        return choices[choiceId].data.length > 0;
+    }
 }

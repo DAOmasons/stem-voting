@@ -36,19 +36,13 @@ contract ERC20Balance is IPoints {
     }
 
     function allocatePoints(address voter, uint256 amount) public onlyContest {
-        require(
-            totalVotingPoints[voter] >= amount,
-            "Insufficient points available"
-        );
+        require(totalVotingPoints[voter] >= amount, "Insufficient points available");
         totalVotingPoints[voter] -= amount;
         allocatedPoints[voter] += amount;
     }
 
     function releasePoints(address voter, uint256 amount) public onlyContest {
-        require(
-            allocatedPoints[voter] >= amount,
-            "Insufficient points allocated"
-        );
+        require(allocatedPoints[voter] >= amount, "Insufficient points allocated");
         allocatedPoints[voter] -= amount;
         totalVotingPoints[voter] += amount;
     }
@@ -56,5 +50,13 @@ contract ERC20Balance is IPoints {
     // Retrieve the current available voting points for a user
     function getPoints(address user) external view override returns (uint256) {
         return totalVotingPoints[user];
+    }
+
+    function hasAllocatedPoints(address user, uint256 amount) external view override returns (bool) {
+        return allocatedPoints[user] >= amount;
+    }
+
+    function hasVotingPoints(address user, uint256 amount) external view override returns (bool) {
+        return totalVotingPoints[user] >= amount;
     }
 }

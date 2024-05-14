@@ -4,14 +4,13 @@ pragma solidity ^0.8.13;
 import "../../interfaces/IChoices.sol";
 
 import {IHats} from "hats-protocol/Interfaces/IHats.sol"; // Path: node_modules/@hats-finance/hats-protocol/contracts/Hats.sol
-import {IContest} from "../../interfaces/IContest.sol";
+import {Contest} from "../../Contest.sol";
+import {ContestStatus} from "../../core/ContestStatus.sol";
 
 // Todo
-// - [] Discuss and review procedural status pattern
-// - [] Check that contest is in voting state
 // - [] Wrap that check in a modifier and apply to write functions except initialize
-// - [] Write a way for all choice modules to update the contest status
 
+// Not continuous enabled
 contract HatsAllowList is IChoices {
     /// ===============================
     /// ========== Events =============
@@ -41,7 +40,7 @@ contract HatsAllowList is IChoices {
 
     uint256 public hatId;
 
-    IContest public contest;
+    Contest public contest;
 
     // choiceId => ChoiceData
     mapping(bytes32 => ChoiceData) public choices;
@@ -58,6 +57,11 @@ contract HatsAllowList is IChoices {
         _;
     }
 
+    modifier onlyContestPopulating() {
+        require(contest.isStatus(ContestStatus.Populating), "Contest is not in populating state");
+        _;
+    }
+
     /// ===============================
     /// ========== Init ===============
     /// ===============================
@@ -68,7 +72,7 @@ contract HatsAllowList is IChoices {
         (address _hats, uint256 _hatId, bytes[] memory _prepopulatedChoices) =
             abi.decode(_initData, (address, uint256, bytes[]));
 
-        contest = IContest(_contest);
+        contest = Contest(_contest);
 
         hats = IHats(_hats);
         hatId = _hatId;
@@ -91,7 +95,7 @@ contract HatsAllowList is IChoices {
     /// ========== Setters ============
     /// ===============================
 
-    function registerChoice(bytes32 choiceId, bytes memory _data) external onlyTrustedWearer {
+    function registerChoice(bytes32 choiceId, bytes memory _data) external onlyTrustedWearer onlyContestPopulating {
         _registerChoice(choiceId, _data);
     }
 
@@ -103,9 +107,7 @@ contract HatsAllowList is IChoices {
         emit Registered(choiceId, choices[choiceId]);
     }
 
-    function removeChoice(bytes32 choiceId, bytes calldata) external onlyTrustedWearer {
-        // Review Any consequences to deleting like this?
-
+    function removeChoice(bytes32 choiceId, bytes calldata) external onlyTrustedWearer onlyContestPopulating {
         require(isValidChoice(choiceId), "Choice does not exist");
 
         delete choices[choiceId];
@@ -113,9 +115,8 @@ contract HatsAllowList is IChoices {
         emit Removed(choiceId);
     }
 
-    function choiceSetComplete() external onlyTrustedWearer {
-        // Review: Discuss setting choice set complete
-        // Cons: Setting contest state from a module
+    function finalizeChoices() external onlyTrustedWearer onlyContestPopulating {
+        contest.finalizeChoices();
     }
 
     /// ===============================

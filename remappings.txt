@@ -6,3 +6,5 @@ ds-test/=lib/hats-protocol/lib/forge-std/lib/ds-test/src/
 solbase/=lib/hats-protocol/lib/solbase/src/
 utils/=lib/hats-protocol/lib/utils/
 lib/ERC1155/=lib/hats-protocol/lib/ERC1155/
+@arb-gov/=lib/governance/src/
+openzeppelin-contracts/=lib/openzeppelin-contracts/
