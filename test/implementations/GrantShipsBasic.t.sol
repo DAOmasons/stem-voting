@@ -49,7 +49,8 @@ contract GrantShipsBasic is GrantShipsSetup {
         assertEq(address(contest().choicesModule()), address(choicesModule()));
         assertEq(contest().executionModule(), signalOnly);
         assertEq(contest().isContinuous(), false);
-        assertEq(contest().isRetractable(), false);
+        assertEq(contest().isRetractable(), true);
+        assertEq(contest().CONTEST_VERSION(), "0.1.0");
 
         assertEq(uint8(contest().contestStatus()), uint8(ContestStatus.Populating));
     }
@@ -90,9 +91,7 @@ contract GrantShipsBasic is GrantShipsSetup {
     }
 
     function testStartVoting() public {
-        _populate();
-        _finalizeChoices();
-        _setVoting_immediate();
+        _setUpVoting();
 
         assertEq(votesModule().startTime(), block.timestamp);
         assertEq(votesModule().endTime(), block.timestamp + TWO_WEEKS);
@@ -108,13 +107,74 @@ contract GrantShipsBasic is GrantShipsSetup {
     }
 
     function testVote_single() public {
-        _populate();
-        _finalizeChoices();
-        _setVoting_immediate();
+        _setUpVoting();
+
         _vote_single(0, choice1());
 
-        // assertEq(arbToken().balanceOf(address(contest()), VOTE_AMOUNT), VOTE_AMOUNT);
-        // assertEq(arbToken().balanceOf(address(facilitator1().wearer), 0);
+        //Votes are registered for choice
+        assertEq(votesModule().votes(choice1(), arbVoter(0)), VOTE_AMOUNT);
+        assertEq(votesModule().totalVotesForChoice(choice1()), VOTE_AMOUNT);
+
+        //Total votes are registered for choice
+        assertEq(votesModule().totalVotesForChoice(choice1()), VOTE_AMOUNT);
+        assertEq(votesModule().getTotalVotesForChoice(choice1()), VOTE_AMOUNT);
+
+        // Points are properly allocated for user
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
+        assertEq(pointsModule().getAllocatedPoints(arbVoter(0)), VOTE_AMOUNT);
+        assertTrue(pointsModule().hasAllocatedPoints(arbVoter(0), VOTE_AMOUNT));
+        assertFalse(pointsModule().hasVotingPoints(arbVoter(0), 1));
+    }
+
+    function testRetract_single() public {
+        _setUpVoting();
+
+        _vote_single(0, choice1());
+        _retract_single(0, choice1());
+
+        assertEq(votesModule().votes(choice1(), arbVoter(0)), 0);
+        assertEq(votesModule().totalVotesForChoice(choice1()), 0);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), 0);
+        assertEq(pointsModule().getPoints(arbVoter(0)), VOTE_AMOUNT);
+    }
+
+    function testVote_retract_vote() public {
+        _setUpVoting();
+
+        _vote_single(0, choice1());
+        _retract_single(0, choice1());
+        _vote_single(0, choice1());
+
+        assertEq(votesModule().totalVotesForChoice(choice1()), VOTE_AMOUNT);
+        assertEq(votesModule().getTotalVotesForChoice(choice1()), VOTE_AMOUNT);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
+        assertEq(pointsModule().getPoints(arbVoter(0)), 0);
+    }
+
+    function testVote_many() public {
+        _setUpVoting();
+
+        _vote_single(0, choice1());
+        _vote_single(1, choice1());
+        _vote_single(2, choice1());
+        _vote_single(3, choice1());
+        _vote_single(4, choice1());
+
+        assertEq(votesModule().votes(choice1(), arbVoter(0)), VOTE_AMOUNT);
+        assertEq(votesModule().votes(choice1(), arbVoter(1)), VOTE_AMOUNT);
+        assertEq(votesModule().votes(choice1(), arbVoter(2)), VOTE_AMOUNT);
+        assertEq(votesModule().votes(choice1(), arbVoter(3)), VOTE_AMOUNT);
+        assertEq(votesModule().votes(choice1(), arbVoter(4)), VOTE_AMOUNT);
+
+        assertEq(votesModule().totalVotesForChoice(choice1()), VOTE_AMOUNT * 5);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
+        assertEq(pointsModule().allocatedPoints(arbVoter(1)), VOTE_AMOUNT);
+        assertEq(pointsModule().allocatedPoints(arbVoter(2)), VOTE_AMOUNT);
+        assertEq(pointsModule().allocatedPoints(arbVoter(3)), VOTE_AMOUNT);
+        assertEq(pointsModule().allocatedPoints(arbVoter(4)), VOTE_AMOUNT);
     }
 
     //////////////////////////////
@@ -158,9 +218,7 @@ contract GrantShipsBasic is GrantShipsSetup {
     }
 
     function testRevert_setVotingTime_votingAlreadyStarted() public {
-        _populate();
-        _finalizeChoices();
-        _setVoting_immediate();
+        _setUpVoting();
 
         vm.expectRevert("Voting has already started");
         _setVoting_future();
@@ -189,9 +247,7 @@ contract GrantShipsBasic is GrantShipsSetup {
     }
 
     function testRevert_vote_notValidChoice() public {
-        _populate();
-        _finalizeChoices();
-        _setVoting_immediate();
+        _setUpVoting();
 
         vm.startPrank(arbVoter(0));
 
@@ -204,9 +260,7 @@ contract GrantShipsBasic is GrantShipsSetup {
     }
 
     function testRevert_vote_overspend() public {
-        _populate();
-        _finalizeChoices();
-        _setVoting_immediate();
+        _setUpVoting();
 
         vm.startPrank(arbVoter(0));
 
@@ -220,15 +274,48 @@ contract GrantShipsBasic is GrantShipsSetup {
         vm.stopPrank();
     }
 
+    function testRevert_vote_noVotes() public {
+        _setUpVoting();
+
+        vm.startPrank(someGuy());
+
+        vm.expectRevert("Amount must be greater than 0");
+        contest().vote(choice1(), 0, abi.encode(metadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_notVotingPeriod() public {
+        vm.expectRevert("Contest is not in voting state");
+        _retract_single(0, choice1());
+    }
+
+    function testRevert_retract_invalidChoice() public {
+        _setUpVoting();
+
+        vm.expectRevert("Choice does not exist");
+        _retract_single(0, "0x0");
+
+        vm.expectRevert("Choice does not exist");
+        _retract_single(0, choice4());
+    }
+
+    function testRevert_retratct_overspend() public {
+        _setUpVoting();
+
+        _vote_single(0, choice1());
+
+        vm.expectRevert("Insufficient points allocated");
+        contest().retractVote(choice1(), VOTE_AMOUNT + 1, abi.encode(metadata));
+    }
+
     //////////////////////////////
     // Adversarial
     //////////////////////////////
 
-    // reentrancy
     // double spend
     // transfer double-spend
-    // overflow
     // vote/transfer/retract/vote
+    // reentrancy
 
     //////////////////////////////
     // Getters
@@ -238,9 +325,20 @@ contract GrantShipsBasic is GrantShipsSetup {
     // Helpers
     //////////////////////////////
 
+    function _retract_single(uint8 voter, bytes32 choiceId) internal {
+        vm.prank(arbVoter(voter));
+        contest().retractVote(choiceId, VOTE_AMOUNT, abi.encode(metadata));
+    }
+
     function _vote_single(uint8 voter, bytes32 choiceId) internal {
         vm.prank(arbVoter(voter));
         contest().vote(choiceId, VOTE_AMOUNT, abi.encode(metadata));
+    }
+
+    function _setUpVoting() internal {
+        _populate();
+        _finalizeChoices();
+        _setVoting_immediate();
     }
 
     function _setVoting_immediate() internal {

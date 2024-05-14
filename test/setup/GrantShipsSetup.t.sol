@@ -99,7 +99,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
 
         // // setup contest
         bytes memory _contestInitData = abi.encode(
-            address(votesModule()), address(pointsModule()), address(choicesModule()), signalOnly, false, false
+            address(votesModule()), address(pointsModule()), address(choicesModule()), signalOnly, false, true
         );
 
         contest().initialize(_contestInitData);

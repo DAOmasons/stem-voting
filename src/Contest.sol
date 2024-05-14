@@ -12,6 +12,8 @@ import "./interfaces/IContest.sol";
 import {ContestStatus} from "./core/ContestStatus.sol";
 
 contract Contest is ReentrancyGuard {
+    string public constant CONTEST_VERSION = "0.1.0";
+
     IVotes public votesModule;
 
     IPoints public pointsModule;
