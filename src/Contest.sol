@@ -116,17 +116,21 @@ contract Contest is ReentrancyGuard {
         _retractVote(choiceId, amount, _data);
     }
 
-    function changeVote(bytes32 oldChoiceId, bytes32 newChoiceId, uint256 amount, bytes memory _data)
+    function changeVote(bytes32 _oldChoiceId, bytes32 _newChoiceId, uint256 _amount, bytes memory _data)
         public
         virtual
         nonReentrant
         onlyVotingPeriod
         onlyContestRetractable
-        onlyCanAllocate(msg.sender, amount)
-        onlyHasAllocated(msg.sender, amount)
+        onlyValidChoice(_oldChoiceId)
+        onlyValidChoice(_newChoiceId)
+        onlyHasAllocated(msg.sender, _amount)
     {
-        _retractVote(oldChoiceId, amount, _data);
-        _vote(newChoiceId, amount, _data);
+        _retractVote(_oldChoiceId, _amount, _data);
+
+        // Review: Is this proveably redundant? Or does this serve a purpose for CEI?
+        require(pointsModule.hasVotingPoints(msg.sender, _amount), "Insufficient points available");
+        _vote(_newChoiceId, _amount, _data);
     }
 
     function batchVote(bytes32[] memory choiceIds, uint256[] memory amounts, bytes[] memory _data, uint256 _totalAmount)

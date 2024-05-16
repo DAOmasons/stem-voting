@@ -177,6 +177,44 @@ contract GrantShipsBasic is GrantShipsSetup {
         assertEq(pointsModule().allocatedPoints(arbVoter(4)), VOTE_AMOUNT);
     }
 
+    function testChangeVote_single() public {
+        _setUpVoting();
+
+        _vote_single(0, choice1());
+
+        assertEq(votesModule().votes(choice1(), arbVoter(0)), VOTE_AMOUNT);
+        assertEq(votesModule().votes(choice2(), arbVoter(0)), 0);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
+        assertEq(pointsModule().getPoints(arbVoter(0)), 0);
+
+        _change_vote_single(0, choice1(), choice2());
+
+        assertEq(votesModule().votes(choice1(), arbVoter(0)), 0);
+        assertEq(votesModule().votes(choice2(), arbVoter(0)), VOTE_AMOUNT);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
+        assertEq(pointsModule().getPoints(arbVoter(0)), 0);
+    }
+
+    function testBatchVote() public {
+        _setUpVoting();
+        _batch_vote_single();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        assertEq(votesModule().votes(choice1(), arbVoter(0)), ONE_EIGHTH * 3);
+        assertEq(votesModule().votes(choice2(), arbVoter(0)), ONE_EIGHTH * 1);
+        assertEq(votesModule().votes(choice3(), arbVoter(0)), ONE_EIGHTH * 4);
+
+        assertEq(votesModule().totalVotesForChoice(choice1()), ONE_EIGHTH * 3);
+        assertEq(votesModule().totalVotesForChoice(choice2()), ONE_EIGHTH * 1);
+        assertEq(votesModule().totalVotesForChoice(choice3()), ONE_EIGHTH * 4);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
+        assertEq(pointsModule().getPoints(arbVoter(0)), 0);
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -308,6 +346,43 @@ contract GrantShipsBasic is GrantShipsSetup {
         contest().retractVote(choice1(), VOTE_AMOUNT + 1, abi.encode(metadata));
     }
 
+    function testRevert_retract_noVotes() public {
+        _setUpVoting();
+
+        vm.expectRevert("Amount must be greater than 0");
+        contest().retractVote(choice1(), 0, abi.encode(metadata));
+    }
+
+    function testRevert_changeVote_notVotingPeriod() public {
+        _populate();
+
+        vm.expectRevert("Contest is not in voting state");
+        _change_vote_single(0, choice1(), choice2());
+    }
+
+    function testRevert_changeVote_onlyValidChoice() public {
+        _setUpVoting();
+
+        vm.expectRevert("Choice does not exist");
+        _change_vote_single(0, "0x0", choice2());
+
+        vm.expectRevert("Choice does not exist");
+        _change_vote_single(0, choice4(), choice2());
+
+        vm.expectRevert("Choice does not exist");
+        _change_vote_single(0, choice1(), "0x0");
+
+        vm.expectRevert("Choice does not exist");
+        _change_vote_single(0, choice2(), choice4());
+    }
+
+    function testRevert_changeVote_onlyHasAllocated() public {
+        _setUpVoting();
+
+        vm.expectRevert("Insufficient points allocated");
+        _change_vote_single(0, choice1(), choice2());
+    }
+
     //////////////////////////////
     // Adversarial
     //////////////////////////////
@@ -324,6 +399,34 @@ contract GrantShipsBasic is GrantShipsSetup {
     //////////////////////////////
     // Helpers
     //////////////////////////////
+
+    function _batch_vote_single() internal {
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice3();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        amounts[2] = ONE_EIGHTH * 4;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+    }
+
+    function _change_vote_single(uint8 voter, bytes32 _oldChoiceId, bytes32 _newChoiceId) internal {
+        vm.prank(arbVoter(voter));
+        contest().changeVote(_oldChoiceId, _newChoiceId, VOTE_AMOUNT, abi.encode(metadata));
+    }
 
     function _retract_single(uint8 voter, bytes32 choiceId) internal {
         vm.prank(arbVoter(voter));

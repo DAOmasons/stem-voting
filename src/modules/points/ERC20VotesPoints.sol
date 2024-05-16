@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+import "forge-std/Test.sol";
+
 pragma solidity ^0.8.13;
 
 import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.sol";
@@ -83,6 +85,7 @@ contract ERC20VotesPoints is IPoints {
 
     function getPoints(address _user) public view returns (uint256) {
         uint256 totalVotingPoints = voteToken.getPastVotes(_user, votingCheckpoint);
+
         uint256 allocatedVotingPoints = allocatedPoints[_user];
 
         return totalVotingPoints - allocatedVotingPoints;
