@@ -12,6 +12,18 @@ import "./interfaces/IContest.sol";
 import {ContestStatus} from "./core/ContestStatus.sol";
 
 contract Contest is ReentrancyGuard {
+    event ContestInitialized(
+        address votesModule,
+        address pointsModule,
+        address choicesModule,
+        address executionModule,
+        bool isContinuous,
+        bool isRetractable,
+        ContestStatus status
+    );
+
+    event ContestStatusChanged(ContestStatus status);
+
     string public constant CONTEST_VERSION = "0.1.0";
 
     IVotes public votesModule;
@@ -27,12 +39,6 @@ contract Contest is ReentrancyGuard {
     bool public isContinuous;
 
     bool public isRetractable;
-
-    mapping(bytes32 => uint256) public choicesIdx;
-
-    bytes32[] public choiceList;
-
-    event ContestStarted(uint256 startTime, uint256 endTime);
 
     modifier onlyVotingPeriod() {
         require(
@@ -87,6 +93,16 @@ contract Contest is ReentrancyGuard {
         }
 
         isContinuous = _isContinuous;
+
+        emit ContestInitialized(
+            _votesContract,
+            _pointsContract,
+            _choicesContract,
+            _executionContract,
+            _isContinuous,
+            _isRetractable,
+            contestStatus
+        );
     }
 
     function claimPoints() public virtual onlyVotingPeriod {
@@ -127,8 +143,6 @@ contract Contest is ReentrancyGuard {
         onlyHasAllocated(msg.sender, _amount)
     {
         _retractVote(_oldChoiceId, _amount, _data);
-
-        // Review: Is this proveably redundant? Or does this serve a purpose for CEI?
         require(pointsModule.hasVotingPoints(msg.sender, _amount), "Insufficient points available");
         _vote(_newChoiceId, _amount, _data);
     }
@@ -202,11 +216,15 @@ contract Contest is ReentrancyGuard {
         require(contestStatus == ContestStatus.Populating, "Contest is not in populating state");
         require(msg.sender == address(choicesModule), "Only choices module");
         contestStatus = ContestStatus.Voting;
+
+        emit ContestStatusChanged(ContestStatus.Voting);
     }
 
     function finalizeVoting() external onlyVotingPeriod {
         require(msg.sender == address(votesModule), "Only votes module");
         contestStatus = ContestStatus.Finalized;
+
+        emit ContestStatusChanged(ContestStatus.Finalized);
     }
 
     function finalizeContinuous() external {
@@ -215,12 +233,16 @@ contract Contest is ReentrancyGuard {
             msg.sender == address(votesModule) || msg.sender == address(choicesModule), "Only votes or choices module"
         );
         contestStatus = ContestStatus.Finalized;
+
+        emit ContestStatusChanged(ContestStatus.Finalized);
     }
 
     function execute() public virtual {
         require(contestStatus == ContestStatus.Finalized, "Contest is not finalized");
         require(msg.sender == address(executionModule), "Only execution module");
         contestStatus = ContestStatus.Executed;
+
+        emit ContestStatusChanged(ContestStatus.Executed);
     }
 
     function getStatus() public view returns (ContestStatus) {

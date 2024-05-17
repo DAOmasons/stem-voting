@@ -8,6 +8,8 @@ import {Metadata} from "../../src/core/Metadata.sol";
 import {HatsAllowList} from "../../src/modules/choices/HatsAllowList.sol";
 
 contract GrantShipsBasic is GrantShipsSetup {
+    event ContestStatusChanged(ContestStatus status);
+
     Metadata metadata = Metadata(1, "QmWmyoMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWeVdD");
     Metadata metadata2 = Metadata(2, "QmBa4oMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWe2zF");
     Metadata metadata3 = Metadata(3, "QmHi23fctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWzt32");
@@ -1142,6 +1144,8 @@ contract GrantShipsBasic is GrantShipsSetup {
     }
 
     function _finalizeChoices() internal {
+        // vm.expectEmit(true, false, false, true);
+        // emit ContestStatusChanged(ContestStatus.Voting);
         vm.prank(facilitator1().wearer);
         choicesModule().finalizeChoices();
     }

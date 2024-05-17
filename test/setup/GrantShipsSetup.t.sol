@@ -13,6 +13,16 @@ import {Contest} from "../../src/Contest.sol";
 import {ContestStatus} from "../../src/core/ContestStatus.sol";
 
 contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
+    event ContestInitialized(
+        address votesModule,
+        address pointsModule,
+        address choicesModule,
+        address executionModule,
+        bool isContinuous,
+        bool isRetractable,
+        ContestStatus status
+    );
+
     address[] _voters;
     uint256 constant VOTE_AMOUNT = 1_000e18;
 
@@ -111,6 +121,16 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
             true
         );
 
+        vm.expectEmit(true, false, false, true);
+        emit ContestInitialized(
+            address(votesModule()),
+            address(pointsModule()),
+            address(choicesModule()),
+            address(executionModule()),
+            false,
+            true,
+            ContestStatus.Populating
+        );
         contest().initialize(_contestInitData);
     }
 
