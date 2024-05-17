@@ -342,7 +342,8 @@ contract GrantShipsBasic is GrantShipsSetup {
         _finalizeChoices();
 
         vm.expectRevert("Contest is not in populating state");
-        _finalizeChoices();
+        vm.prank(facilitator1().wearer);
+        choicesModule().finalizeChoices();
 
         vm.expectRevert("Contest is not in populating state");
         vm.prank(facilitator1().wearer);
@@ -910,12 +911,16 @@ contract GrantShipsBasic is GrantShipsSetup {
     //////////////////////////////
 
     function _execute() internal {
+        vm.expectEmit(true, false, false, true);
+        emit ContestStatusChanged(ContestStatus.Executed);
         executionModule().execute();
     }
 
     function _finalizeVoting() internal {
         vm.warp(votesModule().endTime() + 1);
 
+        vm.expectEmit(true, false, false, true);
+        emit ContestStatusChanged(ContestStatus.Finalized);
         votesModule().finalizeVoting();
     }
 
@@ -1144,8 +1149,8 @@ contract GrantShipsBasic is GrantShipsSetup {
     }
 
     function _finalizeChoices() internal {
-        // vm.expectEmit(true, false, false, true);
-        // emit ContestStatusChanged(ContestStatus.Voting);
+        vm.expectEmit(true, false, false, true);
+        emit ContestStatusChanged(ContestStatus.Voting);
         vm.prank(facilitator1().wearer);
         choicesModule().finalizeChoices();
     }
