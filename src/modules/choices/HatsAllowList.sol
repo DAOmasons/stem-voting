@@ -7,25 +7,28 @@ import {IHats} from "hats-protocol/Interfaces/IHats.sol"; // Path: node_modules/
 import {Contest} from "../../Contest.sol";
 import {ContestStatus} from "../../core/ContestStatus.sol";
 
-// Todo
-// - [] Wrap that check in a modifier and apply to write functions except initialize
-
-// Not continuous enabled
+/// @title HatsAllowList
+/// @author @jord<https://github.com/jordanlesich>
+/// @notice Uses Hats to permission the selection of choices for a contest
 contract HatsAllowList is IChoices {
     /// ===============================
     /// ========== Events =============
     /// ===============================
 
+    /// @notice Emitted when the contract is initialized
     event Initialized(address contest, address hatsAddress, uint256 hatId);
 
+    /// @notice Emitted when a choice is registered
     event Registered(bytes32 choiceId, ChoiceData choiceData);
 
+    /// @notice Emitted when a choice is removed
     event Removed(bytes32 choiceId);
 
     /// ===============================
     /// ========== Struct =============
     /// ===============================
 
+    /// @notice Struct to hold the metadata and bytes data of a choice
     struct ChoiceData {
         Metadata metadata;
         bytes data;
@@ -36,19 +39,27 @@ contract HatsAllowList is IChoices {
     /// ========== Storage ============
     /// ===============================
 
+    /// @notice Reference to the Hats Protocol contract
     IHats public hats;
 
+    /// @notice The hatId of the hat that is allowed to make choices
     uint256 public hatId;
 
+    /// @notice Reference to the Contest contract
     Contest public contest;
 
-    // choiceId => ChoiceData
+    /// @notice This maps the data for each choice to its choiceId
+    /// @dev choiceId => ChoiceData
     mapping(bytes32 => ChoiceData) public choices;
 
     /// ===============================
     /// ========== Modifiers ==========
     /// ===============================
 
+    /// Review: It is likely that this check is redundant, as the caller must be in good standing to be a wearer, but need to test more
+
+    /// @notice Ensures the caller is the wearer of the hat and in good standing
+    /// @dev The caller must be the wearer of the hat and in good standing
     modifier onlyTrustedWearer() {
         require(
             hats.isWearerOfHat(msg.sender, hatId) && hats.isInGoodStanding(msg.sender, hatId),
@@ -57,6 +68,8 @@ contract HatsAllowList is IChoices {
         _;
     }
 
+    /// @notice Ensures the contest is in the populating state
+    /// @dev The contest must be in the populating state
     modifier onlyContestPopulating() {
         require(contest.isStatus(ContestStatus.Populating), "Contest is not in populating state");
         _;
@@ -68,6 +81,10 @@ contract HatsAllowList is IChoices {
 
     constructor() {}
 
+    /// @notice Initializes the contract with the contest, hats, and hatId
+    /// @param _contest The address of the Contest contract
+    /// @param _initData The initialization data for the contract
+    /// @dev Bytes data includes the hats address, hatId, and prepopulated choices
     function initialize(address _contest, bytes calldata _initData) external override {
         (address _hats, uint256 _hatId, bytes[] memory _prepopulatedChoices) =
             abi.decode(_initData, (address, uint256, bytes[]));
@@ -95,26 +112,37 @@ contract HatsAllowList is IChoices {
     /// ========== Setters ============
     /// ===============================
 
-    function registerChoice(bytes32 choiceId, bytes memory _data) external onlyTrustedWearer onlyContestPopulating {
-        _registerChoice(choiceId, _data);
+    /// @notice Registers a choice with the contract
+    /// @param _choiceId The unique identifier for the choice
+    /// @param _data The data for the choice
+    /// @dev Bytes data includes the metadata and choice data
+    function registerChoice(bytes32 _choiceId, bytes memory _data) external onlyTrustedWearer onlyContestPopulating {
+        _registerChoice(_choiceId, _data);
     }
 
-    function _registerChoice(bytes32 choiceId, bytes memory _data) private {
+    /// @notice Internal function to register a choice
+    /// @param _choiceId The unique identifier for the choice
+    /// @param _data The data for the choice
+    /// @dev Bytes data includes the metadata and choice data
+    function _registerChoice(bytes32 _choiceId, bytes memory _data) private {
         (bytes memory _choiceData, Metadata memory _metadata) = abi.decode(_data, (bytes, Metadata));
 
-        choices[choiceId] = ChoiceData(_metadata, _choiceData, true);
+        choices[_choiceId] = ChoiceData(_metadata, _choiceData, true);
 
-        emit Registered(choiceId, choices[choiceId]);
+        emit Registered(_choiceId, choices[_choiceId]);
     }
 
-    function removeChoice(bytes32 choiceId, bytes calldata) external onlyTrustedWearer onlyContestPopulating {
-        require(isValidChoice(choiceId), "Choice does not exist");
+    /// @notice Removes a choice from the contract
+    /// @param _choiceId The unique identifier for the choice
+    function removeChoice(bytes32 _choiceId, bytes calldata) external onlyTrustedWearer onlyContestPopulating {
+        require(isValidChoice(_choiceId), "Choice does not exist");
 
-        delete choices[choiceId];
+        delete choices[_choiceId];
 
-        emit Removed(choiceId);
+        emit Removed(_choiceId);
     }
 
+    /// @notice Finalizes the choices for the contest
     function finalizeChoices() external onlyTrustedWearer onlyContestPopulating {
         contest.finalizeChoices();
     }
@@ -123,7 +151,9 @@ contract HatsAllowList is IChoices {
     /// ========== Getters ============
     /// ===============================
 
-    function isValidChoice(bytes32 choiceId) public view returns (bool) {
-        return choices[choiceId].exists;
+    /// @notice Checks if a choice is valid
+    /// @param _choiceId The unique identifier for the choice
+    function isValidChoice(bytes32 _choiceId) public view returns (bool) {
+        return choices[_choiceId].exists;
     }
 }
