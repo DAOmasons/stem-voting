@@ -47,7 +47,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         assertEq(address(contest().votesModule()), address(votesModule()));
         assertEq(address(contest().pointsModule()), address(pointsModule()));
         assertEq(address(contest().choicesModule()), address(choicesModule()));
-        assertEq(contest().executionModule(), signalOnly);
+        assertEq(contest().executionModule(), address(executionModule()));
         assertEq(contest().isContinuous(), false);
         assertEq(contest().isRetractable(), true);
         assertEq(contest().CONTEST_VERSION(), "0.1.0");
@@ -312,6 +312,23 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         assertEq(pointsModule().allocatedPoints(arbVoter(2)), 0);
         assertEq(pointsModule().getPoints(arbVoter(2)), VOTE_AMOUNT);
+    }
+
+    function testFinalizeVoting() public {
+        _setUpVoting();
+        _batch_vote_many();
+        _finalizeVoting();
+
+        assertEq(uint8(contest().contestStatus()), uint8(ContestStatus.Finalized));
+    }
+
+    function testExecute() public {
+        _setUpVoting();
+        _batch_vote_many();
+        _finalizeVoting();
+        _execute();
+
+        assertEq(uint8(contest().contestStatus()), uint8(ContestStatus.Executed));
     }
 
     //////////////////////////////
@@ -727,6 +744,22 @@ contract GrantShipsBasic is GrantShipsSetup {
         contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
     }
 
+    function testRevert_finalizeVoting_notVotingPeriod() public {
+        _populate();
+
+        vm.expectRevert("Contest is not in voting state");
+        contest().finalizeVoting();
+    }
+
+    function testRevert_finalizeVoting_onlyVotesModule() public {
+        _setUpVoting();
+
+        vm.warp(votesModule().endTime() + 1);
+        vm.prank(someGuy());
+        vm.expectRevert("Only votes module");
+        contest().finalizeVoting();
+    }
+
     //////////////////////////////
     // Adversarial
     //////////////////////////////
@@ -827,6 +860,16 @@ contract GrantShipsBasic is GrantShipsSetup {
     //////////////////////////////
     // Helpers
     //////////////////////////////
+
+    function _execute() internal {
+        executionModule().execute();
+    }
+
+    function _finalizeVoting() internal {
+        vm.warp(votesModule().endTime() + 1);
+
+        votesModule().finalizeVoting();
+    }
 
     function _batch_retract_many() internal {
         _batch_vote_many();

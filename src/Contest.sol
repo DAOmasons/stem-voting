@@ -199,16 +199,21 @@ contract Contest is ReentrancyGuard {
     }
 
     function finalizeChoices() external {
-        require(
-            contestStatus == ContestStatus.Populating || (contestStatus == ContestStatus.Continuous && isContinuous),
-            "Contest is not in populating state"
-        );
+        require(contestStatus == ContestStatus.Populating, "Contest is not in populating state");
         require(msg.sender == address(choicesModule), "Only choices module");
         contestStatus = ContestStatus.Voting;
     }
 
     function finalizeVoting() external onlyVotingPeriod {
         require(msg.sender == address(votesModule), "Only votes module");
+        contestStatus = ContestStatus.Finalized;
+    }
+
+    function finalizeContinuous() external {
+        require(contestStatus == ContestStatus.Continuous, "Contest is not continuous");
+        require(
+            msg.sender == address(votesModule) || msg.sender == address(choicesModule), "Only votes or choices module"
+        );
         contestStatus = ContestStatus.Finalized;
     }
 

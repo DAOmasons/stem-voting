@@ -10,6 +10,7 @@ import {ERC20VotesPoints} from "../../src/modules/points/ERC20VotesPoints.sol";
 import {TimedVotes} from "../../src/modules/votes/TimedVotes.sol";
 import {HatsAllowList} from "../../src/modules/choices/HatsAllowList.sol";
 import {Contest} from "../../src/Contest.sol";
+import {ContestStatus} from "../../src/core/ContestStatus.sol";
 
 contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     address[] _voters;
@@ -21,12 +22,11 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     uint256 constant VOTE_BLOCK = DELEGATE_BLOCK + 20;
     uint256 constant TWO_WEEKS = 1209600;
 
-    address signalOnly = makeAddr("signal-only");
-
     ERC20VotesPoints _pointsModule;
     TimedVotes _votesModule;
     HatsAllowList _choiceModule;
     Contest _contest;
+    MockExecutionModule _executionModule;
 
     function __setupGrantShipsBasic() internal {
         vm.createSelectFork({blockNumber: START_BLOCK, urlOrAlias: "arbitrumOne"});
@@ -37,6 +37,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         _choiceModule = new HatsAllowList();
         _pointsModule = new ERC20VotesPoints();
         _votesModule = new TimedVotes();
+        _executionModule = new MockExecutionModule();
         _contest = new Contest();
 
         // ensure fork block number is synchronized with test environment block number
@@ -97,9 +98,17 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         bytes memory _votesInitData = abi.encode(TWO_WEEKS);
         votesModule().initialize(address(contest()), _votesInitData);
 
+        // setup execution module
+        executionModule().initialize(address(contest()), new bytes(0));
+
         // // setup contest
         bytes memory _contestInitData = abi.encode(
-            address(votesModule()), address(pointsModule()), address(choicesModule()), signalOnly, false, true
+            address(votesModule()),
+            address(pointsModule()),
+            address(choicesModule()),
+            address(executionModule()),
+            false,
+            true
         );
 
         contest().initialize(_contestInitData);
@@ -117,8 +126,8 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         return _votesModule;
     }
 
-    function executionModule() public view returns (address) {
-        return signalOnly;
+    function executionModule() public view returns (MockExecutionModule) {
+        return _executionModule;
     }
 
     function contest() public view returns (Contest) {
@@ -127,5 +136,18 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
 
     function arbVoter(uint256 _index) public view returns (address) {
         return _voters[_index];
+    }
+}
+
+contract MockExecutionModule {
+    Contest public contest;
+
+    function initialize(address _contest, bytes memory) public {
+        contest = Contest(_contest);
+    }
+
+    function execute() public {
+        require(contest.getStatus() == ContestStatus.Finalized, "Contest is not finalized");
+        contest.execute();
     }
 }
