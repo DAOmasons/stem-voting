@@ -848,14 +848,44 @@ contract GrantShipsBasic is GrantShipsSetup {
         contest().retractVote(choice1(), VOTE_AMOUNT, abi.encode(metadata));
     }
 
-    // double spend
-    // transfer double-spend
-    // delegate double-spend
-    // vote/transfer/retract/vote
+    function testRevert_doubleSpend() public {
+        _setUpVoting();
 
-    //////////////////////////////
-    // Getters
-    //////////////////////////////
+        _vote_single(0, choice1());
+
+        vm.prank(arbVoter(0));
+        vm.expectRevert("Insufficient points available");
+        contest().vote(choice1(), VOTE_AMOUNT, abi.encode(metadata));
+    }
+    // transfer double-spend
+
+    function testRevert_transfer_doubleSpend_and_delegate() public {
+        _setUpVoting();
+
+        _vote_single(0, choice1());
+
+        // vm.prank(arbVoter(0));
+        // vm.expectRevert("Insufficient points available");
+
+        vm.prank(arbVoter(0));
+        arbToken().transfer(someGuy(), VOTE_AMOUNT);
+
+        assertEq(pointsModule().getPoints(arbVoter(0)), 0);
+        assertEq(pointsModule().getPoints(someGuy()), 0);
+        assertEq(arbToken().balanceOf(arbVoter(0)), 0);
+        assertEq(arbToken().balanceOf(someGuy()), VOTE_AMOUNT);
+
+        vm.prank(someGuy());
+        vm.expectRevert("Insufficient points available");
+        contest().vote(choice1(), VOTE_AMOUNT, abi.encode(metadata));
+
+        vm.prank(someGuy());
+        arbToken().delegate(someGuy());
+
+        vm.prank(someGuy());
+        vm.expectRevert("Insufficient points available");
+        contest().vote(choice1(), VOTE_AMOUNT, abi.encode(metadata));
+    }
 
     //////////////////////////////
     // Helpers
