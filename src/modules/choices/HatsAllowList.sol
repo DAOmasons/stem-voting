@@ -3,12 +3,12 @@ pragma solidity ^0.8.13;
 
 import "../../interfaces/IChoices.sol";
 
-import {IHats} from "hats-protocol/Interfaces/IHats.sol"; // Path: node_modules/@hats-finance/hats-protocol/contracts/Hats.sol
+import {IHats} from "hats-protocol/Interfaces/IHats.sol";
 import {Contest} from "../../Contest.sol";
 import {ContestStatus} from "../../core/ContestStatus.sol";
 
 /// @title HatsAllowList
-/// @author @jord<https://github.com/jordanlesich>
+/// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
 /// @notice Uses Hats to permission the selection of choices for a contest
 contract HatsAllowList is IChoices {
     /// ===============================
