@@ -760,6 +760,22 @@ contract GrantShipsBasic is GrantShipsSetup {
         contest().finalizeVoting();
     }
 
+    function testRevert_execute_notFinalized() public {
+        _setUpVoting();
+
+        vm.expectRevert("Contest is not finalized");
+        contest().execute();
+    }
+
+    function testRevert_execute_notModule() public {
+        _setUpVoting();
+        _finalizeVoting();
+
+        vm.prank(someGuy());
+        vm.expectRevert("Only execution module");
+        contest().execute();
+    }
+
     //////////////////////////////
     // Adversarial
     //////////////////////////////
