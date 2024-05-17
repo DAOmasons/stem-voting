@@ -215,6 +215,105 @@ contract GrantShipsBasic is GrantShipsSetup {
         assertEq(pointsModule().getPoints(arbVoter(0)), 0);
     }
 
+    function testBatchVote_single() public {
+        _setUpVoting();
+        _batch_vote_single();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        assertEq(votesModule().votes(choice1(), arbVoter(0)), ONE_EIGHTH * 3);
+        assertEq(votesModule().votes(choice2(), arbVoter(0)), ONE_EIGHTH * 1);
+        assertEq(votesModule().votes(choice3(), arbVoter(0)), ONE_EIGHTH * 4);
+
+        assertEq(votesModule().totalVotesForChoice(choice1()), ONE_EIGHTH * 3);
+        assertEq(votesModule().totalVotesForChoice(choice2()), ONE_EIGHTH * 1);
+        assertEq(votesModule().totalVotesForChoice(choice3()), ONE_EIGHTH * 4);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
+        assertEq(pointsModule().getPoints(arbVoter(0)), 0);
+    }
+
+    function testBatchVote_many() public {
+        _setUpVoting();
+        _batch_vote_many();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        assertEq(votesModule().votes(choice1(), arbVoter(0)), ONE_EIGHTH * 3);
+        assertEq(votesModule().votes(choice2(), arbVoter(0)), ONE_EIGHTH * 1);
+        assertEq(votesModule().votes(choice3(), arbVoter(0)), ONE_EIGHTH * 4);
+
+        assertEq(votesModule().votes(choice1(), arbVoter(1)), ONE_EIGHTH * 1);
+        assertEq(votesModule().votes(choice2(), arbVoter(1)), ONE_EIGHTH * 1);
+        assertEq(votesModule().votes(choice3(), arbVoter(1)), ONE_EIGHTH * 6);
+
+        assertEq(votesModule().votes(choice1(), arbVoter(2)), ONE_EIGHTH * 2);
+        assertEq(votesModule().votes(choice2(), arbVoter(2)), ONE_EIGHTH * 2);
+        assertEq(votesModule().votes(choice3(), arbVoter(2)), ONE_EIGHTH * 4);
+
+        assertEq(votesModule().votes(choice1(), arbVoter(3)), ONE_EIGHTH * 3);
+        assertEq(votesModule().votes(choice2(), arbVoter(3)), ONE_EIGHTH * 3);
+        assertEq(votesModule().votes(choice3(), arbVoter(3)), ONE_EIGHTH * 2);
+
+        assertEq(votesModule().totalVotesForChoice(choice1()), ONE_EIGHTH * 9);
+        assertEq(votesModule().totalVotesForChoice(choice2()), ONE_EIGHTH * 7);
+        assertEq(votesModule().totalVotesForChoice(choice3()), ONE_EIGHTH * 16);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
+        assertEq(pointsModule().allocatedPoints(arbVoter(1)), VOTE_AMOUNT);
+        assertEq(pointsModule().allocatedPoints(arbVoter(2)), VOTE_AMOUNT);
+
+        assertEq(pointsModule().getPoints(arbVoter(0)), 0);
+        assertEq(pointsModule().getPoints(arbVoter(1)), 0);
+        assertEq(pointsModule().getPoints(arbVoter(2)), 0);
+    }
+
+    function testBatchRetract_single() public {
+        _setUpVoting();
+        _batch_retract_single();
+
+        assertEq(votesModule().votes(choice1(), arbVoter(0)), 0);
+        assertEq(votesModule().votes(choice2(), arbVoter(0)), 0);
+        assertEq(votesModule().votes(choice3(), arbVoter(0)), 0);
+
+        assertEq(votesModule().totalVotesForChoice(choice1()), 0);
+        assertEq(votesModule().totalVotesForChoice(choice2()), 0);
+        assertEq(votesModule().totalVotesForChoice(choice3()), 0);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), 0);
+        assertEq(pointsModule().getPoints(arbVoter(0)), VOTE_AMOUNT);
+    }
+
+    function testBatchRetract_many() public {
+        _setUpVoting();
+        _batch_retract_many();
+
+        assertEq(votesModule().votes(choice1(), arbVoter(0)), 0);
+        assertEq(votesModule().votes(choice2(), arbVoter(0)), 0);
+        assertEq(votesModule().votes(choice3(), arbVoter(0)), 0);
+
+        assertEq(votesModule().votes(choice1(), arbVoter(1)), 0);
+        assertEq(votesModule().votes(choice2(), arbVoter(1)), 0);
+        assertEq(votesModule().votes(choice3(), arbVoter(1)), 0);
+
+        assertEq(votesModule().votes(choice1(), arbVoter(2)), 0);
+        assertEq(votesModule().votes(choice2(), arbVoter(2)), 0);
+        assertEq(votesModule().votes(choice3(), arbVoter(2)), 0);
+
+        assertEq(votesModule().totalVotesForChoice(choice1()), 0);
+        assertEq(votesModule().totalVotesForChoice(choice2()), 0);
+        assertEq(votesModule().totalVotesForChoice(choice3()), 0);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(0)), 0);
+        assertEq(pointsModule().getPoints(arbVoter(0)), VOTE_AMOUNT);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(1)), 0);
+        assertEq(pointsModule().getPoints(arbVoter(1)), VOTE_AMOUNT);
+
+        assertEq(pointsModule().allocatedPoints(arbVoter(2)), 0);
+        assertEq(pointsModule().getPoints(arbVoter(2)), VOTE_AMOUNT);
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -239,6 +338,144 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         _finalizeChoices();
         _setVoting_immediate();
+    }
+
+    function testRevert_batchRetract_notVotingPeriod() public {
+        _populate();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice3();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        amounts[2] = ONE_EIGHTH * 4;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        vm.expectRevert("Contest is not in voting state");
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+    }
+
+    function testRevert_batchRetract_invalidLength() public {
+        _setUpVoting();
+
+        _batch_vote_single();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](2);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        amounts[2] = ONE_EIGHTH * 4;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        vm.expectRevert("Array mismatch: Invalid input length");
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+    }
+
+    function testRevert_batchRetract_invalidChoice() public {
+        _setUpVoting();
+
+        _batch_vote_single();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice4();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        amounts[2] = ONE_EIGHTH * 4;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        vm.expectRevert("Choice does not exist");
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+    }
+
+    function testRevert_batchRetract_overspend() public {
+        _setUpVoting();
+
+        _batch_vote_single();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice3();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        // sneaks in an extra vote point
+        amounts[2] = ONE_EIGHTH * 4 + 1;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        // should be caught by points module
+        vm.expectRevert("Insufficient points allocated");
+        // keeps totals the same
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+    }
+
+    function testRevert_batchRetract_noVotes() public {
+        _setUpVoting();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice3();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        amounts[2] = ONE_EIGHTH * 4;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(someGuy());
+        vm.expectRevert("Insufficient points allocated");
+        contest().batchRetractVote(choices, amounts, datas, 0);
     }
 
     // usually module specific functions are tested in the module test
@@ -383,14 +620,205 @@ contract GrantShipsBasic is GrantShipsSetup {
         _change_vote_single(0, choice1(), choice2());
     }
 
+    function testRevert_changeVote_overspend() public {
+        _setUpVoting();
+
+        _vote_single(0, choice1());
+
+        vm.expectRevert("Insufficient points allocated");
+        contest().changeVote(choice1(), choice2(), VOTE_AMOUNT + 1, abi.encode(metadata));
+    }
+
+    function testRevert_batchVote_notVotingPeriod() public {
+        _populate();
+
+        vm.expectRevert("Contest is not in voting state");
+        _batch_vote_single();
+    }
+
+    function testRevert_batchVote_onlyValidChoice() public {
+        _setUpVoting();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice4();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        amounts[2] = ONE_EIGHTH * 4;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        vm.expectRevert("Choice does not exist");
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+    }
+
+    function testRevert_batchVote_totalsMismatch() public {
+        _setUpVoting();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice3();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        amounts[2] = ONE_EIGHTH * 4;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        vm.expectRevert("Invalid total amount");
+        contest().batchVote(choices, amounts, datas, ONE_EIGHTH * 7);
+    }
+
+    function testRevert_batchVote_invalidLength() public {
+        _setUpVoting();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](2);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice3();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        amounts[2] = ONE_EIGHTH * 4;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+
+        vm.prank(arbVoter(0));
+        vm.expectRevert("Array mismatch: Invalid input length");
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+
+        amounts = new uint256[](2);
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+
+        datas = new bytes[](3);
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.expectRevert("Array mismatch: Invalid input length");
+        vm.prank(arbVoter(0));
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+    }
+
     //////////////////////////////
     // Adversarial
     //////////////////////////////
 
+    function testRevert_batchVote_overspend_sneakTotal() public {
+        _setUpVoting();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice3();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        // sneaks in an extra vote point
+        amounts[2] = ONE_EIGHTH * 4 + 1;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        // should be caught by points module
+        vm.expectRevert("Insufficient points available");
+        // keeps totals the same
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+    }
+
+    //REVIEW: This test simulates a potential attack vector, or at least an unintended side-effect
+    // because points doesn't log the amount of points allocated
+    // to a particular choice, it's possible to retract more votes from a choice
+    // than what was allocated by the user
+
+    // THis has the effect of 'voting down' other choices
+
+    // In the case of the GS contracts, we catch the error in the votes module
+    // but it's still a potential attack vector for other modules that don't
+    // have the same checks
+
+    // In this case, modular design ftw, but I think this may warrant some discussion
+    // on potential changes to the contest contract or module interfaces
+
+    function test_comingling_attack() public {
+        _setUpVoting();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice3();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 3;
+        amounts[2] = ONE_EIGHTH * 2;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+
+        uint256[] memory adversarialAmounts = new uint256[](3);
+
+        adversarialAmounts[0] = ONE_EIGHTH * 6;
+        adversarialAmounts[1] = ONE_EIGHTH * 1;
+        adversarialAmounts[2] = ONE_EIGHTH * 1;
+
+        // In GS contracts, this is caught by the votes module
+
+        vm.prank(arbVoter(0));
+        vm.expectRevert("Retracted amount exceeds vote amount");
+        contest().batchRetractVote(choices, adversarialAmounts, datas, VOTE_AMOUNT);
+
+        vm.prank(arbVoter(0));
+        vm.expectRevert("Retracted amount exceeds vote amount");
+        contest().retractVote(choice1(), VOTE_AMOUNT, abi.encode(metadata));
+    }
+
     // double spend
     // transfer double-spend
+    // delegate double-spend
     // vote/transfer/retract/vote
-    // reentrancy
 
     //////////////////////////////
     // Getters
@@ -399,6 +827,176 @@ contract GrantShipsBasic is GrantShipsSetup {
     //////////////////////////////
     // Helpers
     //////////////////////////////
+
+    function _batch_retract_many() internal {
+        _batch_vote_many();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice3();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        amounts[2] = ONE_EIGHTH * 4;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+
+        bytes32[] memory user1choices = new bytes32[](3);
+        uint256[] memory user1amounts = new uint256[](3);
+        bytes[] memory user1datas = new bytes[](3);
+
+        user1choices[0] = choice1();
+        user1choices[1] = choice2();
+        user1choices[2] = choice3();
+
+        user1amounts[0] = ONE_EIGHTH * 1;
+        user1amounts[1] = ONE_EIGHTH * 1;
+        user1amounts[2] = ONE_EIGHTH * 6;
+
+        user1datas[0] = abi.encode(metadata);
+        user1datas[1] = abi.encode(metadata2);
+        user1datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(1));
+        contest().batchRetractVote(user1choices, user1amounts, user1datas, VOTE_AMOUNT);
+
+        bytes32[] memory user2choices = new bytes32[](3);
+        uint256[] memory user2amounts = new uint256[](3);
+        bytes[] memory user2datas = new bytes[](3);
+
+        user2choices[0] = choice1();
+        user2choices[1] = choice2();
+        user2choices[2] = choice3();
+
+        user2amounts[0] = ONE_EIGHTH * 2;
+        user2amounts[1] = ONE_EIGHTH * 2;
+        user2amounts[2] = ONE_EIGHTH * 4;
+
+        user2datas[0] = abi.encode(metadata);
+        user2datas[1] = abi.encode(metadata2);
+        user2datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(2));
+        contest().batchRetractVote(user2choices, user2amounts, user2datas, VOTE_AMOUNT);
+
+        bytes32[] memory user3choices = new bytes32[](3);
+        uint256[] memory user3amounts = new uint256[](3);
+        bytes[] memory user3datas = new bytes[](3);
+
+        user3choices[0] = choice1();
+        user3choices[1] = choice2();
+        user3choices[2] = choice3();
+
+        user3amounts[0] = ONE_EIGHTH * 3;
+        user3amounts[1] = ONE_EIGHTH * 3;
+        user3amounts[2] = ONE_EIGHTH * 2;
+
+        user3datas[0] = abi.encode(metadata);
+        user3datas[1] = abi.encode(metadata2);
+        user3datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(3));
+        contest().batchRetractVote(user3choices, user3amounts, user3datas, VOTE_AMOUNT);
+    }
+
+    function _batch_retract_single() internal {
+        _batch_vote_single();
+
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        bytes32[] memory choices = new bytes32[](3);
+        uint256[] memory amounts = new uint256[](3);
+        bytes[] memory datas = new bytes[](3);
+
+        choices[0] = choice1();
+        choices[1] = choice2();
+        choices[2] = choice3();
+
+        amounts[0] = ONE_EIGHTH * 3;
+        amounts[1] = ONE_EIGHTH * 1;
+        amounts[2] = ONE_EIGHTH * 4;
+
+        datas[0] = abi.encode(metadata);
+        datas[1] = abi.encode(metadata2);
+        datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(0));
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+    }
+
+    function _batch_vote_many() internal {
+        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
+
+        _batch_vote_single();
+
+        bytes32[] memory user1choices = new bytes32[](3);
+        uint256[] memory user1amounts = new uint256[](3);
+        bytes[] memory user1datas = new bytes[](3);
+
+        user1choices[0] = choice1();
+        user1choices[1] = choice2();
+        user1choices[2] = choice3();
+
+        user1amounts[0] = ONE_EIGHTH * 1;
+        user1amounts[1] = ONE_EIGHTH * 1;
+        user1amounts[2] = ONE_EIGHTH * 6;
+
+        user1datas[0] = abi.encode(metadata);
+        user1datas[1] = abi.encode(metadata2);
+        user1datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(1));
+        contest().batchVote(user1choices, user1amounts, user1datas, VOTE_AMOUNT);
+
+        bytes32[] memory user2choices = new bytes32[](3);
+        uint256[] memory user2amounts = new uint256[](3);
+        bytes[] memory user2datas = new bytes[](3);
+
+        user2choices[0] = choice1();
+        user2choices[1] = choice2();
+        user2choices[2] = choice3();
+
+        user2amounts[0] = ONE_EIGHTH * 2;
+        user2amounts[1] = ONE_EIGHTH * 2;
+        user2amounts[2] = ONE_EIGHTH * 4;
+
+        user2datas[0] = abi.encode(metadata);
+        user2datas[1] = abi.encode(metadata2);
+        user2datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(2));
+        contest().batchVote(user2choices, user2amounts, user2datas, VOTE_AMOUNT);
+
+        bytes32[] memory user3choices = new bytes32[](3);
+        uint256[] memory user3amounts = new uint256[](3);
+        bytes[] memory user3datas = new bytes[](3);
+
+        user3choices[0] = choice1();
+        user3choices[1] = choice2();
+        user3choices[2] = choice3();
+
+        user3amounts[0] = ONE_EIGHTH * 3;
+        user3amounts[1] = ONE_EIGHTH * 3;
+        user3amounts[2] = ONE_EIGHTH * 2;
+
+        user3datas[0] = abi.encode(metadata);
+        user3datas[1] = abi.encode(metadata2);
+        user3datas[2] = abi.encode(metadata);
+
+        vm.prank(arbVoter(3));
+        contest().batchVote(user3choices, user3amounts, user3datas, VOTE_AMOUNT);
+    }
 
     function _batch_vote_single() internal {
         uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
