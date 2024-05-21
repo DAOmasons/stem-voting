@@ -13,9 +13,10 @@ contract ERC20Balance is IPoints {
     mapping(address => uint256) public allocatedPoints; // Points currently allocated for voting
 
     //TODO initializer, should take bytes to destructure
-    function setUp(address _contest, IERC20 _token, uint256 duration) public {
+    function initialize(address _contest, bytes memory _initData) public {
+        (address _tokenAddress, uint256 duration) = abi.decode(_initData, (address, uint256));
         contest = _contest;
-        token = _token;
+        token = IERC20(_tokenAddress);
         claimEndTime = block.timestamp + duration;
     }
 

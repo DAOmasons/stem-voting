@@ -11,6 +11,8 @@ import {TimedVotes} from "../../src/modules/votes/TimedVotes.sol";
 import {HatsAllowList} from "../../src/modules/choices/HatsAllowList.sol";
 import {Contest} from "../../src/Contest.sol";
 import {ContestStatus} from "../../src/core/ContestStatus.sol";
+import {FastFactory} from "../../src/factories/gsRough/FastFactory.sol";
+import {Metadata} from "../../src/core/Metadata.sol";
 
 contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     event ContestInitialized(
@@ -37,6 +39,8 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     HatsAllowList _choiceModule;
     Contest _contest;
     MockExecutionModule _executionModule;
+    FastFactory _factory;
+    Metadata _mockMetadata = Metadata(1, "qm....");
 
     function __setupGrantShipsBasic() internal {
         vm.createSelectFork({blockNumber: START_BLOCK, urlOrAlias: "arbitrumOne"});
@@ -44,17 +48,10 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         __setupArbToken();
         _setupVoters();
 
-        _choiceModule = new HatsAllowList();
-        _pointsModule = new ERC20VotesPoints();
-        _votesModule = new TimedVotes();
-        _executionModule = new MockExecutionModule();
-        _contest = new Contest();
-
         // ensure fork block number is synchronized with test environment block number
         assertEq(block.number, VOTE_BLOCK);
 
-        // setup modules & contest without factory pattern
-        __rawDog_init_contest();
+        __fastFactory_init_contest();
     }
 
     function _setupVoters() internal {
@@ -93,6 +90,70 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
             }
         }
         vm.roll(VOTE_BLOCK);
+    }
+
+    function _fastFactory_setup() public {
+        vm.startPrank(stemAdmin1());
+        _factory = new FastFactory(stemAdmin1());
+
+        factory().addAdmin(stemAdmin2());
+
+        Contest _contestImpl = new Contest();
+        ERC20VotesPoints _pointsImpl = new ERC20VotesPoints();
+        TimedVotes _votesImpl = new TimedVotes();
+        HatsAllowList _choicesImpl = new HatsAllowList();
+        MockExecutionModule _executionImpl = new MockExecutionModule();
+
+        factory().setContestTemplate("v0.1.0", address(_contestImpl), _mockMetadata);
+        factory().setModuleTemplate("ERC20VotesPoints_v0.1.0", address(_pointsImpl), _mockMetadata);
+        factory().setModuleTemplate("TimedVotes_v0.1.0", address(_votesImpl), _mockMetadata);
+        factory().setModuleTemplate("HatsAllowList_v0.1.0", address(_choicesImpl), _mockMetadata);
+        factory().setModuleTemplate("MockExecutionModule_v0.1.0", address(_executionImpl), _mockMetadata);
+
+        vm.stopPrank();
+
+        assertTrue(factory().admins(stemAdmin1()));
+        assertTrue(factory().admins(stemAdmin2()));
+
+        assertTrue(factory().contestTemplates("v0.1.0") == address(_contestImpl));
+        assertTrue(factory().moduleTemplates("ERC20VotesPoints_v0.1.0") == address(_pointsImpl));
+        assertTrue(factory().moduleTemplates("TimedVotes_v0.1.0") == address(_votesImpl));
+        assertTrue(factory().moduleTemplates("HatsAllowList_v0.1.0") == address(_choicesImpl));
+        assertTrue(factory().moduleTemplates("MockExecutionModule_v0.1.0") == address(_executionImpl));
+    }
+
+    function __fastFactory_init_contest() public {
+        _fastFactory_setup();
+
+        bytes[4] memory moduleData;
+        string[4] memory moduleNames;
+
+        // votes module data
+        moduleData[0] = abi.encode(TWO_WEEKS);
+        moduleNames[0] = "TimedVotes_v0.1.0";
+
+        // points module data
+        moduleData[1] = abi.encode(address(arbToken()), SNAPSHOT_BLOCK);
+        moduleNames[1] = "ERC20VotesPoints_v0.1.0";
+
+        // choices module data
+        moduleData[2] = abi.encode(address(hats()), facilitator1().id, new bytes[](0));
+        moduleNames[2] = "HatsAllowList_v0.1.0";
+
+        // execution module data
+        moduleData[3] = new bytes(0);
+        moduleNames[3] = "MockExecutionModule_v0.1.0";
+
+        bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
+
+        (address contestAddress, address[4] memory moduleAddress) =
+            factory().buildContest(_contestInitData, "v0.1.0", false, true, "gs_test");
+
+        _contest = Contest(contestAddress);
+        _votesModule = TimedVotes(moduleAddress[0]);
+        _pointsModule = ERC20VotesPoints(moduleAddress[1]);
+        _choiceModule = HatsAllowList(moduleAddress[2]);
+        _executionModule = MockExecutionModule(moduleAddress[3]);
     }
 
     function __rawDog_init_contest() public {
@@ -152,6 +213,10 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
 
     function contest() public view returns (Contest) {
         return _contest;
+    }
+
+    function factory() public view returns (FastFactory) {
+        return _factory;
     }
 
     function arbVoter(uint256 _index) public view returns (address) {

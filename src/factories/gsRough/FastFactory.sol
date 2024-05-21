@@ -10,14 +10,7 @@ import {IModule} from "../../interfaces/IModule.sol";
 
 // Quick and dirty module and contest factory for rapid development of GS Voting
 contract FastFactory {
-    struct Recipe {
-        string contestTemplate;
-        string[4] moduleTemplates;
-        bool isContinuous;
-        bool isRetractable;
-    }
-
-    event FactoryInitialized(address[] _admins);
+    event FactoryInitialized(address admin);
     event ModuleTemplateCreated(string moduleName, address moduleAddress, Metadata moduleInfo);
     event ModuleTemplateDeleted(string moduleName, address moduleAddress);
     event ContestTemplateCreated(string contestVersion, address contestAddress, Metadata contestInfo);
@@ -49,20 +42,10 @@ contract FastFactory {
         _;
     }
 
-    constructor(address[] memory _admins) {
-        admins[msg.sender] = true;
+    constructor(address _admin) {
+        admins[_admin] = true;
 
-        address[] memory newAdmins;
-
-        newAdmins[0] = msg.sender;
-
-        for (uint256 i = 0; i < _admins.length; i++) {
-            admins[_admins[i]] = true;
-
-            newAdmins[i + 1] = _admins[i];
-        }
-
-        emit FactoryInitialized(newAdmins);
+        emit FactoryInitialized(_admin);
     }
 
     function setModuleTemplate(string memory _name, address _template, Metadata memory _templateInfo)
@@ -117,18 +100,15 @@ contract FastFactory {
         bool _isContinuous,
         bool _isRetractable,
         string memory _filterTag
-    ) external returns (address) {
+    ) external returns (address, address[4] memory moduleAddresses) {
         address contestTemplate = contestTemplates[_contestVersion];
         require(contestTemplate != address(0), "Template not found");
         require(filterTags[_filterTag] == false, "Filter tag already exists");
 
         Contest newContest = Contest(Clones.clone(contestTemplate));
-        newContest.initialize(_contestInitData);
 
         (string[4] memory _moduleNames, bytes[4] memory _moduleData) =
             abi.decode(_contestInitData, (string[4], bytes[4]));
-
-        address[4] memory moduleAddresses;
 
         for (uint256 i = 0; i < _moduleNames.length; i++) {
             // clones the module template using clone template so we can index
@@ -166,7 +146,7 @@ contract FastFactory {
             _filterTag
         );
 
-        return address(newContest);
+        return (address(newContest), moduleAddresses);
     }
 
     function _cloneTemplate(string memory _name, string memory _filterTag) internal returns (address) {
