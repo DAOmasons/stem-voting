@@ -9,6 +9,15 @@ import {TimedVotes} from "../src/modules/votes/TimedVotes.sol";
 import {Metadata} from "../src/core/Metadata.sol";
 import {DummyVotingToken} from "./DummyVotingToken.sol";
 import {Contest} from "../src/Contest.sol";
+import {EmptyExecution} from "../src/modules/execution/EmptyExecution.sol";
+
+// Instructions to deploy a new GS Voting without updating contracts
+// 1. Bump the FILTER_TAG in ConstantsAgnostic
+// 2. Update deployment inheritance depending on the network (ex. ConstantsTest for TESTNET)
+// 3. Ensure environment variables are correctly set
+// 2. Run the following script:
+// for TESTNET
+// forge script script/GS.s.sol:FastFactoryBuildGSContest --rpc-url $ARB_SEPOLIA_RPC_URL --broadcast --verify
 
 contract ConstantsAgnostic {
     uint256 ONE_WEEK = 604800;
@@ -17,6 +26,9 @@ contract ConstantsAgnostic {
     string CHOICES_MODULE_NAME = "HatsAllowList_v0.1.0";
     string EXECUTION_MODULE_NAME = "MockExecutionModule_v0.1.0";
     string CONTEST_MODULE_VERSION = "v0.1.0";
+    string GS_VOTING_VERSION = "v0.1.0";
+    // bump this to the next version when you want to deploy a new contest
+    string FILTER_TAG = "v0.0.1";
     address HATS = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
     uint256 FACILITATOR_HAT_ID = 2210716038082491793464205775877905354575872088332293351845461877587968;
 }
@@ -26,7 +38,7 @@ contract ConstantsTest is ConstantsAgnostic {
     address constant CHOICES_ADDRESS = 0xF6fee573515E78F30b6dca745581Ce575677c761;
     address constant POINTS_ADDRESS = 0x3198166F2dAA2fe2dA8EFEe1f7a3Ca72da47fbf7;
     address constant VOTES_ADDRESS = 0x52f718fB325CAD186a4D69368765d5604d2483eC;
-    address constant EXECUTION_ADDRESS = 0x0000000000000000000000000000000000070000;
+    address constant EXECUTION_ADDRESS = 0xb60274DE6dEF245dA0fF46bfC61DafbF312c2BAf;
     address constant CONTEST_ADDRESS = 0x3A594698b511D84c3756D99828aF11B9049dFf14;
     address constant DEV = 0xDE6bcde54CF040088607199FC541f013bA53C21E;
     address constant TOKEN = 0xd00CEdA81e6Ce6B47BFC6B19e8981C24aEa58368;
@@ -115,11 +127,13 @@ contract DeployAndRegisterMockExecution is Script, ConstantsTest {
 
         vm.startBroadcast(deployer);
 
+        EmptyExecution module = new EmptyExecution();
+
         FastFactory fastFactory = FastFactory(FAST_FACTORY_ADDRESS);
 
         fastFactory.setModuleTemplate(
             EXECUTION_MODULE_NAME,
-            EXECUTION_ADDRESS,
+            address(module),
             Metadata(0, "EmptyExecutionModule: Execution module that does nothing")
         );
 
@@ -166,7 +180,7 @@ contract FastFactoryDeployAddAdmin is Script, ConstantsTest {
     }
 }
 
-contract FastFactoryBuild is Script, ConstantsTest {
+contract FastFactoryBuildGSContest is Script, ConstantsTest {
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address deployer = vm.rememberKey(pk);
@@ -191,17 +205,19 @@ contract FastFactoryBuild is Script, ConstantsTest {
         moduleNames[2] = CHOICES_MODULE_NAME;
 
         // execution module data
-        moduleData[3] = abi.encode();
+        moduleData[3] = abi.encode(0);
+        moduleNames[3] = EXECUTION_MODULE_NAME;
 
-        // fastFactory.buildContest(
-        //     address(votes),
-        //     address(points),
-        //     address(choices),
-        //     EXECUTION_ADDRESS,
-        //     address(contest),
-        //     "v0.1.0",
-        //     "HatsAllowList"
-        // );
+        bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
+
+        (address contestAddress, address[4] memory moduleAddress) =
+            fastFactory.buildContest(_contestInitData, GS_VOTING_VERSION, false, false, FILTER_TAG);
+
+        console2.log("Contest address: %s", contestAddress);
+        console2.log("Votes module address: %s", moduleAddress[0]);
+        console2.log("Points module address: %s", moduleAddress[1]);
+        console2.log("Choices module address: %s", moduleAddress[2]);
+        console2.log("Execution module address: %s", moduleAddress[3]);
 
         vm.stopBroadcast();
     }

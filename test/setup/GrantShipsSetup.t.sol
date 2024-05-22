@@ -13,6 +13,7 @@ import {Contest} from "../../src/Contest.sol";
 import {ContestStatus} from "../../src/core/ContestStatus.sol";
 import {FastFactory} from "../../src/factories/gsRough/FastFactory.sol";
 import {Metadata} from "../../src/core/Metadata.sol";
+import {EmptyExecution} from "../../src/modules/execution/EmptyExecution.sol";
 
 contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     event ContestInitialized(
@@ -38,7 +39,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     TimedVotes _votesModule;
     HatsAllowList _choiceModule;
     Contest _contest;
-    MockExecutionModule _executionModule;
+    EmptyExecution _executionModule;
     FastFactory _factory;
     Metadata _mockMetadata = Metadata(1, "qm....");
 
@@ -102,7 +103,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         ERC20VotesPoints _pointsImpl = new ERC20VotesPoints();
         TimedVotes _votesImpl = new TimedVotes();
         HatsAllowList _choicesImpl = new HatsAllowList();
-        MockExecutionModule _executionImpl = new MockExecutionModule();
+        EmptyExecution _executionImpl = new EmptyExecution();
 
         factory().setContestTemplate("v0.1.0", address(_contestImpl), _mockMetadata);
         factory().setModuleTemplate("ERC20VotesPoints_v0.1.0", address(_pointsImpl), _mockMetadata);
@@ -153,7 +154,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         _votesModule = TimedVotes(moduleAddress[0]);
         _pointsModule = ERC20VotesPoints(moduleAddress[1]);
         _choiceModule = HatsAllowList(moduleAddress[2]);
-        _executionModule = MockExecutionModule(moduleAddress[3]);
+        _executionModule = EmptyExecution(moduleAddress[3]);
     }
 
     // Note:
@@ -211,7 +212,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         return _votesModule;
     }
 
-    function executionModule() public view returns (MockExecutionModule) {
+    function executionModule() public view returns (EmptyExecution) {
         return _executionModule;
     }
 
@@ -225,18 +226,5 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
 
     function arbVoter(uint256 _index) public view returns (address) {
         return _voters[_index];
-    }
-}
-
-contract MockExecutionModule {
-    Contest public contest;
-
-    function initialize(address _contest, bytes memory) public {
-        contest = Contest(_contest);
-    }
-
-    function execute() public {
-        require(contest.getStatus() == ContestStatus.Finalized, "Contest is not finalized");
-        contest.execute();
     }
 }
