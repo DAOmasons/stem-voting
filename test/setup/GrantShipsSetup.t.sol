@@ -156,6 +156,10 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         _executionModule = MockExecutionModule(moduleAddress[3]);
     }
 
+    // Note:
+    // NOT USED: This function is not used in the test
+    // Now using FastFactory to build contest
+    // Saving for backup and reference only
     function __rawDog_init_contest() public {
         // setup choice module
         bytes memory _choiceInitData = abi.encode(address(hats()), facilitator1().id, new bytes[](0));

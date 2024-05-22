@@ -8,3 +8,8 @@ test = "test"
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 [rpc_endpoints]
 arbitrumOne = "${ARBITRUM_RPC_URL}"
+arbitrumSepolia = "${ARBITRUM_SEPOLIA_RPC_URL}"
+
+[etherscan]
+arbitrumOne = {key = "${SCAN_API_KEY}", url = "https://api.arbiscan.io/api"}
+arbitrumSepolia = {key = "${SCAN_API_KEY}", url = "https://api-sepolia.arbiscan.io/api"}
