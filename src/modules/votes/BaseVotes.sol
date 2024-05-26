@@ -2,9 +2,16 @@
 pragma solidity ^0.8.13;
 
 import "../../interfaces/IVotes.sol";
+import {ModuleType} from "../../core/ModuleType.sol";
 
 contract BaseVotes is IVotes {
     address public contest;
+
+    /// @notice The name and version of the module
+    string public constant MODULE_NAME = "BaseVotes_v0.0.0";
+
+    /// @notice The type of module
+    ModuleType public constant MODULE_TYPE = ModuleType.Votes;
 
     mapping(bytes32 => mapping(address => uint256)) public votes; // Mapping from choice to voter to vote count
     mapping(bytes32 => uint256) public totalVotesForChoice; // Total votes per choice

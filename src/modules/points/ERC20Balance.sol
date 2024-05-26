@@ -3,9 +3,16 @@ pragma solidity ^0.8.13;
 
 import "../../interfaces/IERC20.sol";
 import "../../interfaces/IPoints.sol";
+import "../../core/ModuleType.sol";
 
 // ERC20 balanceOf Points contract
 contract ERC20Balance is IPoints {
+    /// @notice The name and version of the module
+    string public constant MODULE_NAME = "ERC20Balance_v0.0.0";
+
+    /// @notice The type of module
+    ModuleType public constant MODULE_TYPE = ModuleType.Choices;
+
     IERC20 public token;
     uint256 public claimEndTime;
     address public contest;

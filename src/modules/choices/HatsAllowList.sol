@@ -6,6 +6,7 @@ import "../../interfaces/IChoices.sol";
 import {IHats} from "hats-protocol/Interfaces/IHats.sol";
 import {Contest} from "../../Contest.sol";
 import {ContestStatus} from "../../core/ContestStatus.sol";
+import {ModuleType} from "../../core/ModuleType.sol";
 
 /// @title HatsAllowList
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
@@ -14,8 +15,6 @@ contract HatsAllowList is IChoices {
     /// ===============================
     /// ========== Events =============
     /// ===============================
-
-    string public constant MODULE_NAME = "HatsAllowList_v0.1.1";
 
     /// @notice Emitted when the contract is initialized
     event Initialized(address contest, address hatsAddress, uint256 hatId);
@@ -40,6 +39,12 @@ contract HatsAllowList is IChoices {
     /// ===============================
     /// ========== Storage ============
     /// ===============================
+
+    /// @notice The name and version of the module
+    string public constant MODULE_NAME = "HatsAllowList_v0.1.1";
+
+    /// @notice The type of module
+    ModuleType public constant MODULE_TYPE = ModuleType.Choices;
 
     /// @notice Reference to the Hats Protocol contract
     IHats public hats;

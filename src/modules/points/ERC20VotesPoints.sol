@@ -5,6 +5,7 @@ pragma solidity ^0.8.13;
 
 import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.sol";
 import {IPoints} from "../../interfaces/IPoints.sol";
+import {ModuleType} from "../../core/ModuleType.sol";
 
 /// @title ERC20VotesPoints
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
@@ -14,14 +15,18 @@ contract ERC20VotesPoints is IPoints {
     /// ========== Events =============
     /// ===============================
 
-    string public constant MODULE_NAME = "ERC20VotesPoints_v0.1.1";
-
     /// @notice Emitted once the points module is initialized
     event Initialized(address contest, address token, uint256 votingCheckpoint);
 
     /// ===============================
     /// ========== Storage ============
     /// ===============================
+
+    /// @notice The name and version of the module
+    string public constant MODULE_NAME = "ERC20VotesPoints_v0.1.1";
+
+    /// @notice The type of module
+    ModuleType public constant MODULE_TYPE = ModuleType.Execution;
 
     /// @notice Reference to the voting token contract
     /// @dev This voting token must implement IVotes

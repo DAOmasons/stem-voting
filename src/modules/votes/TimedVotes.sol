@@ -8,6 +8,7 @@ import {Metadata} from "../../core/Metadata.sol";
 import {Contest} from "../../Contest.sol";
 
 import {ContestStatus} from "../../core/ContestStatus.sol";
+import {ModuleType} from "../../core/ModuleType.sol";
 
 /// @title TimedVotes
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
@@ -32,6 +33,12 @@ contract TimedVotes is IVotes {
     /// ===============================
     /// ========== Storage ============
     /// ===============================
+
+    /// @notice The name and version of the module
+    string public constant MODULE_NAME = "TimedVotes_v0.1.1";
+
+    /// @notice The type of module
+    ModuleType public constant MODULE_TYPE = ModuleType.Execution;
 
     /// @notice Reference to the contest contract
     Contest public contest;
