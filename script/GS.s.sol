@@ -22,10 +22,7 @@ import {EmptyExecution} from "../src/modules/execution/EmptyExecution.sol";
 contract ConstantsAgnostic {
     uint256 ONE_WEEK = 604800;
     uint256 TEN_MINUTES = 600;
-    string VOTES_MODULE_NAME = "TimedVotes_v0.1.0";
-    string POINTS_MODULE_NAME = "ERC20VotesPoints_v0.1.0";
-    string CHOICES_MODULE_NAME = "HatsAllowList_v0.1.0";
-    string EXECUTION_MODULE_NAME = "EmptyExecutionModule_v0.1.0";
+
     string CONTEST_MODULE_VERSION = "v0.1.0";
     string GS_VOTING_VERSION = "v0.1.0";
     // bump this to the next version when you want to deploy a new contest
@@ -67,7 +64,7 @@ contract DeployAndRegisterHatsAllowList is Script, ConstantsTest {
         FastFactory fastFactory = FastFactory(FAST_FACTORY_ADDRESS);
 
         fastFactory.setModuleTemplate(
-            CHOICES_MODULE_NAME,
+            module.MODULE_NAME(),
             address(module),
             Metadata(0, "HatsAllowList: Choice Creation module that uses a hat ID to gate who can set choices")
         );
@@ -88,7 +85,7 @@ contract DeployAndRegisterERC20VotesPoints is Script, ConstantsTest {
         FastFactory fastFactory = FastFactory(FAST_FACTORY_ADDRESS);
 
         fastFactory.setModuleTemplate(
-            POINTS_MODULE_NAME,
+            module.MODULE_NAME(),
             address(module),
             Metadata(
                 0,
@@ -112,7 +109,7 @@ contract DeployAndRegisterTimedVotes is Script, ConstantsTest {
         FastFactory fastFactory = FastFactory(FAST_FACTORY_ADDRESS);
 
         fastFactory.setModuleTemplate(
-            VOTES_MODULE_NAME,
+            module.MODULE_NAME(),
             address(module),
             Metadata(0, "TimedVotes: Votes module that uses a time limit for voting")
         );
@@ -133,7 +130,7 @@ contract DeployAndRegisterMockExecution is Script, ConstantsTest {
         FastFactory fastFactory = FastFactory(FAST_FACTORY_ADDRESS);
 
         fastFactory.setModuleTemplate(
-            EXECUTION_MODULE_NAME,
+            module.MODULE_NAME(),
             address(module),
             Metadata(0, "EmptyExecutionModule: Execution module that does nothing")
         );
@@ -238,8 +235,15 @@ contract AddModulesAndVersions is Script, ConstantsTest {
 
         FastFactory fastFactory = FastFactory(FAST_FACTORY_ADDRESS);
 
+        TimedVotes votesModule = TimedVotes(VOTES_ADDRESS);
+        ERC20VotesPoints pointsModule = ERC20VotesPoints(POINTS_ADDRESS);
+        HatsAllowList choicesModule = HatsAllowList(CHOICES_ADDRESS);
+        EmptyExecution executionModule = EmptyExecution(EXECUTION_ADDRESS);
+
+        Contest contest = Contest(CONTEST_ADDRESS);
+
         fastFactory.setContestTemplate(
-            CONTEST_MODULE_VERSION,
+            contest.CONTEST_VERSION(),
             address(CONTEST_ADDRESS),
             Metadata(
                 0,
@@ -248,7 +252,7 @@ contract AddModulesAndVersions is Script, ConstantsTest {
         );
 
         fastFactory.setModuleTemplate(
-            POINTS_MODULE_NAME,
+            pointsModule.MODULE_NAME(),
             address(POINTS_ADDRESS),
             Metadata(
                 0,
@@ -257,17 +261,19 @@ contract AddModulesAndVersions is Script, ConstantsTest {
         );
 
         fastFactory.setModuleTemplate(
-            VOTES_MODULE_NAME, VOTES_ADDRESS, Metadata(0, "TimedVotes: Votes module that uses a time limit for voting")
+            votesModule.MODULE_NAME(),
+            VOTES_ADDRESS,
+            Metadata(0, "TimedVotes: Votes module that uses a time limit for voting")
         );
 
         fastFactory.setModuleTemplate(
-            CHOICES_MODULE_NAME,
+            choicesModule.MODULE_NAME(),
             CHOICES_ADDRESS,
             Metadata(0, "HatsAllowList: Choice Creation module that uses a hat ID to gate who can set choices")
         );
 
         fastFactory.setModuleTemplate(
-            EXECUTION_MODULE_NAME,
+            executionModule.MODULE_NAME(),
             EXECUTION_ADDRESS,
             Metadata(0, "EmptyExecutionModule: Execution module that does nothing")
         );
@@ -288,21 +294,26 @@ contract BuildGSContest is Script, ConstantsTest {
         bytes[4] memory moduleData;
         string[4] memory moduleNames;
 
+        TimedVotes votesModule = TimedVotes(VOTES_ADDRESS);
+        ERC20VotesPoints pointsModule = ERC20VotesPoints(POINTS_ADDRESS);
+        HatsAllowList choicesModule = HatsAllowList(CHOICES_ADDRESS);
+        EmptyExecution executionModule = EmptyExecution(EXECUTION_ADDRESS);
+
         // votes module data
         moduleData[0] = abi.encode(TEN_MINUTES);
-        moduleNames[0] = VOTES_MODULE_NAME;
+        moduleNames[0] = votesModule.MODULE_NAME();
 
         // points module data
         moduleData[1] = abi.encode(TOKEN, CHECKPOINT);
-        moduleNames[1] = POINTS_MODULE_NAME;
+        moduleNames[1] = pointsModule.MODULE_NAME();
 
         // choices module data
         moduleData[2] = abi.encode(HATS, FACILITATOR_HAT_ID, new bytes[](0));
-        moduleNames[2] = CHOICES_MODULE_NAME;
+        moduleNames[2] = choicesModule.MODULE_NAME();
 
         // execution module data
         moduleData[3] = abi.encode(0);
-        moduleNames[3] = EXECUTION_MODULE_NAME;
+        moduleNames[3] = executionModule.MODULE_NAME();
 
         bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
@@ -326,7 +337,7 @@ contract DeployDummyToken is Script, ConstantsTest {
 
         vm.startBroadcast(deployer);
 
-        DummyVotingToken token = new DummyVotingToken("TEST", "TTT", 1_000_000_000000000000000000, deployer);
+        new DummyVotingToken("TEST", "TTT", 1_000_000_000000000000000000, deployer);
 
         // address[5] memory voters;
 
