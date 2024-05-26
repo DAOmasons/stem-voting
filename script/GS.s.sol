@@ -24,17 +24,17 @@ contract ConstantsAgnostic {
     string VOTES_MODULE_NAME = "TimedVotes_v0.1.0";
     string POINTS_MODULE_NAME = "ERC20VotesPoints_v0.1.0";
     string CHOICES_MODULE_NAME = "HatsAllowList_v0.1.0";
-    string EXECUTION_MODULE_NAME = "MockExecutionModule_v0.1.0";
+    string EXECUTION_MODULE_NAME = "EmptyExecutionModule_v0.1.0";
     string CONTEST_MODULE_VERSION = "v0.1.0";
     string GS_VOTING_VERSION = "v0.1.0";
     // bump this to the next version when you want to deploy a new contest
-    string FILTER_TAG = "v0.0.1";
+    string FILTER_TAG = "v0.0.2";
     address HATS = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
     uint256 FACILITATOR_HAT_ID = 2210716038082491793464205775877905354575872088332293351845461877587968;
 }
 
 contract ConstantsTest is ConstantsAgnostic {
-    address constant FAST_FACTORY_ADDRESS = 0x1670EEfb9B638243559b6Fcc7D6d3e6f9d4Ca5Fc;
+    address constant FAST_FACTORY_ADDRESS = 0x3a190e45f300cbb8AB1153a90b23EE3333b02D9d;
     address constant CHOICES_ADDRESS = 0xF6fee573515E78F30b6dca745581Ce575677c761;
     address constant POINTS_ADDRESS = 0x3198166F2dAA2fe2dA8EFEe1f7a3Ca72da47fbf7;
     address constant VOTES_ADDRESS = 0x52f718fB325CAD186a4D69368765d5604d2483eC;
@@ -165,6 +165,54 @@ contract DeployAndRegisterContest is Script, ConstantsTest {
     }
 }
 
+contract DeleteAndAddContestTemplate is Script, ConstantsTest {
+    function run() external {
+        uint256 pk = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.rememberKey(pk);
+
+        vm.startBroadcast(deployer);
+
+        FastFactory fastFactory = FastFactory(FAST_FACTORY_ADDRESS);
+
+        fastFactory.setContestTemplate(
+            "should be deleted",
+            address(CONTEST_ADDRESS),
+            Metadata(
+                0,
+                "Contest: Early v0.1.0 Contest contract that orchestrates custom voting, allocation, choice selection, and execution modules for TCR voting"
+            )
+        );
+
+        fastFactory.removeContestTemplate("should be deleted");
+
+        vm.stopBroadcast();
+    }
+}
+
+contract DeleteAndAddModuleTemplate is Script, ConstantsTest {
+    function run() external {
+        uint256 pk = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.rememberKey(pk);
+
+        vm.startBroadcast(deployer);
+
+        FastFactory fastFactory = FastFactory(FAST_FACTORY_ADDRESS);
+
+        fastFactory.setModuleTemplate(
+            "should be deleted",
+            address(POINTS_ADDRESS),
+            Metadata(
+                0,
+                "ERC20VotesPoints: Points module that uses IVotes ERC20 tokens for counting voting power at a given block"
+            )
+        );
+
+        fastFactory.removeModuleTemplate("should be deleted");
+
+        vm.stopBroadcast();
+    }
+}
+
 contract FastFactoryDeployAddAdmin is Script, ConstantsTest {
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -175,6 +223,53 @@ contract FastFactoryDeployAddAdmin is Script, ConstantsTest {
         FastFactory fastFactory = new FastFactory(deployer);
 
         fastFactory.addAdmin(DEV);
+
+        vm.stopBroadcast();
+    }
+}
+
+contract AddModulesAndVersions is Script, ConstantsTest {
+    function run() external {
+        uint256 pk = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.rememberKey(pk);
+
+        vm.startBroadcast(deployer);
+
+        FastFactory fastFactory = FastFactory(FAST_FACTORY_ADDRESS);
+
+        fastFactory.setContestTemplate(
+            CONTEST_MODULE_VERSION,
+            address(CONTEST_ADDRESS),
+            Metadata(
+                0,
+                "Contest: Early v0.1.0 Contest contract that orchestrates custom voting, allocation, choice selection, and execution modules for TCR voting"
+            )
+        );
+
+        fastFactory.setModuleTemplate(
+            POINTS_MODULE_NAME,
+            address(POINTS_ADDRESS),
+            Metadata(
+                0,
+                "ERC20VotesPoints: Points module that uses IVotes ERC20 tokens for counting voting power at a given block"
+            )
+        );
+
+        fastFactory.setModuleTemplate(
+            VOTES_MODULE_NAME, VOTES_ADDRESS, Metadata(0, "TimedVotes: Votes module that uses a time limit for voting")
+        );
+
+        fastFactory.setModuleTemplate(
+            CHOICES_MODULE_NAME,
+            CHOICES_ADDRESS,
+            Metadata(0, "HatsAllowList: Choice Creation module that uses a hat ID to gate who can set choices")
+        );
+
+        fastFactory.setModuleTemplate(
+            EXECUTION_MODULE_NAME,
+            EXECUTION_ADDRESS,
+            Metadata(0, "EmptyExecutionModule: Execution module that does nothing")
+        );
 
         vm.stopBroadcast();
     }

@@ -18,6 +18,7 @@ contract FastFactory {
     event AdminAdded(address admin);
     event AdminRemoved(address admin);
     event ModuleCloned(address moduleAddress, string moduleName, string filterTag);
+    event ContestCloned(address contestAddress, string contestVersion, string filterTag);
     event ContestBuilt(
         string votesModule,
         string pointsModule,
@@ -106,6 +107,8 @@ contract FastFactory {
         require(filterTags[_filterTag] == false, "Filter tag already exists");
 
         Contest newContest = Contest(Clones.clone(contestTemplate));
+
+        emit ContestCloned(address(newContest), _contestVersion, _filterTag);
 
         (string[4] memory _moduleNames, bytes[4] memory _moduleData) =
             abi.decode(_contestInitData, (string[4], bytes[4]));
