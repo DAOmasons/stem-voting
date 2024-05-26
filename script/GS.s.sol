@@ -326,21 +326,20 @@ contract DeployDummyToken is Script, ConstantsTest {
 
         vm.startBroadcast(deployer);
 
-        DummyVotingToken token =
-            new DummyVotingToken("Dummy Voting Token", "DVT", 1_000_000_000000000000000000, deployer);
+        DummyVotingToken token = new DummyVotingToken("TEST", "TTT", 1_000_000_000000000000000000, deployer);
 
-        address[5] memory voters;
+        // address[5] memory voters;
 
-        voters[0] = 0x57abda4ee50Bb3079A556C878b2c345310057569;
-        voters[1] = 0xD800B05c70A2071BC1E5Eac5B3390Da1Eb67bC9D;
-        voters[2] = 0x57ffb33cC9D786da4087d970b0B0053017f26afc;
-        voters[3] = 0x27773b203954FBBb3e98DFa1a85A99e1c2f40f56;
-        voters[4] = 0x67243d6c3c3bDc2F59D2f74ba1949a02973a529d;
+        // voters[0] = 0x57abda4ee50Bb3079A556C878b2c345310057569;
+        // voters[1] = 0xD800B05c70A2071BC1E5Eac5B3390Da1Eb67bC9D;
+        // voters[2] = 0x57ffb33cC9D786da4087d970b0B0053017f26afc;
+        // voters[3] = 0x27773b203954FBBb3e98DFa1a85A99e1c2f40f56;
+        // voters[4] = 0x67243d6c3c3bDc2F59D2f74ba1949a02973a529d;
 
-        for (uint256 i = 0; i < voters.length; i++) {
-            token.transfer(voters[i], 10_000_000000000000000000);
-        }
-        token.transfer(DEV, 300_000_000000000000000000);
+        // for (uint256 i = 0; i < voters.length; i++) {
+        //     token.transfer(voters[i], 10_000_000000000000000000);
+        // }
+        // token.transfer(DEV, 300_000_000000000000000000);
 
         vm.stopBroadcast();
     }
