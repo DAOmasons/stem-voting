@@ -23,9 +23,6 @@ contract TimedVotes is IVotes {
     /// @notice Emitted when voting has started
     event VotingStarted(uint256 startTime, uint256 endTime);
 
-    /// @notice Emitted when voting has ended
-    event VotingComplete(uint256 endTime);
-
     /// @notice Emitted when a vote is cast
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
 

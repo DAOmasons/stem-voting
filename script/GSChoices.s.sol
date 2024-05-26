@@ -6,7 +6,7 @@ import {HatsAllowList} from "../src/modules/choices/HatsAllowList.sol";
 import {Metadata} from "../src/core/Metadata.sol";
 
 contract CurrentDeployment {
-    address CHOICE_MODULE_ADDRESS = 0xb3177343D025F0aD93C7c6FEC2ac01edD3775d80;
+    address CHOICE_MODULE_ADDRESS = 0xAF2293038740Cb9F22DeeD915890EFDA5B5e85BA;
     address FACILITATOR = 0x57abda4ee50Bb3079A556C878b2c345310057569;
     bytes DUMMY_DATA = "0x";
     Metadata SHIP1_METADATA = Metadata(0, "This is Ship 1");
@@ -27,7 +27,9 @@ contract ManageChoices is Script, CurrentDeployment {
         vm.startBroadcast(caller);
 
         _registerChoices();
-        // _removeChoices();
+        _removeChoices();
+        _registerChoices();
+        _finalizeChoices();
 
         vm.stopBroadcast();
     }
@@ -46,5 +48,9 @@ contract ManageChoices is Script, CurrentDeployment {
         choiceModule.removeChoice(SHIP1_ID, "");
         choiceModule.removeChoice(SHIP2_ID, "");
         choiceModule.removeChoice(SHIP3_ID, "");
+    }
+
+    function _finalizeChoices() internal {
+        choiceModule.finalizeChoices();
     }
 }

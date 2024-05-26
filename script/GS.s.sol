@@ -21,6 +21,7 @@ import {EmptyExecution} from "../src/modules/execution/EmptyExecution.sol";
 
 contract ConstantsAgnostic {
     uint256 ONE_WEEK = 604800;
+    uint256 TEN_MINUTES = 600;
     string VOTES_MODULE_NAME = "TimedVotes_v0.1.0";
     string POINTS_MODULE_NAME = "ERC20VotesPoints_v0.1.0";
     string CHOICES_MODULE_NAME = "HatsAllowList_v0.1.0";
@@ -28,7 +29,7 @@ contract ConstantsAgnostic {
     string CONTEST_MODULE_VERSION = "v0.1.0";
     string GS_VOTING_VERSION = "v0.1.0";
     // bump this to the next version when you want to deploy a new contest
-    string FILTER_TAG = "v0.0.2";
+    string FILTER_TAG = "v0.0.4";
     address HATS = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
     uint256 FACILITATOR_HAT_ID = 2210716038082491793464205775877905354575872088332293351845461877587968;
 }
@@ -42,7 +43,7 @@ contract ConstantsTest is ConstantsAgnostic {
     address constant CONTEST_ADDRESS = 0x3A594698b511D84c3756D99828aF11B9049dFf14;
     address constant DEV = 0xDE6bcde54CF040088607199FC541f013bA53C21E;
     address constant TOKEN = 0xd00CEdA81e6Ce6B47BFC6B19e8981C24aEa58368;
-    uint256 CHECKPOINT = 5956417;
+    uint256 CHECKPOINT = 5980010;
 }
 
 contract TemplateAddressesProd is ConstantsAgnostic {
@@ -275,7 +276,7 @@ contract AddModulesAndVersions is Script, ConstantsTest {
     }
 }
 
-contract FastFactoryBuildGSContest is Script, ConstantsTest {
+contract BuildGSContest is Script, ConstantsTest {
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address deployer = vm.rememberKey(pk);
@@ -288,7 +289,7 @@ contract FastFactoryBuildGSContest is Script, ConstantsTest {
         string[4] memory moduleNames;
 
         // votes module data
-        moduleData[0] = abi.encode(ONE_WEEK);
+        moduleData[0] = abi.encode(TEN_MINUTES);
         moduleNames[0] = VOTES_MODULE_NAME;
 
         // points module data

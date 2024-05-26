@@ -14,6 +14,8 @@ contract ERC20VotesPoints is IPoints {
     /// ========== Events =============
     /// ===============================
 
+    string public constant MODULE_NAME = "ERC20VotesPoints_v0.1.1";
+
     /// @notice Emitted once the points module is initialized
     event Initialized(address contest, address token, uint256 votingCheckpoint);
 
