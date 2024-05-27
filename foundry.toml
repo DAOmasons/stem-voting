@@ -1,4 +1,5 @@
 [profile.default]
+fs_permissions = [{access = "read-write", path = "./"}]
 libs = ["lib"]
 out = "out"
 solc-version = "0.8.16"
@@ -11,5 +12,5 @@ arbitrumOne = "${ARBITRUM_RPC_URL}"
 arbitrumSepolia = "${ARBITRUM_SEPOLIA_RPC_URL}"
 
 [etherscan]
-arbitrumOne = {key = "${SCAN_API_KEY}", url = "https://api.arbiscan.io/api"}
-arbitrumSepolia = {key = "${SCAN_API_KEY}", url = "https://api-sepolia.arbiscan.io/api"}
+arbitrumOne = {key = "${ARB_API_KEY}", url = "https://api.arbiscan.io/api"}
+arbitrumSepolia = {key = "${ARB_SEP_API_KEY}", url = "https://api-sepolia.arbiscan.io/api"}

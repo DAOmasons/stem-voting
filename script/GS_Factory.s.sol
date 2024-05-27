@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Script, console2} from "forge-std/Script.sol";
+import "forge-std/StdJson.sol";
 import {HatsAllowList} from "../src/modules/choices/HatsAllowList.sol";
 import {ERC20VotesPoints} from "../src/modules/points/ERC20VotesPoints.sol";
 import {FastFactory} from "../src/factories/gsRough/FastFactory.sol";
@@ -20,39 +21,24 @@ import {IModule} from "../src/interfaces/IModule.sol";
 // for TESTNET
 // forge script script/GS.s.sol:FastFactoryBuildGSContest --rpc-url $ARB_SEPOLIA_RPC_URL --broadcast --verify
 
-abstract contract ConstantsAgnostic {
+contract RunFactory is Script {
     uint256 ONE_WEEK = 604800;
     uint256 TEN_MINUTES = 600;
-
     string GS_VOTING_VERSION = "v0.1.0";
-    // bump this to the next version when you want to deploy a new contest
     string FILTER_TAG = "v0.0.4";
     address HATS = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
     uint256 FACILITATOR_HAT_ID = 2210716038082491793464205775877905354575872088332293351845461877587968;
-}
-
-abstract contract ConstantsTest is ConstantsAgnostic {
-    address constant FACTORY_TEMPLATE_ADDRESS = 0x3a190e45f300cbb8AB1153a90b23EE3333b02D9d;
-    address constant CHOICES_TEMPLATE_ADDRESS = 0xF6fee573515E78F30b6dca745581Ce575677c761;
-    address constant POINTS_TEMPLATE_ADDRESS = 0x3198166F2dAA2fe2dA8EFEe1f7a3Ca72da47fbf7;
-    address constant VOTES_TEMPLATE_ADDRESS = 0x52f718fB325CAD186a4D69368765d5604d2483eC;
-    address constant EXECUTION_TEMPLATE_ADDRESS = 0xb60274DE6dEF245dA0fF46bfC61DafbF312c2BAf;
-    address constant CONTEST_TEMPLATE_ADDRESS = 0x3A594698b511D84c3756D99828aF11B9049dFf14;
     address constant DEV_ADDRESS = 0xDE6bcde54CF040088607199FC541f013bA53C21E;
     address constant TOKEN_ADDRESS = 0xd00CEdA81e6Ce6B47BFC6B19e8981C24aEa58368;
-    uint256 V_TOKEN_CHECKPOINT = 5980010;
-}
 
-abstract contract ConstantsProd is ConstantsAgnostic {
-    address constant FACTORY_TEMPLATE_ADDRESS = 0x1670EEfb9B638243559b6Fcc7D6d3e6f9d4Ca5Fc;
-    address constant CHOICES_TEMPLATE_ADDRESS = 0x1670EEfb9B638243559b6Fcc7D6d3e6f9d4Ca5Fc;
-    address constant CONTEST_TEMPLATE_ADDRESS = 0x1670EEfb9B638243559b6Fcc7D6d3e6f9d4Ca5Fc;
-    address constant POINTS_TEMPLATE_ADDRESS = 0x1670EEfb9B638243559b6Fcc7D6d3e6f9d4Ca5Fc;
-    address constant VOTES_TEMPLATE_ADDRESS = 0x1670EEfb9B638243559b6Fcc7D6d3e6f9d4Ca5Fc;
-    address constant EXECUTION_MODULE_ADDRESS = 0x0000000000000000000000000000000000000000;
-}
+    using stdJson for string;
 
-contract ManageFactory is Script, ConstantsTest {
+    string _network;
+    string root = vm.projectRoot();
+
+    string TEMPLATES_DIR = string.concat(root, "/deployments/gs_templates.json");
+    string DEPLOYMENTS_DIR = string.concat(root, "/deployments/gs_recentDeployments.json");
+
     FastFactory internal _fastFactory;
     HatsAllowList internal _choicesTemplate;
     ERC20VotesPoints internal _pointsTemplate;
@@ -78,10 +64,9 @@ contract ManageFactory is Script, ConstantsTest {
         address deployer = vm.rememberKey(pk);
 
         vm.startBroadcast(deployer);
+        _setEnvString();
 
-        _deployFactory(deployer);
-        _addAdmin(DEV_ADDRESS);
-        _removeAdmin(DEV_ADDRESS);
+        // __setupNewFactoryWithModules(deployer);
 
         vm.stopBroadcast();
     }
@@ -90,7 +75,26 @@ contract ManageFactory is Script, ConstantsTest {
     /// =========== Macro =============
     /// ===============================
 
+    function _setEnvString() internal {
+        // string memory str = vm.envString(_key);
+
+        uint256 key;
+
+        console2.log(vm.toString(block.number));
+
+        assembly {
+            key := chainid()
+        }
+
+        _network = vm.toString(key);
+    }
+
     function __setupNewFactory(address _deployer) internal {
+        _deployFactory(_deployer);
+        _addAdmin(DEV_ADDRESS);
+    }
+
+    function __setupNewFactoryWithModules(address _deployer) internal {
         _deployFactory(_deployer);
         _addAdmin(DEV_ADDRESS);
         __deployModules();
@@ -99,14 +103,15 @@ contract ManageFactory is Script, ConstantsTest {
 
     function __deployModules() internal {
         console2.log("Deploying modules...");
+        _deployContestTemplate();
         _deployChoicesModule();
         _deployPointsModule();
         _deployVotesModule();
         _deployExecutionModule();
-        console2.log("Modules deployed. COPY these addresses to the Constants contract.");
     }
 
     function __setModuleTemplates() internal {
+        _setContestTemplate();
         _setChoicesTemplate();
         _setPointsTemplate();
         _setVotesTemplate();
@@ -119,31 +124,51 @@ contract ManageFactory is Script, ConstantsTest {
 
     function _deployFactory(address _deployer) internal {
         _fastFactory = new FastFactory(_deployer);
+
+        vm.writeJson(vm.toString(address(_fastFactory)), DEPLOYMENTS_DIR, string.concat(".", _network, ".factory"));
+
         console2.log("Factory address: %s", address(_fastFactory));
     }
 
     function _deployContestTemplate() internal {
         _contest = new Contest();
+
+        vm.writeJson(vm.toString(address(_contest)), TEMPLATES_DIR, string.concat(".", _network, ".contest"));
+
         console2.log("Contest address: %s", address(_contest));
     }
 
     function _deployChoicesModule() internal {
         _choicesTemplate = new HatsAllowList();
+
+        vm.writeJson(vm.toString(address(_choicesTemplate)), TEMPLATES_DIR, string.concat(".", _network, ".choices"));
+
         console2.log("Choices module address: %s", address(_choicesTemplate));
     }
 
     function _deployPointsModule() internal {
         _pointsTemplate = new ERC20VotesPoints();
+
+        vm.writeJson(vm.toString(address(_pointsTemplate)), TEMPLATES_DIR, string.concat(".", _network, ".points"));
+
         console2.log("Points module address: %s", address(_pointsTemplate));
     }
 
     function _deployVotesModule() internal {
         _votesTemplate = new TimedVotes();
+
+        vm.writeJson(vm.toString(address(_votesTemplate)), TEMPLATES_DIR, string.concat(".", _network, ".votes"));
+
         console2.log("Votes module address: %s", address(_votesTemplate));
     }
 
     function _deployExecutionModule() internal {
         _executionTemplate = new EmptyExecution();
+
+        vm.writeJson(
+            vm.toString(address(_executionTemplate)), TEMPLATES_DIR, string.concat(".", _network, ".execution")
+        );
+
         console2.log("Execution module address: %s", address(_executionTemplate));
     }
 
@@ -184,28 +209,62 @@ contract ManageFactory is Script, ConstantsTest {
     function _setContestTemplate() internal {
         _fastFactory.setContestTemplate(_contest.CONTEST_VERSION(), address(_contest), _contestMetadata);
     }
-}
 
-contract DeployAndRegisterHatsAllowList is Script, ConstantsTest {
-    function run() external {
-        uint256 pk = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.rememberKey(pk);
+    function __buildGrantShips() external {
+        bytes[4] memory moduleData;
+        string[4] memory moduleNames;
 
-        vm.startBroadcast(deployer);
+        // votes module data
+        moduleData[0] = abi.encode(TEN_MINUTES);
+        moduleNames[0] = _votesTemplate.MODULE_NAME();
 
-        HatsAllowList module = new HatsAllowList();
+        // points module data
+        moduleData[1] = abi.encode(TOKEN_ADDRESS, block.number);
+        moduleNames[1] = _pointsTemplate.MODULE_NAME();
 
-        FastFactory fastFactory = FastFactory(FACTORY_TEMPLATE_ADDRESS);
+        // choices module data
+        moduleData[2] = abi.encode(HATS, FACILITATOR_HAT_ID, new bytes[](0));
+        moduleNames[2] = _choicesTemplate.MODULE_NAME();
 
-        fastFactory.setModuleTemplate(
-            module.MODULE_NAME(),
-            address(module),
-            Metadata(0, "HatsAllowList: Choice Creation module that uses a hat ID to gate who can set choices")
-        );
+        // execution module data
+        moduleData[3] = abi.encode(0);
+        moduleNames[3] = _executionTemplate.MODULE_NAME();
+
+        bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
+
+        (address contestAddress, address[4] memory moduleAddress) =
+            _fastFactory.buildContest(_contestInitData, GS_VOTING_VERSION, false, false, FILTER_TAG);
+
+        console2.log("Contest address: %s", contestAddress);
+        console2.log("Votes module address: %s", moduleAddress[0]);
+        console2.log("Points module address: %s", moduleAddress[1]);
+        console2.log("Choices module address: %s", moduleAddress[2]);
+        console2.log("Execution module address: %s", moduleAddress[3]);
 
         vm.stopBroadcast();
     }
 }
+
+// contract DeployAndRegisterHatsAllowList is Script, ConstantsTest {
+// function run() external {
+//     uint256 pk = vm.envUint("PRIVATE_KEY");
+//     address deployer = vm.rememberKey(pk);
+
+//     vm.startBroadcast(deployer);
+
+//     HatsAllowList module = new HatsAllowList();
+
+//     FastFactory fastFactory = FastFactory(FACTORY_TEMPLATE_ADDRESS);
+
+//     fastFactory.setModuleTemplate(
+//         module.MODULE_NAME(),
+//         address(module),
+//         Metadata(0, "HatsAllowList: Choice Creation module that uses a hat ID to gate who can set choices")
+//     );
+
+//     vm.stopBroadcast();
+// }
+// }
 
 // contract DeployAndRegisterERC20VotesPoints is Script, ConstantsTest {
 //     function run() external {
@@ -416,76 +475,76 @@ contract DeployAndRegisterHatsAllowList is Script, ConstantsTest {
 //     }
 // }
 
-contract BuildGSContest is Script, ConstantsTest {
-    function run() external {
-        uint256 pk = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.rememberKey(pk);
+// contract BuildGSContest is Script, ConstantsTest {
+//     function run() external {
+//         uint256 pk = vm.envUint("PRIVATE_KEY");
+//         address deployer = vm.rememberKey(pk);
 
-        vm.startBroadcast(deployer);
+//         vm.startBroadcast(deployer);
 
-        FastFactory fastFactory = FastFactory(FACTORY_TEMPLATE_ADDRESS);
+//         FastFactory fastFactory = FastFactory(FACTORY_TEMPLATE_ADDRESS);
 
-        bytes[4] memory moduleData;
-        string[4] memory moduleNames;
+//         bytes[4] memory moduleData;
+//         string[4] memory moduleNames;
 
-        TimedVotes votesModule = TimedVotes(VOTES_TEMPLATE_ADDRESS);
-        ERC20VotesPoints pointsModule = ERC20VotesPoints(POINTS_TEMPLATE_ADDRESS);
-        HatsAllowList choicesModule = HatsAllowList(CHOICES_TEMPLATE_ADDRESS);
-        EmptyExecution executionModule = EmptyExecution(EXECUTION_TEMPLATE_ADDRESS);
+//         TimedVotes votesModule = TimedVotes(VOTES_TEMPLATE_ADDRESS);
+//         ERC20VotesPoints pointsModule = ERC20VotesPoints(POINTS_TEMPLATE_ADDRESS);
+//         HatsAllowList choicesModule = HatsAllowList(CHOICES_TEMPLATE_ADDRESS);
+//         EmptyExecution executionModule = EmptyExecution(EXECUTION_TEMPLATE_ADDRESS);
 
-        // votes module data
-        moduleData[0] = abi.encode(TEN_MINUTES);
-        moduleNames[0] = votesModule.MODULE_NAME();
+//         // votes module data
+//         moduleData[0] = abi.encode(TEN_MINUTES);
+//         moduleNames[0] = votesModule.MODULE_NAME();
 
-        // points module data
-        moduleData[1] = abi.encode(TOKEN_ADDRESS, V_TOKEN_CHECKPOINT);
-        moduleNames[1] = pointsModule.MODULE_NAME();
+//         // points module data
+//         moduleData[1] = abi.encode(TOKEN_ADDRESS, V_TOKEN_CHECKPOINT);
+//         moduleNames[1] = pointsModule.MODULE_NAME();
 
-        // choices module data
-        moduleData[2] = abi.encode(HATS, FACILITATOR_HAT_ID, new bytes[](0));
-        moduleNames[2] = choicesModule.MODULE_NAME();
+//         // choices module data
+//         moduleData[2] = abi.encode(HATS, FACILITATOR_HAT_ID, new bytes[](0));
+//         moduleNames[2] = choicesModule.MODULE_NAME();
 
-        // execution module data
-        moduleData[3] = abi.encode(0);
-        moduleNames[3] = executionModule.MODULE_NAME();
+//         // execution module data
+//         moduleData[3] = abi.encode(0);
+//         moduleNames[3] = executionModule.MODULE_NAME();
 
-        bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
+//         bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
-        (address contestAddress, address[4] memory moduleAddress) =
-            fastFactory.buildContest(_contestInitData, GS_VOTING_VERSION, false, false, FILTER_TAG);
+//         (address contestAddress, address[4] memory moduleAddress) =
+//             fastFactory.buildContest(_contestInitData, GS_VOTING_VERSION, false, false, FILTER_TAG);
 
-        console2.log("Contest address: %s", contestAddress);
-        console2.log("Votes module address: %s", moduleAddress[0]);
-        console2.log("Points module address: %s", moduleAddress[1]);
-        console2.log("Choices module address: %s", moduleAddress[2]);
-        console2.log("Execution module address: %s", moduleAddress[3]);
+//         console2.log("Contest address: %s", contestAddress);
+//         console2.log("Votes module address: %s", moduleAddress[0]);
+//         console2.log("Points module address: %s", moduleAddress[1]);
+//         console2.log("Choices module address: %s", moduleAddress[2]);
+//         console2.log("Execution module address: %s", moduleAddress[3]);
 
-        vm.stopBroadcast();
-    }
-}
+//         vm.stopBroadcast();
+//     }
+// }
 
-contract DeployDummyToken is Script, ConstantsTest {
-    function run() external {
-        uint256 pk = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.rememberKey(pk);
+// contract DeployDummyToken is Script, ConstantsTest {
+//     function run() external {
+//         uint256 pk = vm.envUint("PRIVATE_KEY");
+//         address deployer = vm.rememberKey(pk);
 
-        vm.startBroadcast(deployer);
+//         vm.startBroadcast(deployer);
 
-        new DummyVotingToken("TEST", "TTT", 1_000_000_000000000000000000, deployer);
+//         new DummyVotingToken("TEST", "TTT", 1_000_000_000000000000000000, deployer);
 
-        // address[5] memory voters;
+//         // address[5] memory voters;
 
-        // voters[0] = 0x57abda4ee50Bb3079A556C878b2c345310057569;
-        // voters[1] = 0xD800B05c70A2071BC1E5Eac5B3390Da1Eb67bC9D;
-        // voters[2] = 0x57ffb33cC9D786da4087d970b0B0053017f26afc;
-        // voters[3] = 0x27773b203954FBBb3e98DFa1a85A99e1c2f40f56;
-        // voters[4] = 0x67243d6c3c3bDc2F59D2f74ba1949a02973a529d;
+//         // voters[0] = 0x57abda4ee50Bb3079A556C878b2c345310057569;
+//         // voters[1] = 0xD800B05c70A2071BC1E5Eac5B3390Da1Eb67bC9D;
+//         // voters[2] = 0x57ffb33cC9D786da4087d970b0B0053017f26afc;
+//         // voters[3] = 0x27773b203954FBBb3e98DFa1a85A99e1c2f40f56;
+//         // voters[4] = 0x67243d6c3c3bDc2F59D2f74ba1949a02973a529d;
 
-        // for (uint256 i = 0; i < voters.length; i++) {
-        //     token.transfer(voters[i], 10_000_000000000000000000);
-        // }
-        // token.transfer(DEV_ADDRESS, 300_000_000000000000000000);
+//         // for (uint256 i = 0; i < voters.length; i++) {
+//         //     token.transfer(voters[i], 10_000_000000000000000000);
+//         // }
+//         // token.transfer(DEV_ADDRESS, 300_000_000000000000000000);
 
-        vm.stopBroadcast();
-    }
-}
+//         vm.stopBroadcast();
+//     }
+// }
