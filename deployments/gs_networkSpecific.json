@@ -1,0 +1,18 @@
+{
+  "421614": {
+    "networkName": "arbitrumSepolia",
+    "hatId": 2210716038082491793464205775877905354575872088332293351845461877587968,
+    "hatsAddress": "0x3bc1a0ad72417f2d411118085256fc53cbddd137",
+    "tokenAddress": "0xd00CEdA81e6Ce6B47BFC6B19e8981C24aEa58368",
+    "voteTime": 600,
+    "deploymentNonce": "0"
+  },
+  "42161": {
+    "networkName": "arbitrumOne",
+    "hatId": 377439664716248287426848749960570468768546267599534423130416380641280,
+    "hatsAddress": "0x3bc1a0ad72417f2d411118085256fc53cbddd137",
+    "tokenAddress": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+    "voteTime": 604800,
+    "deploymentNonce": 1
+  }
+}

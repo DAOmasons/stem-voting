@@ -10,11 +10,11 @@
   },
   "42161": {
     "networkName": "arbitrumOne",
-    "contest": "",
-    "votes": "",
-    "choices": "",
-    "points": "",
-    "execution": "",
+    "contest": "0x157800420409765c6775A7f201Aeb05fB76D5aC1",
+    "votes": "0xBF8aA4C4f93752E9F45D0dBbC1DaDBA8a6634fC7",
+    "choices": "0xDC6082c40f78C2A66efB46E6f08c075A5808B32c",
+    "points": "0xb381418d51F7db9B7B1552AF787171Cd26793F3A",
+    "execution": "0x13eF693e8fb38358eCD88963390f4cE00330D7Fa",
     "factory": "0x98917Fe3554acFB9f982F6A4fE5Ad377EE55ee70"
   }
 }

@@ -13,23 +13,10 @@ import {Contest} from "../src/Contest.sol";
 import {EmptyExecution} from "../src/modules/execution/EmptyExecution.sol";
 import {IModule} from "../src/interfaces/IModule.sol";
 
-// Instructions to deploy a new GS Voting without updating contracts
-// 1. Bump the FILTER_TAG in ConstantsAgnostic
-// 2. Update deployment inheritance depending on the network (ex. ConstantsTest for TESTNET)
-// 3. Ensure environment variables are correctly set
-// 2. Run the following script:
-// for TESTNET
-// forge script script/GS.s.sol:FastFactoryBuildGSContest --rpc-url $ARB_SEPOLIA_RPC_URL --broadcast --verify
-
 contract RunFactory is Script {
-    uint256 ONE_WEEK = 604800;
-    uint256 TEN_MINUTES = 600;
     string GS_VOTING_VERSION = "v0.1.0";
-    string FILTER_TAG = "v0.0.4";
-    address HATS = 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137;
-    uint256 FACILITATOR_HAT_ID = 2210716038082491793464205775877905354575872088332293351845461877587968;
+    string TAG_PREFIX = "grantShips_deployment_";
     address constant DEV_ADDRESS = 0xDE6bcde54CF040088607199FC541f013bA53C21E;
-    address constant TOKEN_ADDRESS = 0xd00CEdA81e6Ce6B47BFC6B19e8981C24aEa58368;
 
     using stdJson for string;
 
@@ -38,6 +25,7 @@ contract RunFactory is Script {
 
     string TEMPLATES_DIR = string.concat(root, "/deployments/gs_templates.json");
     string DEPLOYMENTS_DIR = string.concat(root, "/deployments/gs_recentDeployments.json");
+    string NETWORK_DIR = string.concat(root, "/deployments/gs_networkSpecific.json");
 
     FastFactory internal _fastFactory;
     HatsAllowList internal _choicesTemplate;
@@ -66,6 +54,8 @@ contract RunFactory is Script {
         vm.startBroadcast(deployer);
         _setEnvString();
 
+        __buildGrantShips();
+
         // __setupNewFactoryWithModules(deployer);
 
         vm.stopBroadcast();
@@ -79,8 +69,6 @@ contract RunFactory is Script {
         // string memory str = vm.envString(_key);
 
         uint256 key;
-
-        console2.log(vm.toString(block.number));
 
         assembly {
             key := chainid()
@@ -210,38 +198,116 @@ contract RunFactory is Script {
         _fastFactory.setContestTemplate(_contest.CONTEST_VERSION(), address(_contest), _contestMetadata);
     }
 
-    function __buildGrantShips() external {
+    function __buildGrantShips() internal {
         bytes[4] memory moduleData;
         string[4] memory moduleNames;
 
+        FastFactory fastFactory = FastFactory(getDeploymentAddress("factory"));
+        ERC20VotesPoints pointsTemplate = ERC20VotesPoints(getTemplateAddress("points"));
+        TimedVotes votesTemplate = TimedVotes(getTemplateAddress("votes"));
+        HatsAllowList choicesTemplate = HatsAllowList(getTemplateAddress("choices"));
+        EmptyExecution executionTemplate = EmptyExecution(getTemplateAddress("execution"));
+        Contest contestTemplate = Contest(getTemplateAddress("contest"));
+
         // votes module data
-        moduleData[0] = abi.encode(TEN_MINUTES);
-        moduleNames[0] = _votesTemplate.MODULE_NAME();
+        moduleData[0] = abi.encode(voteTime());
+        moduleNames[0] = votesTemplate.MODULE_NAME();
 
         // points module data
-        moduleData[1] = abi.encode(TOKEN_ADDRESS, block.number);
-        moduleNames[1] = _pointsTemplate.MODULE_NAME();
+        moduleData[1] = abi.encode(tokenAddress(), block.number);
+        moduleNames[1] = pointsTemplate.MODULE_NAME();
 
-        // choices module data
-        moduleData[2] = abi.encode(HATS, FACILITATOR_HAT_ID, new bytes[](0));
-        moduleNames[2] = _choicesTemplate.MODULE_NAME();
+        // // choices module data
+        moduleData[2] = abi.encode(hatsAddress(), hatId(), new bytes[](0));
+        moduleNames[2] = choicesTemplate.MODULE_NAME();
 
-        // execution module data
+        // // execution module data
         moduleData[3] = abi.encode(0);
-        moduleNames[3] = _executionTemplate.MODULE_NAME();
+        moduleNames[3] = executionTemplate.MODULE_NAME();
 
         bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
         (address contestAddress, address[4] memory moduleAddress) =
-            _fastFactory.buildContest(_contestInitData, GS_VOTING_VERSION, false, false, FILTER_TAG);
+            fastFactory.buildContest(_contestInitData, contestTemplate.CONTEST_VERSION(), false, false, TAG_PREFIX);
 
         console2.log("Contest address: %s", contestAddress);
+        vm.writeJson(vm.toString(address(contestAddress)), DEPLOYMENTS_DIR, string.concat(".", _network, ".contest"));
         console2.log("Votes module address: %s", moduleAddress[0]);
+        vm.writeJson(vm.toString(moduleAddress[0]), DEPLOYMENTS_DIR, string.concat(".", _network, ".votes"));
         console2.log("Points module address: %s", moduleAddress[1]);
+        vm.writeJson(vm.toString(moduleAddress[1]), DEPLOYMENTS_DIR, string.concat(".", _network, ".points"));
         console2.log("Choices module address: %s", moduleAddress[2]);
+        vm.writeJson(vm.toString(moduleAddress[2]), DEPLOYMENTS_DIR, string.concat(".", _network, ".choices"));
         console2.log("Execution module address: %s", moduleAddress[3]);
+        vm.writeJson(vm.toString(moduleAddress[3]), DEPLOYMENTS_DIR, string.concat(".", _network, ".execution"));
 
-        vm.stopBroadcast();
+        vm.writeJson(
+            vm.toString(vm.parseInt(deploymentNonce()) + 1),
+            NETWORK_DIR,
+            string.concat(".", _network, ".deploymentNonce")
+        );
+    }
+
+    function _getNetworkConfigValue(string memory _key) internal view returns (bytes memory) {
+        string memory jsonString = vm.readFile(NETWORK_DIR);
+
+        bytes memory jsonBytes = vm.parseJson(jsonString, string.concat(".", _network, ".", _key));
+
+        return jsonBytes;
+    }
+
+    function networkName() internal view returns (string memory) {
+        bytes memory json = _getNetworkConfigValue("networkName");
+        (string memory _networkName) = abi.decode(json, (string));
+        return _networkName;
+    }
+
+    function hatId() internal view returns (uint256) {
+        bytes memory json = _getNetworkConfigValue("hatId");
+        (uint256 _hatId) = abi.decode(json, (uint256));
+        return _hatId;
+    }
+
+    function hatsAddress() internal view returns (address) {
+        bytes memory json = _getNetworkConfigValue("hatsAddress");
+        (address _hatsAddress) = abi.decode(json, (address));
+        return _hatsAddress;
+    }
+
+    function voteTime() internal view returns (uint256) {
+        bytes memory json = _getNetworkConfigValue("voteTime");
+        (uint256 _testTime) = abi.decode(json, (uint256));
+        return _testTime;
+    }
+
+    function tokenAddress() internal view returns (address) {
+        bytes memory json = _getNetworkConfigValue("tokenAddress");
+        (address _tokenAddress) = abi.decode(json, (address));
+        return _tokenAddress;
+    }
+
+    function deploymentNonce() internal view returns (string memory) {
+        bytes memory json = _getNetworkConfigValue("deploymentNonce");
+        (string memory _deploymentNonce) = abi.decode(json, (string));
+        return _deploymentNonce;
+    }
+
+    function getTemplateAddress(string memory _key) internal view returns (address) {
+        string memory jsonString = vm.readFile(TEMPLATES_DIR);
+
+        bytes memory jsonBytes = vm.parseJson(jsonString, string.concat(".", _network, ".", _key));
+
+        (address _templateAddress) = abi.decode(jsonBytes, (address));
+        return _templateAddress;
+    }
+
+    function getDeploymentAddress(string memory _key) internal view returns (address) {
+        string memory jsonString = vm.readFile(DEPLOYMENTS_DIR);
+
+        bytes memory jsonBytes = vm.parseJson(jsonString, string.concat(".", _network, ".", _key));
+
+        (address _deploymentAddress) = abi.decode(jsonBytes, (address));
+        return _deploymentAddress;
     }
 }
 
