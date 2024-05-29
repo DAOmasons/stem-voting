@@ -12,6 +12,7 @@ import {DummyVotingToken} from "./DummyVotingToken.sol";
 import {Contest} from "../src/Contest.sol";
 import {EmptyExecution} from "../src/modules/execution/EmptyExecution.sol";
 import {IModule} from "../src/interfaces/IModule.sol";
+import {HatsPoster} from "../src/factories/gsRough/HatsPoster.sol";
 
 contract RunFactory is Script {
     string GS_VOTING_VERSION = "v0.1.0";
@@ -32,8 +33,11 @@ contract RunFactory is Script {
     ERC20VotesPoints internal _pointsTemplate;
     TimedVotes internal _votesTemplate;
     EmptyExecution internal _executionTemplate;
+    HatsPoster internal _hatsPoster;
 
     Contest internal _contest;
+
+    uint256[] hatsIds;
 
     Metadata internal _choicesMetadata =
         Metadata(0, "HatsAllowList: Choice Creation module that uses a hat ID to gate who can set choices");
@@ -54,7 +58,8 @@ contract RunFactory is Script {
         vm.startBroadcast(deployer);
         _setEnvString();
 
-        __buildGrantShips();
+        // __buildGrantShips();
+        __buildHatsPoster();
 
         // __setupNewFactoryWithModules(deployer);
 
@@ -160,6 +165,14 @@ contract RunFactory is Script {
         console2.log("Execution module address: %s", address(_executionTemplate));
     }
 
+    function _deployHatsPoster() internal {
+        _hatsPoster = new HatsPoster();
+
+        vm.writeJson(vm.toString(address(_hatsPoster)), DEPLOYMENTS_DIR, string.concat(".", _network, ".hatsPoster"));
+
+        console2.log("HatsPoster address: %s", address(_hatsPoster));
+    }
+
     /// ===============================
     /// =========== Roles =============
     /// ===============================
@@ -222,7 +235,7 @@ contract RunFactory is Script {
         moduleNames[1] = pointsTemplate.MODULE_NAME();
 
         // // choices module data
-        moduleData[2] = abi.encode(hatsAddress(), hatId(), new bytes[](0));
+        moduleData[2] = abi.encode(hatsAddress(), facilitatorHatId(), new bytes[](0));
         moduleNames[2] = choicesTemplate.MODULE_NAME();
 
         // // execution module data
@@ -253,6 +266,17 @@ contract RunFactory is Script {
         vm.writeJson(vm.toString(deploymentNonce() + 1), NETWORK_DIR, string.concat(".", _network, ".deploymentNonce"));
     }
 
+    function __buildHatsPoster() internal {
+        _deployHatsPoster();
+
+        hatsIds.push(facilitatorHatId());
+        hatsIds.push(shipId1());
+        hatsIds.push(shipId2());
+        hatsIds.push(shipId3());
+
+        _hatsPoster.initialize(hatsIds, hatsAddress());
+    }
+
     /// ===============================
     /// ========== GetJSON ============
     /// ===============================
@@ -271,10 +295,28 @@ contract RunFactory is Script {
         return _networkName;
     }
 
-    function hatId() internal view returns (uint256) {
-        bytes memory json = _getNetworkConfigValue("hatId");
+    function facilitatorHatId() internal view returns (uint256) {
+        bytes memory json = _getNetworkConfigValue("facilitatorHatId");
         (uint256 _hatId) = abi.decode(json, (uint256));
         return _hatId;
+    }
+
+    function shipId1() internal view returns (uint256) {
+        bytes memory json = _getNetworkConfigValue("shipId1");
+        (uint256 _shipId) = abi.decode(json, (uint256));
+        return _shipId;
+    }
+
+    function shipId2() internal view returns (uint256) {
+        bytes memory json = _getNetworkConfigValue("shipId2");
+        (uint256 _shipId) = abi.decode(json, (uint256));
+        return _shipId;
+    }
+
+    function shipId3() internal view returns (uint256) {
+        bytes memory json = _getNetworkConfigValue("shipId3");
+        (uint256 _shipId) = abi.decode(json, (uint256));
+        return _shipId;
     }
 
     function hatsAddress() internal view returns (address) {

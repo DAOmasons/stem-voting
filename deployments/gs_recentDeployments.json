@@ -6,7 +6,8 @@
     "choices": "0x0247615Ec9d73163a81CcF8218c9C48FD0dc6777",
     "points": "0x3934ECBA9E38c14F0063F79f4ebEbeAD09D2d496",
     "execution": "0x404Ba26b07F9C842aB97B7025b6eaFa8D0029A87",
-    "factory": "0x2bABC10b90c67399F820433358fEb85fbB24f22f"
+    "factory": "0x2bABC10b90c67399F820433358fEb85fbB24f22f",
+    "hatsPoster": "0x2c30E8923B7cB0D91c2E7Ed24a420DC032E156d0"
   },
   "42161": {
     "networkName": "arbitrumOne",
@@ -15,6 +16,7 @@
     "choices": "0x267E5F75d691E28f132c96bAE8D1b155C5ae87a3",
     "points": "0x48681512eBCeC05B9bfb1700276EC6c6Fa5a7804",
     "execution": "0x9bFC8B8C7b832BaF2568202B51bb6026F76e893C",
-    "factory": "0x98917Fe3554acFB9f982F6A4fE5Ad377EE55ee70"
+    "factory": "0x98917Fe3554acFB9f982F6A4fE5Ad377EE55ee70",
+    "hatsPoster": "0x363a6eFF03cdAbD5Cf4921d9A85eAf7dFd2A7efD"
   }
 }
