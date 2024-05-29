@@ -1,20 +1,20 @@
 {
   "421614": {
     "networkName": "arbitrumSepolia",
-    "contest": "",
-    "votes": "",
-    "choices": "",
-    "points": "",
-    "execution": "",
-    "factory": "0xc6De3Da52B4FCBD42Eae5db20a28D97c9bCc08DA"
+    "contest": "0x7Ce32b2C60Faf8A1b35eF5e3954cC499A462718D",
+    "votes": "0xeBd90Bf35cA7151F3eF3124c76C92DFB2a629030",
+    "choices": "0x0247615Ec9d73163a81CcF8218c9C48FD0dc6777",
+    "points": "0x3934ECBA9E38c14F0063F79f4ebEbeAD09D2d496",
+    "execution": "0x404Ba26b07F9C842aB97B7025b6eaFa8D0029A87",
+    "factory": "0x2bABC10b90c67399F820433358fEb85fbB24f22f"
   },
   "42161": {
     "networkName": "arbitrumOne",
-    "contest": "0x157800420409765c6775A7f201Aeb05fB76D5aC1",
-    "votes": "0xBF8aA4C4f93752E9F45D0dBbC1DaDBA8a6634fC7",
-    "choices": "0xDC6082c40f78C2A66efB46E6f08c075A5808B32c",
-    "points": "0xb381418d51F7db9B7B1552AF787171Cd26793F3A",
-    "execution": "0x13eF693e8fb38358eCD88963390f4cE00330D7Fa",
+    "contest": "0xb5EE5150837961D067d563B802C8FA77Db533538",
+    "votes": "0x2D2a2B1E5DEedE3f9b46f315E06fE08f8a2682B1",
+    "choices": "0x267E5F75d691E28f132c96bAE8D1b155C5ae87a3",
+    "points": "0x48681512eBCeC05B9bfb1700276EC6c6Fa5a7804",
+    "execution": "0x9bFC8B8C7b832BaF2568202B51bb6026F76e893C",
     "factory": "0x98917Fe3554acFB9f982F6A4fE5Ad377EE55ee70"
   }
 }

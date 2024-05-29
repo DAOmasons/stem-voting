@@ -5,7 +5,7 @@
     "hatsAddress": "0x3bc1a0ad72417f2d411118085256fc53cbddd137",
     "tokenAddress": "0xd00CEdA81e6Ce6B47BFC6B19e8981C24aEa58368",
     "voteTime": 600,
-    "deploymentNonce": "0"
+    "deploymentNonce": 2
   },
   "42161": {
     "networkName": "arbitrumOne",
@@ -13,6 +13,6 @@
     "hatsAddress": "0x3bc1a0ad72417f2d411118085256fc53cbddd137",
     "tokenAddress": "0x912CE59144191C1204E64559FE8253a0e49E6548",
     "voteTime": 604800,
-    "deploymentNonce": 1
+    "deploymentNonce": 3
   }
 }
