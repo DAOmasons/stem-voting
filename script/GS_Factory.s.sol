@@ -28,6 +28,8 @@ contract RunFactory is Script {
     string DEPLOYMENTS_DIR = string.concat(root, "/deployments/gs_recentDeployments.json");
     string NETWORK_DIR = string.concat(root, "/deployments/gs_networkSpecific.json");
 
+    uint256 _blockNumber = block.number;
+
     FastFactory internal _fastFactory;
     HatsAllowList internal _choicesTemplate;
     ERC20VotesPoints internal _pointsTemplate;
@@ -58,8 +60,8 @@ contract RunFactory is Script {
         vm.startBroadcast(deployer);
         _setEnvString();
 
-        // __buildGrantShips();
-        __buildHatsPoster();
+        __buildGrantShips();
+        // __buildHatsPoster();
 
         // __setupNewFactoryWithModules(deployer);
 
@@ -76,6 +78,12 @@ contract RunFactory is Script {
         }
 
         _network = vm.toString(key);
+
+        if (key == 421614) {
+            _blockNumber = 6033741;
+        } else {
+            _blockNumber = block.number;
+        }
     }
 
     /// ===============================
@@ -231,7 +239,7 @@ contract RunFactory is Script {
         moduleNames[0] = votesTemplate.MODULE_NAME();
 
         // points module data
-        moduleData[1] = abi.encode(tokenAddress(), block.number);
+        moduleData[1] = abi.encode(tokenAddress(), _blockNumber);
         moduleNames[1] = pointsTemplate.MODULE_NAME();
 
         // // choices module data
