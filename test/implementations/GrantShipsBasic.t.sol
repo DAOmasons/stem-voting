@@ -913,7 +913,7 @@ contract GrantShipsBasic is GrantShipsSetup {
     function _execute() internal {
         vm.expectEmit(true, false, false, true);
         emit ContestStatusChanged(ContestStatus.Executed);
-        executionModule().execute();
+        executionModule().execute("");
     }
 
     function _finalizeVoting() internal {

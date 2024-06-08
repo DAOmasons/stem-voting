@@ -1,0 +1,18 @@
+{
+  "421614": {
+    "networkName": "arbitrumSepolia",
+    "contest": "0xab31b10b11F3AFBcDce99b77F543c14072B419eb",
+    "votes": "0xc3Ff9a864Ce37909c23b9d6eEAc47Ebc3d5eBbf7",
+    "choices": "0xc803850A41dFDf7c0b427b6384Fcf746F5b05b82",
+    "points": "0x819853d76FED7A524eb25380eDcc6FA2784B3fa1",
+    "execution": "0x35739F40F72d273e99D587e730CC07b5cfaB6821"
+  },
+  "42161": {
+    "networkName": "arbitrumOne",
+    "contest": "0xC7835B5d9671303B2FE8Bd9f42E3B112C2C0003A",
+    "votes": "0xe459fE67882958f191D5641D239E6033645c39Ea",
+    "choices": "0xd00CEdA81e6Ce6B47BFC6B19e8981C24aEa58368",
+    "points": "0x9cf0DA528294e9EC8c1Fa10Ae9BB4594238127Ef",
+    "execution": "0xEaF4Cb29bfda23A008BFf740006D42968f4b56a4"
+  }
+}

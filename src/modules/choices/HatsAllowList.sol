@@ -6,6 +6,7 @@ import "../../interfaces/IChoices.sol";
 import {IHats} from "hats-protocol/Interfaces/IHats.sol";
 import {Contest} from "../../Contest.sol";
 import {ContestStatus} from "../../core/ContestStatus.sol";
+import {ModuleType} from "../../core/ModuleType.sol";
 
 /// @title HatsAllowList
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
@@ -19,10 +20,10 @@ contract HatsAllowList is IChoices {
     event Initialized(address contest, address hatsAddress, uint256 hatId);
 
     /// @notice Emitted when a choice is registered
-    event Registered(bytes32 choiceId, ChoiceData choiceData);
+    event Registered(bytes32 choiceId, ChoiceData choiceData, address contest);
 
     /// @notice Emitted when a choice is removed
-    event Removed(bytes32 choiceId);
+    event Removed(bytes32 choiceId, address contest);
 
     /// ===============================
     /// ========== Struct =============
@@ -38,6 +39,12 @@ contract HatsAllowList is IChoices {
     /// ===============================
     /// ========== Storage ============
     /// ===============================
+
+    /// @notice The name and version of the module
+    string public constant MODULE_NAME = "HatsAllowList_v0.1.1";
+
+    /// @notice The type of module
+    ModuleType public constant MODULE_TYPE = ModuleType.Choices;
 
     /// @notice Reference to the Hats Protocol contract
     IHats public hats;
@@ -129,7 +136,7 @@ contract HatsAllowList is IChoices {
 
         choices[_choiceId] = ChoiceData(_metadata, _choiceData, true);
 
-        emit Registered(_choiceId, choices[_choiceId]);
+        emit Registered(_choiceId, choices[_choiceId], address(contest));
     }
 
     /// @notice Removes a choice from the contract
@@ -139,7 +146,7 @@ contract HatsAllowList is IChoices {
 
         delete choices[_choiceId];
 
-        emit Removed(_choiceId);
+        emit Removed(_choiceId, address(contest));
     }
 
     /// @notice Finalizes the choices for the contest

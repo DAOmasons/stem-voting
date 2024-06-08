@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-interface IPoints {
+import {IModule} from "./IModule.sol";
+
+interface IPoints is IModule {
     /**
      * @dev Event emitted when a user claims voting points.
      * @param user The address of the user claiming the points.

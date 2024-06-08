@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "../../interfaces/IChoices.sol";
+import "../../core/ModuleType.sol";
 
 // Allow listed choice contract
 contract AllowList is IChoices {
@@ -9,6 +10,12 @@ contract AllowList is IChoices {
         string uri;
         bytes data;
     }
+
+    /// @notice The name and version of the module
+    string public constant MODULE_NAME = "AllowList_v0.0.0";
+
+    /// @notice The type of module
+    ModuleType public constant MODULE_TYPE = ModuleType.Choices;
 
     mapping(bytes32 => ChoiceData) private choices;
     mapping(address => bool) public allowedAccounts;

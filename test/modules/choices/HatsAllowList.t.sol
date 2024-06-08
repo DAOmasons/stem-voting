@@ -12,9 +12,9 @@ import {ContestStatus} from "../../../src/core/ContestStatus.sol";
 contract HatsAllowListTest is HatsSetup {
     event Initialized(address contest, address hatsAddress, uint256 hatId);
 
-    event Registered(bytes32 choiceId, HatsAllowList.ChoiceData choiceData);
+    event Registered(bytes32 choiceId, HatsAllowList.ChoiceData choiceData, address contest);
 
-    event Removed(bytes32 choiceId);
+    event Removed(bytes32 choiceId, address contest);
 
     HatsAllowList hatsAllowList;
     MockContest mockContest;
@@ -398,7 +398,7 @@ contract HatsAllowListTest is HatsSetup {
         mockContest.cheatStatus(ContestStatus.Populating);
 
         vm.expectEmit(true, false, false, true);
-        emit Registered(choice1(), HatsAllowList.ChoiceData(metadata, choiceData, true));
+        emit Registered(choice1(), HatsAllowList.ChoiceData(metadata, choiceData, true), address(mockContest));
 
         vm.startPrank(facilitator1().wearer);
         hatsAllowList.registerChoice(choice1(), abi.encode(choiceData, metadata));

@@ -3,9 +3,16 @@ pragma solidity ^0.8.13;
 
 import "../../interfaces/IERC20.sol";
 import "../../interfaces/IPoints.sol";
+import "../../core/ModuleType.sol";
 
 // ERC20 balanceOf Points contract
 contract ERC20Balance is IPoints {
+    /// @notice The name and version of the module
+    string public constant MODULE_NAME = "ERC20Balance_v0.0.0";
+
+    /// @notice The type of module
+    ModuleType public constant MODULE_TYPE = ModuleType.Choices;
+
     IERC20 public token;
     uint256 public claimEndTime;
     address public contest;
@@ -13,9 +20,10 @@ contract ERC20Balance is IPoints {
     mapping(address => uint256) public allocatedPoints; // Points currently allocated for voting
 
     //TODO initializer, should take bytes to destructure
-    function setUp(address _contest, IERC20 _token, uint256 duration) public {
+    function initialize(address _contest, bytes memory _initData) public {
+        (address _tokenAddress, uint256 duration) = abi.decode(_initData, (address, uint256));
         contest = _contest;
-        token = _token;
+        token = IERC20(_tokenAddress);
         claimEndTime = block.timestamp + duration;
     }
 
