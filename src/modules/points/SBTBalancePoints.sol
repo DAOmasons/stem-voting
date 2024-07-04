@@ -1,37 +1,29 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.16;
 
-import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.sol";
 import {IPoints} from "../../interfaces/IPoints.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 /// @title ERC20VotesPoints
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
-/// @notice Points module that uses ERC20Votes to allocate points to voters based on their delegated voting balance at particular checkpoints
-contract ERC20VotesPoints is IPoints {
+/// @notice Points module that uses an a voters token balance to allocate points. This module is recommended for use with the SBT voting token, where values cannot be transferred or doublespent during the vote.
+contract SBTBalancePoints is IPoints {
     /// ===============================
     /// ========== Events =============
     /// ===============================
 
     /// @notice Emitted once the points module is initialized
-    event Initialized(address contest, address token, uint256 votingCheckpoint);
-
-    /// ===============================
-    /// ========== Storage ============
-    /// ===============================
+    event Initialized(address contest, address token);
 
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "ERC20VotesPoints_v0.1.1";
+    string public constant MODULE_NAME = "SBTBalancePoints_v0.1.0";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Points;
 
     /// @notice Reference to the voting token contract
-    /// @dev This voting token must implement IVotes
-    IVotes public voteToken;
-
-    /// @notice The block checkpoint to use for voting balances
-    uint256 public votingCheckpoint;
+    IERC20 public voteToken;
 
     /// @notice Reference to the contest contract
     address public contest;
@@ -60,15 +52,14 @@ contract ERC20VotesPoints is IPoints {
     /// @notice Initializes the points module
     /// @param _contest The address of the contest contract
     /// @param _initData The initialization data
-    /// @dev Bytes data includes the address of the voting token and the voting checkpoint
-    function initialize(address _contest, bytes calldata _initData) public {
-        (address _token, uint256 _votingCheckpoint) = abi.decode(_initData, (address, uint256));
+    /// @dev Bytes data includes the address of the voting token
+    function initialize(address _contest, bytes calldata _initData) external {
+        (address _token) = abi.decode(_initData, (address));
 
-        votingCheckpoint = _votingCheckpoint;
-        voteToken = IVotes(_token);
         contest = _contest;
+        voteToken = IERC20(_token);
 
-        emit Initialized(_contest, _token, _votingCheckpoint);
+        emit Initialized(_contest, _token);
     }
 
     /// ===============================
@@ -105,10 +96,6 @@ contract ERC20VotesPoints is IPoints {
         revert("This contract does not require users to claim points.");
     }
 
-    /// ===============================
-    /// ========== Getters ============
-    /// ===============================
-
     /// @notice Gets the allocated points for a user
     /// @param _user The address of the user
     function getAllocatedPoints(address _user) public view returns (uint256) {
@@ -118,7 +105,7 @@ contract ERC20VotesPoints is IPoints {
     /// @notice Gets the available points for a user
     /// @param _user The address of the user
     function getPoints(address _user) public view returns (uint256) {
-        uint256 totalVotingPoints = voteToken.getPastVotes(_user, votingCheckpoint);
+        uint256 totalVotingPoints = voteToken.balanceOf(_user);
 
         uint256 allocatedVotingPoints = allocatedPoints[_user];
 
