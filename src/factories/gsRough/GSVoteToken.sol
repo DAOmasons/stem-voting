@@ -2,6 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Pausable.sol";
+
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 contract GSVotingToken is ERC20Votes, Ownable {
@@ -10,10 +12,6 @@ contract GSVotingToken is ERC20Votes, Ownable {
         ERC20Permit(name)
     {
         _mint(_holder, initialSupply);
-    }
-
-    function _afterTokenTransfer(address from, address to, uint256 amount) internal override(ERC20Votes) {
-        super._afterTokenTransfer(from, to, amount);
     }
 
     function mint(address to, uint256 amount) public onlyOwner {
