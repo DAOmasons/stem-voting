@@ -5,6 +5,7 @@ import {Script, console2} from "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
 import {HatsAllowList} from "../src/modules/choices/HatsAllowList.sol";
 import {ERC20VotesPoints} from "../src/modules/points/ERC20VotesPoints.sol";
+import {SBTBalancePoints} from "../src/modules/points/SBTBalancePoints.sol";
 import {FastFactory} from "../src/factories/gsRough/FastFactory.sol";
 import {TimedVotes} from "../src/modules/votes/TimedVotes.sol";
 import {Metadata} from "../src/core/Metadata.sol";
@@ -33,6 +34,7 @@ contract RunFactory is Script {
     FastFactory internal _fastFactory;
     HatsAllowList internal _choicesTemplate;
     ERC20VotesPoints internal _pointsTemplate;
+    SBTBalancePoints internal _sbtPointsTemplate;
     TimedVotes internal _votesTemplate;
     EmptyExecution internal _executionTemplate;
     HatsPoster internal _hatsPoster;
@@ -46,6 +48,8 @@ contract RunFactory is Script {
     Metadata internal _pointsMetadata = Metadata(
         0, "ERC20VotesPoints: Points module that uses IVotes ERC20 tokens for counting voting power at a given block"
     );
+    Metadata internal _sbtPointsMetadata =
+        Metadata(0, "SBTBalancePoints: Points module that uses SBT balance for counting voting power");
     Metadata internal _votesMetadata = Metadata(0, "TimedVotes: Votes module that uses a time limit for voting");
     Metadata internal _executionMetadata = Metadata(0, "EmptyExecutionModule: Execution module that does nothing");
     Metadata internal _contestMetadata = Metadata(
@@ -60,7 +64,9 @@ contract RunFactory is Script {
         vm.startBroadcast(deployer);
         _setEnvString();
 
-        __buildGrantShips();
+        _addSBTPointsModule();
+
+        // __buildGrantShips();
         // __buildHatsPoster();
 
         // __setupNewFactoryWithModules(deployer);
@@ -119,6 +125,11 @@ contract RunFactory is Script {
         _setExecutionTemplate();
     }
 
+    function _addSBTPointsModule() internal {
+        _deploySBTPointsModule();
+        _setSbtPointsTemplate();
+    }
+
     /// ===============================
     /// =========== Deploy ============
     /// ===============================
@@ -153,6 +164,14 @@ contract RunFactory is Script {
         vm.writeJson(vm.toString(address(_pointsTemplate)), TEMPLATES_DIR, string.concat(".", _network, ".points"));
 
         console2.log("Points module address: %s", address(_pointsTemplate));
+    }
+
+    function _deploySBTPointsModule() internal {
+        _sbtPointsTemplate = new SBTBalancePoints();
+        vm.writeJson(
+            vm.toString(address(_sbtPointsTemplate)), TEMPLATES_DIR, string.concat(".", _network, ".sbtPoints")
+        );
+        console2.log("SBT Points module address: %s", address(_sbtPointsTemplate));
     }
 
     function _deployVotesModule() internal {
@@ -205,6 +224,10 @@ contract RunFactory is Script {
         _fastFactory.setModuleTemplate(_pointsTemplate.MODULE_NAME(), address(_pointsTemplate), _pointsMetadata);
     }
 
+    function _setSbtPointsTemplate() internal {
+        factory().setModuleTemplate(_sbtPointsTemplate.MODULE_NAME(), address(_sbtPointsTemplate), _sbtPointsMetadata);
+    }
+
     function _setVotesTemplate() internal {
         _fastFactory.setModuleTemplate(_votesTemplate.MODULE_NAME(), address(_votesTemplate), _votesMetadata);
     }
@@ -228,7 +251,8 @@ contract RunFactory is Script {
         string[4] memory moduleNames;
 
         FastFactory fastFactory = FastFactory(getDeploymentAddress("factory"));
-        ERC20VotesPoints pointsTemplate = ERC20VotesPoints(getTemplateAddress("points"));
+        // ERC20VotesPoints pointsTemplate = ERC20VotesPoints(getTemplateAddress("points"));
+        SBTBalancePoints pointsTemplate = SBTBalancePoints(getTemplateAddress("sbtPoints"));
         TimedVotes votesTemplate = TimedVotes(getTemplateAddress("votes"));
         HatsAllowList choicesTemplate = HatsAllowList(getTemplateAddress("choices"));
         EmptyExecution executionTemplate = EmptyExecution(getTemplateAddress("execution"));
@@ -239,7 +263,7 @@ contract RunFactory is Script {
         moduleNames[0] = votesTemplate.MODULE_NAME();
 
         // points module data
-        moduleData[1] = abi.encode(tokenAddress(), _blockNumber);
+        moduleData[1] = abi.encode(tokenAddress());
         moduleNames[1] = pointsTemplate.MODULE_NAME();
 
         // // choices module data
@@ -301,6 +325,12 @@ contract RunFactory is Script {
         bytes memory json = _getNetworkConfigValue("networkName");
         (string memory _networkName) = abi.decode(json, (string));
         return _networkName;
+    }
+
+    function factory() internal view returns (FastFactory) {
+        bytes memory json = _getNetworkConfigValue("factory");
+        (address _factory) = abi.decode(json, (address));
+        return FastFactory(_factory);
     }
 
     function facilitatorHatId() internal view returns (uint256) {
