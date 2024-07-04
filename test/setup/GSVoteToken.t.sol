@@ -21,6 +21,65 @@ contract GSVoteTokenTest is Test, Accounts {
         assertEq(voteToken().totalSupply(), SUPPLY_AT_SETUP);
 
         assertEq(voteToken().owner(), admin1());
+
+        assertEq(voteToken().balanceOf(voter0()), VOTE_AMOUNT);
+        assertEq(voteToken().balanceOf(voter1()), VOTE_AMOUNT * 2);
+        assertEq(voteToken().balanceOf(voter2()), VOTE_AMOUNT * 3);
+        assertEq(voteToken().balanceOf(voter3()), VOTE_AMOUNT);
+        assertEq(voteToken().balanceOf(voter4()), VOTE_AMOUNT * 4);
+        assertEq(voteToken().balanceOf(voter5()), VOTE_AMOUNT);
+        assertEq(voteToken().balanceOf(voter6()), VOTE_AMOUNT * 7);
+        assertEq(voteToken().balanceOf(voter7()), VOTE_AMOUNT);
+        assertEq(voteToken().balanceOf(voter8()), VOTE_AMOUNT);
+        assertEq(voteToken().balanceOf(voter9()), VOTE_AMOUNT * 3);
+    }
+
+    function testBurn() public {
+        vm.startPrank(admin1());
+        voteToken().burn(voter0(), VOTE_AMOUNT);
+        vm.stopPrank();
+
+        assertEq(voteToken().balanceOf(voter0()), 0);
+        assertEq(voteToken().totalSupply(), SUPPLY_AT_SETUP - VOTE_AMOUNT);
+    }
+
+    function testRevert_unauthorized() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.startPrank(voter0());
+        voteToken().burn(voter0(), VOTE_AMOUNT);
+        vm.stopPrank();
+
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.startPrank(voter0());
+        voteToken().mint(voter0(), VOTE_AMOUNT);
+        vm.stopPrank();
+
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.startPrank(someGuy());
+        voteToken().mint(someGuy(), VOTE_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function testRevert_transfer_noTransfer() public {
+        vm.expectRevert("SBT: Transfers are not allowed");
+        voteToken().transfer(voter1(), VOTE_AMOUNT);
+
+        vm.expectRevert("SBT: Transfers are not allowed");
+        vm.startPrank(voter0());
+        voteToken().transfer(voter1(), VOTE_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function testRevert_transferFrom_noTransfer() public {
+        vm.expectRevert("SBT: Transfers are not allowed");
+        voteToken().transferFrom(voter0(), voter1(), VOTE_AMOUNT);
+
+        vm.expectRevert("SBT: Transfers are not allowed");
+        vm.startPrank(voter0());
+        voteToken().transferFrom(voter0(), voter1(), VOTE_AMOUNT);
+        vm.stopPrank();
     }
 
     function voteToken() public view returns (GSVotingToken) {
@@ -45,7 +104,7 @@ contract GSVoteTokenTest is Test, Accounts {
         voteToken().mint(voter6(), VOTE_AMOUNT * 7);
         voteToken().mint(voter7(), VOTE_AMOUNT);
         voteToken().mint(voter8(), VOTE_AMOUNT);
-        voteToken().mint(admin1(), VOTE_AMOUNT * 3);
+        voteToken().mint(voter9(), VOTE_AMOUNT * 3);
         vm.stopPrank();
     }
 }
