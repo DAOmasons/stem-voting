@@ -17,7 +17,7 @@ contract SBTBalancePoints is IPoints {
     event Initialized(address contest, address token);
 
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "SBTBalancePoints_v0.1.0";
+    string public constant MODULE_NAME = "SBTBalancePoints_v0.1.1";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Points;

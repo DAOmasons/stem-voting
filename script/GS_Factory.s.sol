@@ -16,8 +16,8 @@ import {IModule} from "../src/interfaces/IModule.sol";
 import {HatsPoster} from "../src/factories/gsRough/HatsPoster.sol";
 
 contract RunFactory is Script {
-    string GS_VOTING_VERSION = "v0.1.0";
-    string TAG_PREFIX = "grantShips_deployment_";
+    string GS_VOTING_VERSION = "v0.2.0";
+    string TAG_PREFIX = "grantShips_sbt_deployment_";
     address constant DEV_ADDRESS = 0xDE6bcde54CF040088607199FC541f013bA53C21E;
 
     using stdJson for string;
@@ -64,9 +64,9 @@ contract RunFactory is Script {
         vm.startBroadcast(deployer);
         _setEnvString();
 
-        _addSBTPointsModule();
+        // _addSBTPointsModule();
 
-        // __buildGrantShips();
+        __buildGrantShips();
         // __buildHatsPoster();
 
         // __setupNewFactoryWithModules(deployer);
@@ -253,6 +253,9 @@ contract RunFactory is Script {
         FastFactory fastFactory = FastFactory(getDeploymentAddress("factory"));
         // ERC20VotesPoints pointsTemplate = ERC20VotesPoints(getTemplateAddress("points"));
         SBTBalancePoints pointsTemplate = SBTBalancePoints(getTemplateAddress("sbtPoints"));
+
+        console2.log("Points template address: %s", address(pointsTemplate));
+
         TimedVotes votesTemplate = TimedVotes(getTemplateAddress("votes"));
         HatsAllowList choicesTemplate = HatsAllowList(getTemplateAddress("choices"));
         EmptyExecution executionTemplate = EmptyExecution(getTemplateAddress("execution"));
@@ -263,6 +266,7 @@ contract RunFactory is Script {
         moduleNames[0] = votesTemplate.MODULE_NAME();
 
         // points module data
+        // moduleData[1] = abi.encode(tokenAddress(), _blockNumber);
         moduleData[1] = abi.encode(tokenAddress());
         moduleNames[1] = pointsTemplate.MODULE_NAME();
 
@@ -289,7 +293,8 @@ contract RunFactory is Script {
         console2.log("Votes module address: %s", moduleAddress[0]);
         vm.writeJson(vm.toString(moduleAddress[0]), DEPLOYMENTS_DIR, string.concat(".", _network, ".votes"));
         console2.log("Points module address: %s", moduleAddress[1]);
-        vm.writeJson(vm.toString(moduleAddress[1]), DEPLOYMENTS_DIR, string.concat(".", _network, ".points"));
+        // vm.writeJson(vm.toString(moduleAddress[1]), DEPLOYMENTS_DIR, string.concat(".", _network, ".points"));
+        vm.writeJson(vm.toString(moduleAddress[1]), DEPLOYMENTS_DIR, string.concat(".", _network, ".sbtPoints"));
         console2.log("Choices module address: %s", moduleAddress[2]);
         vm.writeJson(vm.toString(moduleAddress[2]), DEPLOYMENTS_DIR, string.concat(".", _network, ".choices"));
         console2.log("Execution module address: %s", moduleAddress[3]);
