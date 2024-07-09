@@ -1,21 +1,21 @@
 {
   "421614": {
     "networkName": "arbitrumSepolia",
-    "contest": "0xe26FED98E41D55321090A1C83DE9E633132E92BC",
-    "votes": "0x6eAf6Fe78091a1628C446aBc76B3062896550B9e",
-    "choices": "0x6B26dD7c8f9716399a62c4d164c2C4b4E19b1883",
+    "contest": "0x0F7B4f1D615e53a62404e30d4b5Ad20EA3AA41f0",
+    "votes": "0xC60082660659E189Bf70f0788915783af4207Fa2",
+    "choices": "0xCEbcdA364b8dbe2c9900F8f48C31d6dEA9C8972e",
     "points": "0xf53917736e4f81258B596DF7d47865F86aAB160F",
-    "execution": "0x33ba1A84116542b3629613d39B04603872233901",
+    "execution": "0xBdBFEbdcE245073dBdae6569d7E3f32D6210387f",
     "factory": "0x2bABC10b90c67399F820433358fEb85fbB24f22f",
     "hatsPoster": "0x0e05844778b95B2d45092ad26a5871037eE230dA"
   },
   "42161": {
     "networkName": "arbitrumOne",
-    "contest": "0x259B75e0a937a945af7b63596c7cb1de7928389e",
-    "votes": "0x90bA73875D08C2BB088BF57824233Cd0d0c8Ed1F",
-    "choices": "0x58f2ea8522f519A905D5dB246Df49332c8cD47Bd",
+    "contest": "0x2a39aEe0dD9f6409aE9315A7D887f5a7Fb78029A",
+    "votes": "0x1baAB2A495Ee826fdbE680aA1130f18f72106764",
+    "choices": "0xfE94506fe41f0eC4b7FD5907F76C726Ba72F070a",
     "points": "0x846638260363DfBBec723793dC89b8bEcC57C9B3",
-    "execution": "0xc204ad20363c554Bdba72070a067d47d0314dbc2",
+    "execution": "0x056B578742D4815dCf0525AeAcFbf15be61C72c4",
     "factory": "0x98917Fe3554acFB9f982F6A4fE5Ad377EE55ee70",
     "hatsPoster": "0x363a6eFF03cdAbD5Cf4921d9A85eAf7dFd2A7efD"
   }

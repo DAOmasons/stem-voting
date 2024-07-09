@@ -267,8 +267,11 @@ contract RunFactory is Script {
 
         // points module data
         // moduleData[1] = abi.encode(tokenAddress(), _blockNumber);
-        moduleData[1] = abi.encode(tokenAddress());
+        moduleData[1] = abi.encode(sbtTokenAddress());
         moduleNames[1] = pointsTemplate.MODULE_NAME();
+
+        /// SBT VOTING ONLY
+        /// Poplulate with choices from DAO vote
 
         // // choices module data
         moduleData[2] = abi.encode(hatsAddress(), facilitatorHatId(), new bytes[](0));
@@ -378,6 +381,12 @@ contract RunFactory is Script {
         bytes memory json = _getNetworkConfigValue("tokenAddress");
         (address _tokenAddress) = abi.decode(json, (address));
         return _tokenAddress;
+    }
+
+    function sbtTokenAddress() internal view returns (address) {
+        bytes memory json = _getNetworkConfigValue("sbtTokenAddress");
+        (address _sbtToken) = abi.decode(json, (address));
+        return _sbtToken;
     }
 
     function deploymentNonce() internal view returns (uint256) {
