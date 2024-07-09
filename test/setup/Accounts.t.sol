@@ -20,6 +20,10 @@ contract Accounts is StdCheats {
         return makeAddr("admin_3");
     }
 
+    function sbtMinter() public returns (address) {
+        return makeAddr("sbt_minter");
+    }
+
     // //////////////////////
     // Voters
     // //////////////////////
