@@ -109,7 +109,12 @@ contract SBTBalancePoints is IPoints {
 
         uint256 allocatedVotingPoints = allocatedPoints[_user];
 
-        return totalVotingPoints - allocatedVotingPoints;
+        // prevent underflow
+        if (totalVotingPoints < allocatedVotingPoints) {
+            return 0;
+        } else {
+            return totalVotingPoints - allocatedVotingPoints;
+        }
     }
 
     /// @notice Checks if a user has the specified voting points

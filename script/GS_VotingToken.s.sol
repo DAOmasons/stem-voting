@@ -48,9 +48,11 @@ contract ManageSBT is Script {
     function _mintToVoters() internal {
         GSVotingToken token = GSVotingToken(sbtTokenAddress());
 
-        token.mint(0xAc8618BeECBd3C950e1f684bEe22969e38EC629F, 10_000e18);
-        token.mint(0x0c19299D30AfC4748369c85f92ADC50D4df5B7b9, 10_000e18);
-        token.mint(0xB336b490eeAB1e0Dd514d1160c791D26F23b1283, 10_000e18);
+        token.burn(0xDE6bcde54CF040088607199FC541f013bA53C21E, 10_000e18);
+        token.burn(0x57abda4ee50Bb3079A556C878b2c345310057569, 10_000e18);
+        token.burn(0xAc8618BeECBd3C950e1f684bEe22969e38EC629F, 10_000e18);
+        token.burn(0x0c19299D30AfC4748369c85f92ADC50D4df5B7b9, 10_000e18);
+        token.burn(0xB336b490eeAB1e0Dd514d1160c791D26F23b1283, 10_000e18);
     }
 
     function _getNetworkConfigValue(string memory _key) internal view returns (bytes memory) {

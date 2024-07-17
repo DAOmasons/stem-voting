@@ -190,6 +190,19 @@ contract SBTBalancePointsTest is Test, Accounts {
         vm.stopPrank();
     }
 
+    function testSoftRevert_mint_vote_burn() public {
+        _allocatePoints(0);
+
+        vm.prank(sbtMinter());
+        voteToken().burn(voter0(), VOTE_AMOUNT);
+        vm.stopPrank();
+
+        pointsModule().getPoints(voter0());
+        pointsModule().getAllocatedPoints(voter0());
+        pointsModule().hasVotingPoints(voter0(), VOTE_AMOUNT);
+        pointsModule().hasAllocatedPoints(voter0(), VOTE_AMOUNT);
+    }
+
     //////////////////////////////
     // Getters
     //////////////////////////////
