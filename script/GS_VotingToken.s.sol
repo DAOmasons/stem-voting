@@ -71,7 +71,7 @@ contract ManageSBT is Script {
         // token.mint(0x516cAfD745Ec780D20f61c0d71fe258eA765222D, 3636e18);
         // token.mint(0x603185043f3B4E1342B734dFE77c0d3e0297fC7a, 3636e18);
         // token.mint(0xCED608Aa29bB92185D9b6340Adcbfa263DAe075b, 3636e18);
-        // token.mint(0x997D35b300bA1775fdB175dF045252e57D6EA5B0, 3636e18);
+        token.mint(0xdfBecC0b4aEF80b96Da27aB483feb0892472eaC2, 3636e18);
         // token.mint(0xcBf407C33d68a55CB594Ffc8f4fD1416Bba39DA5, 3636e18);
         // token.mint(0x1421d52714B01298E2e9AA969e14c9317B3E1CFA, 3636e18);
         // token.mint(0x01Cf9fD2efa5Fdf178bd635c3E2adF25B2052712, 3636e18);
