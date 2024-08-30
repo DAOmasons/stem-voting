@@ -27,10 +27,12 @@ contract DualTokenTimedV0 is IVotes {
     event VotingStarted(uint256 startTime, uint256 endTime);
 
     /// @notice Emitted when a vote is cast
-    event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
+    event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason, address _votingToken);
 
     /// @notice Emitted when a vote is retracted
-    event VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
+    event VoteRetracted(
+        address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason, address _votingToken
+    );
 
     /// ===============================
     /// ========== Storage ============
@@ -66,11 +68,25 @@ contract DualTokenTimedV0 is IVotes {
 
     /// @notice Mapping of choiceId to voter to vote amount
     /// @dev choiceId => voter => amount
-    mapping(bytes32 => mapping(address => uint256)) public votes;
+    mapping(bytes32 => mapping(address => uint256)) public contextVotes;
+
+    /// @notice Mapping of choiceId to voter to vote amount
+    /// @dev choiceId => voter => amount
+    mapping(bytes32 => mapping(address => uint256)) public daoVotes;
 
     /// @notice Mapping of choiceId to total votes for that choice
     /// @dev choiceId => totalVotes
-    mapping(bytes32 => uint256) public totalVotesForChoice;
+    mapping(bytes32 => uint256) public totalContextVotesForChoice;
+
+    /// @notice Mapping of choiceId to total votes for that choice
+    /// @dev choiceId => totalVotes
+    mapping(bytes32 => uint256) public totalDaoVotesForChoice;
+
+    /// @notice total context votes across all choices
+    uint256 public totalContextVotes;
+
+    /// @notice total dao votes across all choices
+    uint256 public totalDaoVotes;
 
     /// ===============================
     /// ========== Modifiers ==========
@@ -119,10 +135,14 @@ contract DualTokenTimedV0 is IVotes {
 
     /// @notice Sets the start time of the voting period, links points module
     /// @param _startTime The start time of the voting period
-    function setupVoting(uint256 _startTime) public {
+    function setupVoting(uint256 _startTime, address _pointModule) public {
         require(contest.isStatus(ContestStatus.Voting), "Contest is not in voting state");
 
         require(startTime == 0, "Voting has already started");
+
+        require(_pointModule != address(0), "Invalid point module");
+
+        pointModule = DualTokenPointsV0(_pointModule);
 
         if (_startTime == 0) {
             startTime = block.timestamp;
@@ -154,12 +174,29 @@ contract DualTokenTimedV0 is IVotes {
         onlyContest
         onlyDuringVotingPeriod
     {
-        votes[_choiceId][_voter] += _amount;
-        totalVotesForChoice[_choiceId] += _amount;
+        (Metadata memory _reason, address _votingToken) = abi.decode(_data, (Metadata, address));
 
-        (Metadata memory _reason) = abi.decode(_data, (Metadata));
+        require(isAcceptedToken(_votingToken), "Invalid voting token");
 
-        emit VoteCast(_voter, _choiceId, _amount, _reason);
+        if (_votingToken == daoToken) {
+            uint256 votedAmount = daoVotes[_choiceId][_voter];
+
+            require(pointModule.getDaoVotingPower(_voter) >= _amount - votedAmount, "Insufficient voting power");
+
+            daoVotes[_choiceId][_voter] += _amount;
+            totalDaoVotesForChoice[_choiceId] += _amount;
+            totalDaoVotes += _amount;
+        } else {
+            uint256 votedAmount = contextVotes[_choiceId][_voter];
+
+            require(pointModule.getContextVotingPower(_voter) >= _amount - votedAmount, "Insufficient voting power");
+
+            contextVotes[_choiceId][_voter] += _amount;
+            totalContextVotesForChoice[_choiceId] += _amount;
+            totalContextVotes += _amount;
+        }
+
+        emit VoteCast(_voter, _choiceId, _amount, _reason, _votingToken);
     }
 
     /// @notice Retracts a vote for a choice
@@ -171,32 +208,61 @@ contract DualTokenTimedV0 is IVotes {
         onlyContest
         onlyDuringVotingPeriod
     {
-        uint256 votedAmount = votes[_choiceId][_voter];
-        require(votedAmount >= _amount, "Retracted amount exceeds vote amount");
+        (Metadata memory _reason, address _votingToken) = abi.decode(_data, (Metadata, address));
 
-        votes[_choiceId][_voter] -= _amount;
-        totalVotesForChoice[_choiceId] -= _amount;
+        require(isAcceptedToken(_votingToken), "Invalid voting token");
 
-        (Metadata memory _reason) = abi.decode(_data, (Metadata));
+        if (_votingToken == daoToken) {
+            require(daoVotes[_choiceId][_voter] >= _amount, "Insufficient votes");
 
-        emit VoteRetracted(_voter, _choiceId, _amount, _reason);
+            daoVotes[_choiceId][_voter] -= _amount;
+            totalDaoVotesForChoice[_choiceId] -= _amount;
+            totalDaoVotes -= _amount;
+        } else {
+            require(contextVotes[_choiceId][_voter] >= _amount, "Insufficient votes");
+
+            contextVotes[_choiceId][_voter] -= _amount;
+            totalContextVotesForChoice[_choiceId] -= _amount;
+            totalContextVotes -= _amount;
+        }
+
+        emit VoteRetracted(_voter, _choiceId, _amount, _reason, _votingToken);
     }
 
     /// ===============================
     /// ========== Getters ============
     /// ===============================
 
+    function isAcceptedToken(address _token) public view returns (bool) {
+        return _token == daoToken || _token == contextToken;
+    }
+
     /// @notice Gets the total votes for a choice
     /// @param _choiceId The unique identifier for the choice
     /// @return The total votes for the choice
     function getTotalVotesForChoice(bytes32 _choiceId) public view returns (uint256) {
-        return totalVotesForChoice[_choiceId];
+        return totalDaoVotesForChoice[_choiceId] + totalContextVotesForChoice[_choiceId];
+    }
+
+    function getTotalVotesForChoices() public view returns (uint256, uint256) {
+        return (totalDaoVotes, totalContextVotes);
     }
 
     /// @notice Gets the votes for a choice by a voter
     /// @param _choiceId The unique identifier for the choice
     /// @param voter The address of the voter
-    function getChoiceVotesByVoter(bytes32 _choiceId, address voter) public view returns (uint256) {
-        return votes[_choiceId][voter];
+    /// @param tokenAddress The address of the voting token
+    function getChoiceVotesByVoter(bytes32 _choiceId, address voter, address tokenAddress)
+        public
+        view
+        returns (uint256)
+    {
+        require(isAcceptedToken(tokenAddress), "Invalid voting token");
+
+        if (tokenAddress == daoToken) {
+            return daoVotes[_choiceId][voter];
+        } else {
+            return contextVotes[_choiceId][voter];
+        }
     }
 }
