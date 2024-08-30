@@ -6,7 +6,7 @@ import {IPoints} from "../../interfaces/IPoints.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-/// @title DualTokenPointsV0
+/// @title DualTokenPoints
 /// @author @jord<https://github.com/jordanlesich>
 /// @notice Points module that tests a Dual Token voting strategy between a core DAO and a smaller community DAO (context token).
 contract DualTokenPointsV0 is IPoints {
@@ -122,6 +122,20 @@ contract DualTokenPointsV0 is IPoints {
         return allocatedPoints[_user];
     }
 
+    /// @notice Gets a user's voting power for the DAO token
+    /// @param _user The address of the user
+    function getDaoVotingPower(address _user) public view returns (uint256) {
+        return voteToken.getPastVotes(_user, votingCheckpoint);
+    }
+
+    /// @notice Gets a user's voting power for the context token
+    /// @param _user The address of the user
+    function getContextVotingPower(address _user) public view returns (uint256) {
+        return contextToken.balanceOf(_user);
+    }
+
+    /// @notice Gets the aggregate voting power for a user, between the DAO token and context token
+    /// @param _user The address of the user
     function getAggregateVotingPower(address _user) public view returns (uint256) {
         uint256 daoVotingPower = voteToken.getPastVotes(_user, votingCheckpoint);
         uint256 contextVotingPower = contextToken.balanceOf(_user);
