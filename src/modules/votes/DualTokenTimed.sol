@@ -11,7 +11,7 @@ import {DualTokenPointsV0} from "../points/DualTokenPointsV0.sol";
 import {ContestStatus} from "../../core/ContestStatus.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 
-/// @title DualTokenTimed
+/// @title DualTokenTimedV0
 /// @author @jord<https://github.com/jordanlesich>
 /// @notice Timed voting module that incorporates a dual token voting strategy.
 /// @notice this module is NOT PURELY MODULAR, requires DualTokenPointsV0
@@ -24,7 +24,7 @@ contract DualTokenTimedV0 is IVotes {
     event Initialized(address contest, uint256 duration, address daoToken, address contextToken);
 
     /// @notice Emitted when voting has started
-    event VotingStarted(uint256 startTime, uint256 endTime);
+    event VotingStarted(uint256 startTime, uint256 endTime, address pointModule);
 
     /// @notice Emitted when a vote is cast
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason, address _votingToken);
@@ -154,7 +154,7 @@ contract DualTokenTimedV0 is IVotes {
 
         endTime = startTime + duration;
 
-        emit VotingStarted(startTime, endTime);
+        emit VotingStarted(startTime, endTime, _pointModule);
     }
 
     /// @notice Finalizes the voting period
