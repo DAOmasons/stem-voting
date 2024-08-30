@@ -103,160 +103,160 @@ contract DualTokenPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accoun
         assertEq(pointsModule.contest(), address(this));
     }
 
-    // function test_allocatePoints_total() public {
-    //     _allocatePoints(0);
+    function test_allocatePoints_total() public {
+        _allocatePoints(0);
 
-    //     uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
-    //     uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
+        uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
 
-    //     assertEq(allocatedPoints, voteAmount);
-    //     assertEq(pointsLeft, 0);
-    // }
+        assertEq(allocatedPoints, voteAmount);
+        assertEq(pointsLeft, 0);
+    }
 
-    // function test_allocatePoints_partial() public {
-    //     _initialize();
+    function test_allocatePoints_partial() public {
+        _initialize();
 
-    //     pointsModule.allocatePoints(_voters[0], voteAmount / 2);
+        pointsModule.allocatePoints(_voters[0], voteAmount / 2);
 
-    //     uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
-    //     uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
+        uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
 
-    //     assertEq(pointsLeft, voteAmount / 2);
-    //     assertEq(allocatedPoints, voteAmount / 2);
+        assertEq(pointsLeft, voteAmount / 2);
+        assertEq(allocatedPoints, voteAmount / 2);
 
-    //     pointsModule.allocatePoints(_voters[0], voteAmount / 2);
+        pointsModule.allocatePoints(_voters[0], voteAmount / 2);
 
-    //     allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
-    //     pointsLeft = pointsModule.getPoints(_voters[0]);
+        allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        pointsLeft = pointsModule.getPoints(_voters[0]);
 
-    //     assertEq(allocatedPoints, voteAmount);
-    //     assertEq(pointsLeft, 0);
-    // }
+        assertEq(allocatedPoints, voteAmount);
+        assertEq(pointsLeft, 0);
+    }
 
-    // function test_releasePoints_total() public {
-    //     _releasePoints(0);
+    function test_releasePoints_total() public {
+        _releasePoints(0);
 
-    //     uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
-    //     uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
+        uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
 
-    //     assertEq(allocatedPoints, 0);
-    //     assertEq(pointsLeft, voteAmount);
-    // }
+        assertEq(allocatedPoints, 0);
+        assertEq(pointsLeft, voteAmount);
+    }
 
-    // function test_releasePoints_partial() public {
-    //     _allocatePoints(0);
+    function test_releasePoints_partial() public {
+        _allocatePoints(0);
 
-    //     pointsModule.releasePoints(_voters[0], voteAmount / 2);
+        pointsModule.releasePoints(_voters[0], voteAmount / 2);
 
-    //     uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
-    //     uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
+        uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
 
-    //     assertEq(allocatedPoints, voteAmount / 2);
-    //     assertEq(pointsLeft, voteAmount / 2);
+        assertEq(allocatedPoints, voteAmount / 2);
+        assertEq(pointsLeft, voteAmount / 2);
 
-    //     pointsModule.releasePoints(_voters[0], voteAmount / 2);
+        pointsModule.releasePoints(_voters[0], voteAmount / 2);
 
-    //     allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
-    //     pointsLeft = pointsModule.getPoints(_voters[0]);
+        allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
+        pointsLeft = pointsModule.getPoints(_voters[0]);
 
-    //     assertEq(allocatedPoints, 0);
-    //     assertEq(pointsLeft, voteAmount);
-    // }
+        assertEq(allocatedPoints, 0);
+        assertEq(pointsLeft, voteAmount);
+    }
 
     //////////////////////////////
     // Reverts
     //////////////////////////////
 
-    // function testRevertAllocate_nonContest() public {
-    //     _initialize();
+    function testRevertAllocate_nonContest() public {
+        _initialize();
 
-    //     vm.prank(voter0());
-    //     vm.expectRevert("Only contest");
-    //     pointsModule.allocatePoints(voter0(), voteAmount);
+        vm.prank(voter0());
+        vm.expectRevert("Only contest");
+        pointsModule.allocatePoints(voter0(), voteAmount);
 
-    //     vm.expectRevert("Only contest");
-    //     vm.prank(someGuy());
-    //     pointsModule.allocatePoints(voter0(), voteAmount);
-    // }
+        vm.expectRevert("Only contest");
+        vm.prank(someGuy());
+        pointsModule.allocatePoints(voter0(), voteAmount);
+    }
 
-    // function testRevertAllocate_nonZero() public {
-    //     _initialize();
+    function testRevertAllocate_nonZero() public {
+        _initialize();
 
-    //     vm.expectRevert("Amount must be greater than 0");
-    //     pointsModule.allocatePoints(voter0(), 0);
-    // }
+        vm.expectRevert("Amount must be greater than 0");
+        pointsModule.allocatePoints(voter0(), 0);
+    }
 
-    // function testRevertAllocate_insufficient() public {
-    //     _initialize();
+    function testRevertAllocate_insufficient() public {
+        _initialize();
 
-    //     vm.expectRevert("Insufficient points available");
-    //     pointsModule.allocatePoints(voter0(), voteAmount + 1);
+        vm.expectRevert("Insufficient points available");
+        pointsModule.allocatePoints(voter0(), voteAmount + 1);
 
-    //     vm.expectRevert("Insufficient points available");
-    //     pointsModule.allocatePoints(someGuy(), voteAmount);
-    // }
+        vm.expectRevert("Insufficient points available");
+        pointsModule.allocatePoints(someGuy(), voteAmount);
+    }
 
-    // function testRevertRelease_nonContest() public {
-    //     _initialize();
+    function testRevertRelease_nonContest() public {
+        _initialize();
 
-    //     vm.prank(voter0());
-    //     vm.expectRevert("Only contest");
-    //     pointsModule.releasePoints(voter0(), voteAmount);
+        vm.prank(voter0());
+        vm.expectRevert("Only contest");
+        pointsModule.releasePoints(voter0(), voteAmount);
 
-    //     vm.expectRevert("Only contest");
-    //     vm.prank(someGuy());
-    //     pointsModule.releasePoints(voter0(), voteAmount);
-    // }
+        vm.expectRevert("Only contest");
+        vm.prank(someGuy());
+        pointsModule.releasePoints(voter0(), voteAmount);
+    }
 
-    // function testRevertRelease_nonZero() public {
-    //     _initialize();
+    function testRevertRelease_nonZero() public {
+        _initialize();
 
-    //     vm.expectRevert("Amount must be greater than 0");
-    //     pointsModule.releasePoints(voter0(), 0);
-    // }
+        vm.expectRevert("Amount must be greater than 0");
+        pointsModule.releasePoints(voter0(), 0);
+    }
 
-    // function testRevertRelease_insufficient() public {
-    //     _initialize();
+    function testRevertRelease_insufficient() public {
+        _initialize();
 
-    //     vm.expectRevert("Insufficient points allocated");
-    //     pointsModule.releasePoints(voter0(), voteAmount + 1);
+        vm.expectRevert("Insufficient points allocated");
+        pointsModule.releasePoints(voter0(), voteAmount + 1);
 
-    //     vm.expectRevert("Insufficient points allocated");
-    //     pointsModule.releasePoints(someGuy(), voteAmount);
-    // }
+        vm.expectRevert("Insufficient points allocated");
+        pointsModule.releasePoints(someGuy(), voteAmount);
+    }
 
-    // function testRevertClaimPoints() public {
-    //     _initialize();
+    function testRevertClaimPoints() public {
+        _initialize();
 
-    //     vm.expectRevert("This contract does not require users to claim points.");
-    //     pointsModule.claimPoints();
-    // }
+        vm.expectRevert("This contract does not require users to claim points.");
+        pointsModule.claimPoints();
+    }
 
     //////////////////////////////
     // Adversarial
     //////////////////////////////
 
-    // function testRevertAllocate_doublespend() public {
-    //     _initialize();
+    function testRevertAllocate_doublespend() public {
+        _initialize();
 
-    //     pointsModule.allocatePoints(voter0(), voteAmount);
+        pointsModule.allocatePoints(voter0(), voteAmount);
 
-    //     vm.expectRevert("Insufficient points available");
-    //     pointsModule.allocatePoints(voter0(), voteAmount);
-    // }
+        vm.expectRevert("Insufficient points available");
+        pointsModule.allocatePoints(voter0(), voteAmount);
+    }
 
-    // function testRevertAllocate_doublespend_transfer() public {
-    //     _initialize();
+    function testRevertAllocate_doublespend_transfer() public {
+        _initialize();
 
-    //     pointsModule.allocatePoints(voter0(), voteAmount);
+        pointsModule.allocatePoints(voter0(), voteAmount);
 
-    //     vm.startPrank(voter0());
-    //     arbToken().transfer(someGuy(), voteAmount);
-    //     vm.stopPrank();
+        vm.startPrank(voter0());
+        arbToken().transfer(someGuy(), daoTokenAmount);
+        vm.stopPrank();
 
-    //     vm.expectRevert("Insufficient points available");
-    //     pointsModule.allocatePoints(someGuy(), voteAmount);
-    // }
+        vm.expectRevert("Insufficient points available");
+        pointsModule.allocatePoints(someGuy(), voteAmount);
+    }
 
     //////////////////////////////
     // Getters
@@ -298,6 +298,18 @@ contract DualTokenPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accoun
             pointsModule.allocatePoints(_voters[i], voteAmount);
             hasPoints = pointsModule.hasVotingPoints(_voters[i], voteAmount);
             assertFalse(hasPoints);
+        }
+    }
+
+    function test_getSeparateValues() public {
+        _initialize();
+
+        for (uint256 i = 0; i < _voters.length; i++) {
+            uint256 allocatedDaoToken = pointsModule.getDaoVotingPower(_voters[i]);
+            assertEq(allocatedDaoToken, daoTokenAmount);
+
+            uint256 allocatedContextToken = pointsModule.getContextVotingPower(_voters[i]);
+            assertEq(allocatedContextToken, contextTokenAmount);
         }
     }
 
