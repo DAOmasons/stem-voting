@@ -74,6 +74,16 @@ contract DualTokenTimedV0 is IVotes {
     /// @dev choiceId => voter => amount
     mapping(bytes32 => mapping(address => uint256)) public daoVotes;
 
+    /// @notice Mapping of voter to total amount of votes
+    /// @dev voter => totalVotes
+    /// @notice inelegant, but necessary --researching a better solution
+    mapping(address => uint256) public daoVotesForVoter;
+
+    /// @notice Mapping of voter to total amount of votes
+    /// @dev voter => totalVotes
+    /// @notice inelegant, but necessary --researching a better solution
+    mapping(address => uint256) public contextVotesForVoter;
+
     /// @notice Mapping of choiceId to total votes for that choice
     /// @dev choiceId => totalVotes
     mapping(bytes32 => uint256) public totalContextVotesForChoice;
@@ -83,10 +93,8 @@ contract DualTokenTimedV0 is IVotes {
     mapping(bytes32 => uint256) public totalDaoVotesForChoice;
 
     /// @notice total context votes across all choices
-    uint256 public totalContextVotes;
 
     /// @notice total dao votes across all choices
-    uint256 public totalDaoVotes;
 
     /// ===============================
     /// ========== Modifiers ==========
@@ -179,21 +187,23 @@ contract DualTokenTimedV0 is IVotes {
         require(isAcceptedToken(_votingToken), "Invalid voting token");
 
         if (_votingToken == daoToken) {
-            uint256 votedAmount = daoVotes[_choiceId][_voter];
+            uint256 votedAmount = daoVotesForVoter[_voter];
 
-            require(pointModule.getDaoVotingPower(_voter) >= _amount - votedAmount, "Insufficient voting power");
+            console.log(votedAmount);
+
+            require(pointModule.getDaoVotingPower(_voter) - votedAmount >= _amount, "Insufficient voting power");
 
             daoVotes[_choiceId][_voter] += _amount;
             totalDaoVotesForChoice[_choiceId] += _amount;
-            totalDaoVotes += _amount;
+            daoVotesForVoter[_voter] += _amount;
         } else {
-            uint256 votedAmount = contextVotes[_choiceId][_voter];
+            uint256 votedAmount = contextVotesForVoter[_voter];
 
-            require(pointModule.getContextVotingPower(_voter) >= _amount - votedAmount, "Insufficient voting power");
+            require(pointModule.getContextVotingPower(_voter) - votedAmount >= _amount, "Insufficient voting power");
 
             contextVotes[_choiceId][_voter] += _amount;
             totalContextVotesForChoice[_choiceId] += _amount;
-            totalContextVotes += _amount;
+            contextVotesForVoter[_voter] += _amount;
         }
 
         emit VoteCast(_voter, _choiceId, _amount, _reason, _votingToken);
@@ -213,17 +223,15 @@ contract DualTokenTimedV0 is IVotes {
         require(isAcceptedToken(_votingToken), "Invalid voting token");
 
         if (_votingToken == daoToken) {
-            require(daoVotes[_choiceId][_voter] >= _amount, "Insufficient votes");
+            require(daoVotesForVoter[_voter] >= _amount, "Insufficient votes");
 
             daoVotes[_choiceId][_voter] -= _amount;
             totalDaoVotesForChoice[_choiceId] -= _amount;
-            totalDaoVotes -= _amount;
         } else {
-            require(contextVotes[_choiceId][_voter] >= _amount, "Insufficient votes");
+            require(contextVotesForVoter[_voter] >= _amount, "Insufficient votes");
 
             contextVotes[_choiceId][_voter] -= _amount;
             totalContextVotesForChoice[_choiceId] -= _amount;
-            totalContextVotes -= _amount;
         }
 
         emit VoteRetracted(_voter, _choiceId, _amount, _reason, _votingToken);
@@ -242,10 +250,6 @@ contract DualTokenTimedV0 is IVotes {
     /// @return The total votes for the choice
     function getTotalVotesForChoice(bytes32 _choiceId) public view returns (uint256) {
         return totalDaoVotesForChoice[_choiceId] + totalContextVotesForChoice[_choiceId];
-    }
-
-    function getTotalVotesForChoices() public view returns (uint256, uint256) {
-        return (totalDaoVotes, totalContextVotes);
     }
 
     /// @notice Gets the votes for a choice by a voter

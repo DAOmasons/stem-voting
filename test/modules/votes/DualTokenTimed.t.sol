@@ -92,10 +92,6 @@ contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockCon
         _setVotingTime_now();
         _vote_daoToken();
 
-        (uint256 daoVotes, uint256 contextVotes) = votesModule.getTotalVotesForChoices();
-
-        assertEq(daoVotes, _daoAmount);
-        assertEq(contextVotes, 0);
         assertEq(votesModule.daoVotes(choice1(), address(voter1())), _daoAmount);
         assertEq(votesModule.contextVotes(choice1(), address(voter1())), 0);
     }
@@ -104,10 +100,6 @@ contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockCon
         _setVotingTime_now();
         _vote_contextToken();
 
-        (uint256 daoVotes, uint256 contextVotes) = votesModule.getTotalVotesForChoices();
-
-        assertEq(daoVotes, 0);
-        assertEq(contextVotes, _contextAmount);
         assertEq(votesModule.daoVotes(choice1(), address(voter1())), 0);
         assertEq(votesModule.contextVotes(choice1(), address(voter1())), _contextAmount);
     }
@@ -117,15 +109,10 @@ contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockCon
         _vote_daoToken();
         _vote_contextToken();
 
-        (uint256 daoVotes, uint256 contextVotes) = votesModule.getTotalVotesForChoices();
-
         votesModule.getTotalVotesForChoice(choice1());
 
         assertEq(votesModule.daoVotes(choice1(), address(voter1())), _daoAmount);
         assertEq(votesModule.contextVotes(choice1(), address(voter1())), _contextAmount);
-
-        assertEq(daoVotes, _daoAmount);
-        assertEq(contextVotes, _contextAmount);
     }
 
     function test_retract_dao() public {
@@ -327,19 +314,40 @@ contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockCon
 
         vm.startPrank(address(mockContest()));
 
-        votesModule.vote(voter2(), choice1(), _daoAmount / 2, abi.encode(_reason, address(arbToken())));
-        votesModule.vote(voter2(), choice2(), _daoAmount / 2, abi.encode(_reason, address(arbToken())));
+        votesModule.vote(voter0(), choice1(), _daoAmount / 2, abi.encode(_reason, address(arbToken())));
+        votesModule.vote(voter0(), choice2(), _daoAmount / 2, abi.encode(_reason, address(arbToken())));
 
-        votesModule.vote(voter2(), choice1(), _contextAmount / 2, abi.encode(_reason, address(loot())));
-        votesModule.vote(voter2(), choice2(), _contextAmount / 2, abi.encode(_reason, address(loot())));
+        votesModule.vote(voter0(), choice1(), _contextAmount / 2, abi.encode(_reason, address(loot())));
+        votesModule.vote(voter0(), choice2(), _contextAmount / 2, abi.encode(_reason, address(loot())));
 
-        votesModule.vote(voter3(), choice1(), _daoAmount / 3, abi.encode(_reason, address(arbToken())));
-        votesModule.vote(voter3(), choice2(), _daoAmount / 3, abi.encode(_reason, address(arbToken())));
-        votesModule.vote(voter3(), protestVote(), _daoAmount / 3, abi.encode(_reason, address(arbToken())));
+        votesModule.vote(voter2(), choice1(), _daoAmount / 3, abi.encode(_reason, address(arbToken())));
+        votesModule.vote(voter2(), choice2(), _daoAmount / 3, abi.encode(_reason, address(arbToken())));
+        votesModule.vote(voter2(), protestVote(), _daoAmount / 3, abi.encode(_reason, address(arbToken())));
 
-        votesModule.vote(voter3(), choice1(), _contextAmount / 3, abi.encode(_reason, address(loot())));
-        votesModule.vote(voter3(), choice2(), _contextAmount / 3, abi.encode(_reason, address(loot())));
-        votesModule.vote(voter3(), protestVote(), _contextAmount / 3, abi.encode(_reason, address(loot())));
+        votesModule.vote(voter2(), choice1(), _contextAmount / 3, abi.encode(_reason, address(loot())));
+        votesModule.vote(voter2(), choice2(), _contextAmount / 3, abi.encode(_reason, address(loot())));
+        votesModule.vote(voter2(), protestVote(), _contextAmount / 3, abi.encode(_reason, address(loot())));
+
+        assertEq(
+            votesModule.getTotalVotesForChoice(choice1()),
+            _daoAmount + _contextAmount + _daoAmount / 2 + _contextAmount / 2 + _daoAmount / 3 + _contextAmount / 3
+        );
+
+        assertEq(
+            votesModule.getTotalVotesForChoice(choice2()),
+            _daoAmount / 2 + _contextAmount / 2 + _daoAmount / 3 + _contextAmount / 3
+        );
+
+        assertEq(votesModule.getTotalVotesForChoice(protestVote()), _daoAmount / 3 + _contextAmount / 3);
+
+        assertEq(votesModule.daoVotesForVoter(voter2()), _daoAmount - 1); // rounding
+        assertEq(votesModule.contextVotesForVoter(voter2()), _contextAmount);
+
+        assertEq(votesModule.daoVotesForVoter(voter1()), _daoAmount);
+        assertEq(votesModule.contextVotesForVoter(voter1()), _contextAmount);
+
+        assertEq(votesModule.daoVotesForVoter(voter0()), _daoAmount);
+        assertEq(votesModule.contextVotesForVoter(voter0()), _contextAmount);
     }
 
     //////////////////////////////
