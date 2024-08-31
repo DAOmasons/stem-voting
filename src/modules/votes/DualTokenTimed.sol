@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
+// import "forge-std/Test.sol";
 
 import "../../interfaces/IVotes.sol";
 import {Metadata} from "../../core/Metadata.sol";
@@ -188,8 +188,6 @@ contract DualTokenTimedV0 is IVotes {
 
         if (_votingToken == daoToken) {
             uint256 votedAmount = daoVotesForVoter[_voter];
-
-            console.log(votedAmount);
 
             require(pointModule.getDaoVotingPower(_voter) - votedAmount >= _amount, "Insufficient voting power");
 
