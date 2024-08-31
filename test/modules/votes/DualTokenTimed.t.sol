@@ -171,8 +171,152 @@ contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockCon
     function testRevert_setVotingTime_now_contestNotVoteStatus() public {
         _inititalize();
 
+        mockContest().cheatStatus(ContestStatus.None);
+
         vm.expectRevert("Contest is not in voting state");
         votesModule.setupVoting(0, address(pointsModule));
+
+        mockContest().cheatStatus(ContestStatus.Populating);
+
+        vm.expectRevert("Contest is not in voting state");
+        votesModule.setupVoting(0, address(pointsModule));
+
+        mockContest().cheatStatus(ContestStatus.Continuous);
+
+        vm.expectRevert("Contest is not in voting state");
+        votesModule.setupVoting(0, address(pointsModule));
+
+        mockContest().cheatStatus(ContestStatus.Finalized);
+
+        vm.expectRevert("Contest is not in voting state");
+        votesModule.setupVoting(0, address(pointsModule));
+
+        mockContest().cheatStatus(ContestStatus.Executed);
+
+        vm.expectRevert("Contest is not in voting state");
+        votesModule.setupVoting(0, address(pointsModule));
+
+        mockContest().cheatStatus(ContestStatus.Voting);
+        votesModule.setupVoting(0, address(pointsModule));
+    }
+
+    function testRevert_setVotingTime_later_contestNotVoteStatus() public {
+        _inititalize();
+
+        mockContest().cheatStatus(ContestStatus.None);
+
+        vm.expectRevert("Contest is not in voting state");
+        votesModule.setupVoting(block.timestamp + TWO_WEEKS, address(pointsModule));
+    }
+
+    function testRevert_setVotingTime_later_startTimeInPast() public {
+        _inititalize();
+
+        mockContest().cheatStatus(ContestStatus.Voting);
+
+        vm.expectRevert("Start time must be in the future");
+        votesModule.setupVoting(block.timestamp - 1, address(pointsModule));
+
+        votesModule.setupVoting(block.timestamp + 1, address(pointsModule));
+    }
+
+    function testRevert_setVotingTime_now_alreadyStarted() public {
+        _setVotingTime_now();
+
+        vm.expectRevert("Voting has already started");
+        votesModule.setupVoting(0, address(pointsModule));
+
+        vm.expectRevert("Voting has already started");
+        votesModule.setupVoting(block.timestamp + 1, address(pointsModule));
+    }
+
+    function testRevert_setVotingTime_later_alreadyStarted() public {
+        _setVotingTime_later();
+
+        vm.expectRevert("Must vote within voting period");
+        vm.prank(address(mockContest()));
+        votesModule.vote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+
+        vm.warp(block.timestamp + TWO_WEEKS);
+        vm.prank(address(mockContest()));
+        votesModule.vote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+    }
+
+    function testRevert_voteWithinVotePeriod_before() public {
+        _setVotingTime_later();
+
+        vm.expectRevert("Must vote within voting period");
+        vm.prank(address(mockContest()));
+        votesModule.vote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+    }
+
+    function testRevert_voteWithinVotePeriod_after() public {
+        _setVotingTime_now();
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        vm.expectRevert("Must vote within voting period");
+        vm.prank(address(mockContest()));
+        votesModule.vote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+    }
+
+    function testRevert_vote_notContest() public {
+        _setVotingTime_now();
+
+        vm.prank(voter1());
+        vm.expectRevert("Only contest");
+        votesModule.vote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+
+        vm.prank(someGuy());
+        vm.expectRevert("Only contest");
+        votesModule.vote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+    }
+
+    function testRevert_retract_not_contest() public {
+        vm.prank(voter1());
+        vm.expectRevert("Only contest");
+        votesModule.retractVote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+
+        vm.startPrank(someGuy());
+        vm.expectRevert("Only contest");
+        votesModule.retractVote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+    }
+
+    function testRevert_retract_more_than_voted() public {
+        _setVotingTime_now();
+
+        _vote_contextToken();
+        _vote_daoToken();
+
+        vm.startPrank(address(mockContest()));
+
+        vm.expectRevert("Insufficient votes");
+        votesModule.retractVote(voter1(), choice1(), _contextAmount + 1, abi.encode(_reason, address(loot())));
+
+        vm.expectRevert("Insufficient votes");
+        votesModule.retractVote(voter1(), choice1(), _daoAmount + 1, abi.encode(_reason, address(arbToken())));
+
+        votesModule.retractVote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+
+        votesModule.retractVote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(arbToken())));
+        vm.stopPrank();
+    }
+
+    function testRevert_finalize_notEnded() public {
+        _setVotingTime_now();
+
+        _vote_contextToken();
+
+        vm.expectRevert("Voting period has not ended");
+        votesModule.finalizeVoting();
+    }
+
+    function testRevert_finalize_notVotingStatus() public {
+        _setVotingTime_now();
+        _finalizeVoting();
+
+        vm.expectRevert("Contest is not in voting state");
+        votesModule.finalizeVoting();
     }
 
     //////////////////////////////
