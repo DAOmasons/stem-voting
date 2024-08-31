@@ -319,6 +319,29 @@ contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockCon
         votesModule.finalizeVoting();
     }
 
+    function test_getTotalVotesForChoice() public {
+        _setVotingTime_now();
+
+        _vote_daoToken();
+        _vote_contextToken();
+
+        vm.startPrank(address(mockContest()));
+
+        votesModule.vote(voter2(), choice1(), _daoAmount / 2, abi.encode(_reason, address(arbToken())));
+        votesModule.vote(voter2(), choice2(), _daoAmount / 2, abi.encode(_reason, address(arbToken())));
+
+        votesModule.vote(voter2(), choice1(), _contextAmount / 2, abi.encode(_reason, address(loot())));
+        votesModule.vote(voter2(), choice2(), _contextAmount / 2, abi.encode(_reason, address(loot())));
+
+        votesModule.vote(voter3(), choice1(), _daoAmount / 3, abi.encode(_reason, address(arbToken())));
+        votesModule.vote(voter3(), choice2(), _daoAmount / 3, abi.encode(_reason, address(arbToken())));
+        votesModule.vote(voter3(), protestVote(), _daoAmount / 3, abi.encode(_reason, address(arbToken())));
+
+        votesModule.vote(voter3(), choice1(), _contextAmount / 3, abi.encode(_reason, address(loot())));
+        votesModule.vote(voter3(), choice2(), _contextAmount / 3, abi.encode(_reason, address(loot())));
+        votesModule.vote(voter3(), protestVote(), _contextAmount / 3, abi.encode(_reason, address(loot())));
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
