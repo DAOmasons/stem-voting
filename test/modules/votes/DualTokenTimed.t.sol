@@ -60,6 +60,14 @@ contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockCon
         mockContest().cheatStatus(ContestStatus.Voting);
     }
 
+    //////////////////////////////
+    // Base Functionality Tests
+    //////////////////////////////
+
+    function test_initialize() public {
+        _inititalize();
+    }
+
     function test_setVotingTime_now() public {
         _setVotingTime_now();
 
@@ -120,17 +128,70 @@ contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockCon
         assertEq(contextVotes, _contextAmount);
     }
 
-    //////////////////////////////
-    // Base Functionality Tests
-    //////////////////////////////
+    function test_retract_dao() public {
+        _setVotingTime_now();
+        _vote_daoToken();
+        _retract(address(arbToken()), _daoAmount);
 
-    function test_initialize() public {
+        assertEq(votesModule.daoVotes(choice1(), address(voter1())), 0);
+        assertEq(votesModule.contextVotes(choice1(), address(voter1())), 0);
+    }
+
+    function test_retract_context() public {
+        _setVotingTime_now();
+        _vote_contextToken();
+        _retract(address(loot()), _contextAmount);
+
+        assertEq(votesModule.daoVotes(choice1(), address(voter1())), 0);
+        assertEq(votesModule.contextVotes(choice1(), address(voter1())), 0);
+    }
+
+    function test_retract_partial() public {
+        _setVotingTime_now();
+        _vote_daoToken();
+        _vote_contextToken();
+        _retract(address(arbToken()), _daoAmount / 2);
+        _retract(address(loot()), _contextAmount / 2);
+
+        assertEq(votesModule.daoVotes(choice1(), address(voter1())), _daoAmount / 2);
+        assertEq(votesModule.contextVotes(choice1(), address(voter1())), _contextAmount / 2);
+    }
+
+    function test_finalizeVoting() public {
+        _setVotingTime_now();
+        _vote_daoToken();
+        _vote_contextToken();
+        _finalizeVoting();
+    }
+
+    //////////////////////////////
+    // Reverts
+    /////////////////////////////
+
+    function testRevert_setVotingTime_now_contestNotVoteStatus() public {
         _inititalize();
+
+        vm.expectRevert("Contest is not in voting state");
+        votesModule.setupVoting(0, address(pointsModule));
     }
 
     //////////////////////////////
     // Helpers
     //////////////////////////////
+
+    function _finalizeVoting() private {
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        votesModule.finalizeVoting();
+    }
+
+    function _retract(address _token, uint256 _amount) private {
+        vm.expectEmit(true, false, false, true);
+        emit VoteRetracted(voter1(), choice1(), _amount, _reason, _token);
+
+        vm.prank(address(mockContest()));
+        votesModule.retractVote(voter1(), choice1(), _amount, abi.encode(_reason, _token));
+    }
 
     function _vote_contextToken() private {
         vm.expectEmit(true, false, false, true);
