@@ -21,7 +21,7 @@ contract ERC20VotesPoints is IPoints {
     /// ===============================
 
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "ERC20VotesPoints_v0.1.1";
+    string public constant MODULE_NAME = "ERC20VotesPoints_v0.2.0";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Points;
@@ -78,7 +78,7 @@ contract ERC20VotesPoints is IPoints {
     /// @notice Allocates points to a user to track the amount voted
     /// @param _user The address of the user
     /// @param _amount The amount of points to allocate
-    function allocatePoints(address _user, uint256 _amount) external onlyContest {
+    function allocatePoints(address _user, uint256 _amount, bytes memory) external onlyContest {
         require(_amount > 0, "Amount must be greater than 0");
         require(hasVotingPoints(_user, _amount), "Insufficient points available");
 
@@ -90,7 +90,7 @@ contract ERC20VotesPoints is IPoints {
     /// @notice Releases points from a user
     /// @param _user The address of the user
     /// @param _amount The amount of points to release
-    function releasePoints(address _user, uint256 _amount) external onlyContest {
+    function releasePoints(address _user, uint256 _amount, bytes memory) external onlyContest {
         require(_amount > 0, "Amount must be greater than 0");
         require(allocatedPoints[_user] >= _amount, "Insufficient points allocated");
 
@@ -101,7 +101,7 @@ contract ERC20VotesPoints is IPoints {
 
     /// @notice Claims points from the user
     /// @dev This contract does not require users to claim points. Will revert if called.
-    function claimPoints() public pure {
+    function claimPoints(address, bytes memory) public pure {
         revert("This contract does not require users to claim points.");
     }
 

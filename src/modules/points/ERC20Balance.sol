@@ -8,7 +8,7 @@ import "../../core/ModuleType.sol";
 // ERC20 balanceOf Points contract
 contract ERC20Balance is IPoints {
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "ERC20Balance_v0.0.0";
+    string public constant MODULE_NAME = "ERC20Balance_v0.2.0";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Choices;
@@ -35,21 +35,21 @@ contract ERC20Balance is IPoints {
     // Users claim their voting points based on their current token balance
     // TODO: this needs to prevent double vote
     // TODO: keep track of claims so they only happen once
-    function claimPoints() public onlyContest {
-        uint256 balance = token.balanceOf(msg.sender);
-        uint256 claimablePoints = balance - allocatedPoints[msg.sender];
+    function claimPoints(address _voter, bytes memory) public onlyContest {
+        uint256 balance = token.balanceOf(_voter);
+        uint256 claimablePoints = balance - allocatedPoints[_voter];
         require(claimablePoints > 0, "No points available to claim");
-        totalVotingPoints[msg.sender] = claimablePoints;
-        emit PointsClaimed(msg.sender, claimablePoints);
+        totalVotingPoints[_voter] = claimablePoints;
+        emit PointsClaimed(_voter, claimablePoints);
     }
 
-    function allocatePoints(address voter, uint256 amount) public onlyContest {
+    function allocatePoints(address voter, uint256 amount, bytes memory) public onlyContest {
         require(totalVotingPoints[voter] >= amount, "Insufficient points available");
         totalVotingPoints[voter] -= amount;
         allocatedPoints[voter] += amount;
     }
 
-    function releasePoints(address voter, uint256 amount) public onlyContest {
+    function releasePoints(address voter, uint256 amount, bytes memory) public onlyContest {
         require(allocatedPoints[voter] >= amount, "Insufficient points allocated");
         allocatedPoints[voter] -= amount;
         totalVotingPoints[voter] += amount;
