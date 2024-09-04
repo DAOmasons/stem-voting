@@ -127,7 +127,7 @@ contract SBTBalancePoints is IPoints {
     /// @notice Checks if a user has allocated the specified amount
     /// @param _user The address of the user
     /// @param _amount The amount of points to check
-    function hasAllocatedPoints(address _user, uint256 _amount) public view returns (bool) {
+    function hasAllocatedPoints(address _user, uint256 _amount, bytes memory) public view returns (bool) {
         return getAllocatedPoints(_user) >= _amount;
     }
 }

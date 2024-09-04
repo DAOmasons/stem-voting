@@ -89,8 +89,8 @@ contract Contest is ReentrancyGuard {
 
     /// @notice Modifier to check if the voter has enough points allocated
     /// @dev Throws if voter does not have enough points allocated
-    modifier onlyHasAllocated(address _voter, uint256 _amount) {
-        require(pointsModule.hasAllocatedPoints(_voter, _amount), "Insufficient points allocated");
+    modifier onlyHasAllocated(address _voter, uint256 _amount, bytes memory _data) {
+        require(pointsModule.hasAllocatedPoints(_voter, _amount, _data), "Insufficient points allocated");
         _;
     }
 
@@ -179,7 +179,7 @@ contract Contest is ReentrancyGuard {
         onlyVotingPeriod
         onlyContestRetractable
         onlyValidChoice(_choiceId)
-        onlyHasAllocated(msg.sender, _amount)
+        onlyHasAllocated(msg.sender, _amount, _data)
     {
         _retractVote(_choiceId, _amount, _data);
     }
@@ -197,7 +197,7 @@ contract Contest is ReentrancyGuard {
         onlyContestRetractable
         onlyValidChoice(_oldChoiceId)
         onlyValidChoice(_newChoiceId)
-        onlyHasAllocated(msg.sender, _amount)
+        onlyHasAllocated(msg.sender, _amount, _data)
     {
         _retractVote(_oldChoiceId, _amount, _data);
         require(pointsModule.hasVotingPoints(msg.sender, _amount, _data), "Insufficient points available");
@@ -247,7 +247,7 @@ contract Contest is ReentrancyGuard {
         uint256[] memory _amounts,
         bytes[] memory _data,
         uint256 _totalAmount
-    ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable onlyHasAllocated(msg.sender, _totalAmount) {
+    ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
         require(
             _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
             "Array mismatch: Invalid input length"
@@ -256,6 +256,7 @@ contract Contest is ReentrancyGuard {
         uint256 totalAmount = 0;
 
         for (uint256 i = 0; i < _choiceIds.length;) {
+            require(pointsModule.hasAllocatedPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points allocated");
             require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
             totalAmount += _amounts[i];
 

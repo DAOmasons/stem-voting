@@ -124,7 +124,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         // Points are properly allocated for user
         assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
         assertEq(pointsModule().getAllocatedPoints(arbVoter(0)), VOTE_AMOUNT);
-        assertTrue(pointsModule().hasAllocatedPoints(arbVoter(0), VOTE_AMOUNT));
+        assertTrue(pointsModule().hasAllocatedPoints(arbVoter(0), VOTE_AMOUNT, ""));
         assertFalse(pointsModule().hasVotingPoints(arbVoter(0), 1, ""));
     }
 

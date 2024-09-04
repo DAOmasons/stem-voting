@@ -200,7 +200,7 @@ contract SBTBalancePointsTest is Test, Accounts {
         pointsModule().getPoints(voter0());
         pointsModule().getAllocatedPoints(voter0());
         pointsModule().hasVotingPoints(voter0(), VOTE_AMOUNT, "");
-        pointsModule().hasAllocatedPoints(voter0(), VOTE_AMOUNT);
+        pointsModule().hasAllocatedPoints(voter0(), VOTE_AMOUNT, "");
     }
 
     //////////////////////////////
