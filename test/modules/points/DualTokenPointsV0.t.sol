@@ -292,11 +292,11 @@ contract DualTokenPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accoun
         _initialize();
 
         for (uint256 i = 0; i < _voters.length; i++) {
-            bool hasPoints = pointsModule.hasVotingPoints(_voters[i], voteAmount);
+            bool hasPoints = pointsModule.hasVotingPoints(_voters[i], voteAmount, "");
             assertTrue(hasPoints);
 
             pointsModule.allocatePoints(_voters[i], voteAmount, "");
-            hasPoints = pointsModule.hasVotingPoints(_voters[i], voteAmount);
+            hasPoints = pointsModule.hasVotingPoints(_voters[i], voteAmount, "");
             assertFalse(hasPoints);
         }
     }

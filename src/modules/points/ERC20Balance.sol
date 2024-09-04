@@ -64,7 +64,7 @@ contract ERC20Balance is IPoints {
         return allocatedPoints[user] >= amount;
     }
 
-    function hasVotingPoints(address user, uint256 amount) external view override returns (bool) {
+    function hasVotingPoints(address user, uint256 amount, bytes memory) external view override returns (bool) {
         return totalVotingPoints[user] >= amount;
     }
 }

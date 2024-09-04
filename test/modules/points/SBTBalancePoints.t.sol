@@ -199,7 +199,7 @@ contract SBTBalancePointsTest is Test, Accounts {
 
         pointsModule().getPoints(voter0());
         pointsModule().getAllocatedPoints(voter0());
-        pointsModule().hasVotingPoints(voter0(), VOTE_AMOUNT);
+        pointsModule().hasVotingPoints(voter0(), VOTE_AMOUNT, "");
         pointsModule().hasAllocatedPoints(voter0(), VOTE_AMOUNT);
     }
 
@@ -237,11 +237,11 @@ contract SBTBalancePointsTest is Test, Accounts {
         _initialize();
 
         for (uint256 i = 0; i < _voters.length; i++) {
-            bool hasPoints = pointsModule().hasVotingPoints(_voters[i], VOTE_AMOUNT);
+            bool hasPoints = pointsModule().hasVotingPoints(_voters[i], VOTE_AMOUNT, "");
             assertTrue(hasPoints);
 
             pointsModule().allocatePoints(_voters[i], VOTE_AMOUNT, "");
-            hasPoints = pointsModule().hasVotingPoints(_voters[i], VOTE_AMOUNT);
+            hasPoints = pointsModule().hasVotingPoints(_voters[i], VOTE_AMOUNT, "");
             assertFalse(hasPoints);
         }
     }

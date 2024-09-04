@@ -78,9 +78,9 @@ contract ERC20VotesPoints is IPoints {
     /// @notice Allocates points to a user to track the amount voted
     /// @param _user The address of the user
     /// @param _amount The amount of points to allocate
-    function allocatePoints(address _user, uint256 _amount, bytes memory) external onlyContest {
+    function allocatePoints(address _user, uint256 _amount, bytes memory _data) external onlyContest {
         require(_amount > 0, "Amount must be greater than 0");
-        require(hasVotingPoints(_user, _amount), "Insufficient points available");
+        require(hasVotingPoints(_user, _amount, _data), "Insufficient points available");
 
         allocatedPoints[_user] += _amount;
 
@@ -128,7 +128,7 @@ contract ERC20VotesPoints is IPoints {
     /// @notice Checks if a user has the specified voting points
     /// @param _user The address of the user
     /// @param _amount The amount of points to check
-    function hasVotingPoints(address _user, uint256 _amount) public view returns (bool) {
+    function hasVotingPoints(address _user, uint256 _amount, bytes memory) public view returns (bool) {
         return getPoints(_user) >= _amount;
     }
 

@@ -18,7 +18,7 @@ interface IPoints is IModule {
 
     function getPoints(address voter) external view returns (uint256);
 
-    function hasVotingPoints(address voter, uint256 amount) external view returns (bool);
+    function hasVotingPoints(address voter, uint256 amount, bytes memory data) external view returns (bool);
 
     function hasAllocatedPoints(address voter, uint256 amount) external view returns (bool);
 }

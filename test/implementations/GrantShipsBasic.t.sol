@@ -125,7 +125,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
         assertEq(pointsModule().getAllocatedPoints(arbVoter(0)), VOTE_AMOUNT);
         assertTrue(pointsModule().hasAllocatedPoints(arbVoter(0), VOTE_AMOUNT));
-        assertFalse(pointsModule().hasVotingPoints(arbVoter(0), 1));
+        assertFalse(pointsModule().hasVotingPoints(arbVoter(0), 1, ""));
     }
 
     function testRetract_single() public {
