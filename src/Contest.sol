@@ -38,7 +38,7 @@ contract Contest is ReentrancyGuard {
     /// ================================
 
     /// @notice Contest version
-    string public constant CONTEST_VERSION = "0.1.0";
+    string public constant CONTEST_VERSION = "0.2.0";
 
     /// @notice Reference to the Voting contract module.
     IVotes public votesModule;
@@ -149,8 +149,8 @@ contract Contest is ReentrancyGuard {
     /// ===============================
 
     /// @notice Claim points from the Points module
-    function claimPoints() public virtual onlyVotingPeriod {
-        pointsModule.claimPoints();
+    function claimPoints(bytes memory _data) public virtual onlyVotingPeriod {
+        pointsModule.claimPoints(msg.sender, _data);
     }
 
     /// @notice Vote on a choice
@@ -322,7 +322,7 @@ contract Contest is ReentrancyGuard {
     /// @param _amount The amount of points to vote with
     /// @param _data Additional data to include with the vote
     function _vote(bytes32 _choiceId, uint256 _amount, bytes memory _data) internal {
-        pointsModule.allocatePoints(msg.sender, _amount);
+        pointsModule.allocatePoints(msg.sender, _amount, _data);
         votesModule.vote(msg.sender, _choiceId, _amount, _data);
     }
 
@@ -331,7 +331,7 @@ contract Contest is ReentrancyGuard {
     /// @param _amount The amount of points to retract
     /// @param _data Additional data to include with the retraction
     function _retractVote(bytes32 _choiceId, uint256 _amount, bytes memory _data) internal {
-        pointsModule.releasePoints(msg.sender, _amount);
+        pointsModule.releasePoints(msg.sender, _amount, _data);
         votesModule.retractVote(msg.sender, _choiceId, _amount, _data);
     }
 

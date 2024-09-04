@@ -52,7 +52,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         assertEq(contest().executionModule(), address(executionModule()));
         assertEq(contest().isContinuous(), false);
         assertEq(contest().isRetractable(), true);
-        assertEq(contest().CONTEST_VERSION(), "0.1.0");
+        assertEq(contest().CONTEST_VERSION(), "0.2.0");
 
         assertEq(uint8(contest().contestStatus()), uint8(ContestStatus.Populating));
     }

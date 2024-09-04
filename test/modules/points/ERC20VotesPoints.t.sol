@@ -101,7 +101,7 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
     function test_allocatePoints_partial() public {
         _initialize();
 
-        pointsModule.allocatePoints(_voters[0], voteAmount / 2);
+        pointsModule.allocatePoints(_voters[0], voteAmount / 2, "");
 
         uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
         uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
@@ -109,7 +109,7 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
         assertEq(pointsLeft, voteAmount / 2);
         assertEq(allocatedPoints, voteAmount / 2);
 
-        pointsModule.allocatePoints(_voters[0], voteAmount / 2);
+        pointsModule.allocatePoints(_voters[0], voteAmount / 2, "");
 
         allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
         pointsLeft = pointsModule.getPoints(_voters[0]);
@@ -131,7 +131,7 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
     function test_releasePoints_partial() public {
         _allocatePoints(0);
 
-        pointsModule.releasePoints(_voters[0], voteAmount / 2);
+        pointsModule.releasePoints(_voters[0], voteAmount / 2, "");
 
         uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
         uint256 pointsLeft = pointsModule.getPoints(_voters[0]);
@@ -139,7 +139,7 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
         assertEq(allocatedPoints, voteAmount / 2);
         assertEq(pointsLeft, voteAmount / 2);
 
-        pointsModule.releasePoints(_voters[0], voteAmount / 2);
+        pointsModule.releasePoints(_voters[0], voteAmount / 2, "");
 
         allocatedPoints = pointsModule.getAllocatedPoints(_voters[0]);
         pointsLeft = pointsModule.getPoints(_voters[0]);
@@ -157,28 +157,28 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
 
         vm.prank(voter0());
         vm.expectRevert("Only contest");
-        pointsModule.allocatePoints(voter0(), voteAmount);
+        pointsModule.allocatePoints(voter0(), voteAmount, "");
 
         vm.expectRevert("Only contest");
         vm.prank(someGuy());
-        pointsModule.allocatePoints(voter0(), voteAmount);
+        pointsModule.allocatePoints(voter0(), voteAmount, "");
     }
 
     function testRevertAllocate_nonZero() public {
         _initialize();
 
         vm.expectRevert("Amount must be greater than 0");
-        pointsModule.allocatePoints(voter0(), 0);
+        pointsModule.allocatePoints(voter0(), 0, "");
     }
 
     function testRevertAllocate_insufficient() public {
         _initialize();
 
         vm.expectRevert("Insufficient points available");
-        pointsModule.allocatePoints(voter0(), voteAmount + 1);
+        pointsModule.allocatePoints(voter0(), voteAmount + 1, "");
 
         vm.expectRevert("Insufficient points available");
-        pointsModule.allocatePoints(someGuy(), voteAmount);
+        pointsModule.allocatePoints(someGuy(), voteAmount, "");
     }
 
     function testRevertRelease_nonContest() public {
@@ -186,35 +186,35 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
 
         vm.prank(voter0());
         vm.expectRevert("Only contest");
-        pointsModule.releasePoints(voter0(), voteAmount);
+        pointsModule.releasePoints(voter0(), voteAmount, "");
 
         vm.expectRevert("Only contest");
         vm.prank(someGuy());
-        pointsModule.releasePoints(voter0(), voteAmount);
+        pointsModule.releasePoints(voter0(), voteAmount, "");
     }
 
     function testRevertRelease_nonZero() public {
         _initialize();
 
         vm.expectRevert("Amount must be greater than 0");
-        pointsModule.releasePoints(voter0(), 0);
+        pointsModule.releasePoints(voter0(), 0, "");
     }
 
     function testRevertRelease_insufficient() public {
         _initialize();
 
         vm.expectRevert("Insufficient points allocated");
-        pointsModule.releasePoints(voter0(), voteAmount + 1);
+        pointsModule.releasePoints(voter0(), voteAmount + 1, "");
 
         vm.expectRevert("Insufficient points allocated");
-        pointsModule.releasePoints(someGuy(), voteAmount);
+        pointsModule.releasePoints(someGuy(), voteAmount, "");
     }
 
     function testRevertClaimPoints() public {
         _initialize();
 
         vm.expectRevert("This contract does not require users to claim points.");
-        pointsModule.claimPoints();
+        pointsModule.claimPoints(address(0), "");
     }
 
     //////////////////////////////
@@ -224,23 +224,23 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
     function testRevertAllocate_doublespend() public {
         _initialize();
 
-        pointsModule.allocatePoints(voter0(), voteAmount);
+        pointsModule.allocatePoints(voter0(), voteAmount, "");
 
         vm.expectRevert("Insufficient points available");
-        pointsModule.allocatePoints(voter0(), voteAmount);
+        pointsModule.allocatePoints(voter0(), voteAmount, "");
     }
 
     function testRevertAllocate_doublespend_transfer() public {
         _initialize();
 
-        pointsModule.allocatePoints(voter0(), voteAmount);
+        pointsModule.allocatePoints(voter0(), voteAmount, "");
 
         vm.startPrank(voter0());
         arbToken().transfer(someGuy(), voteAmount);
         vm.stopPrank();
 
         vm.expectRevert("Insufficient points available");
-        pointsModule.allocatePoints(someGuy(), voteAmount);
+        pointsModule.allocatePoints(someGuy(), voteAmount, "");
     }
 
     //////////////////////////////
@@ -254,7 +254,7 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
             uint256 allocatedPoints = pointsModule.getAllocatedPoints(_voters[i]);
             assertEq(allocatedPoints, 0);
 
-            pointsModule.allocatePoints(_voters[i], voteAmount);
+            pointsModule.allocatePoints(_voters[i], voteAmount, "");
             allocatedPoints = pointsModule.getAllocatedPoints(_voters[i]);
             assertEq(allocatedPoints, voteAmount);
         }
@@ -267,7 +267,7 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
             uint256 points = pointsModule.getPoints(_voters[i]);
             assertEq(points, voteAmount);
 
-            pointsModule.allocatePoints(_voters[i], voteAmount);
+            pointsModule.allocatePoints(_voters[i], voteAmount, "");
             points = pointsModule.getPoints(_voters[i]);
             assertEq(points, 0);
         }
@@ -280,7 +280,7 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
             bool hasPoints = pointsModule.hasVotingPoints(_voters[i], voteAmount);
             assertTrue(hasPoints);
 
-            pointsModule.allocatePoints(_voters[i], voteAmount);
+            pointsModule.allocatePoints(_voters[i], voteAmount, "");
             hasPoints = pointsModule.hasVotingPoints(_voters[i], voteAmount);
             assertFalse(hasPoints);
         }
@@ -337,7 +337,7 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
         _initialize();
         vm.expectEmit(true, false, false, true);
         emit PointsAllocated(_voters[_voter], voteAmount);
-        pointsModule.allocatePoints(_voters[_voter], voteAmount);
+        pointsModule.allocatePoints(_voters[_voter], voteAmount, "");
     }
 
     function _releasePoints(uint256 _voter) internal {
@@ -346,6 +346,6 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
         vm.expectEmit(true, false, false, true);
         emit PointsReleased(_voters[_voter], voteAmount);
 
-        pointsModule.releasePoints(_voters[_voter], voteAmount);
+        pointsModule.releasePoints(_voters[_voter], voteAmount, "");
     }
 }

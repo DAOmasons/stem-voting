@@ -58,7 +58,7 @@ contract SBTBalancePointsTest is Test, Accounts {
     function test_allocatePoints_partial() public {
         _initialize();
 
-        pointsModule().allocatePoints(_voters[0], VOTE_AMOUNT / 2);
+        pointsModule().allocatePoints(_voters[0], VOTE_AMOUNT / 2, "");
 
         uint256 allocatedPoints = pointsModule().getAllocatedPoints(_voters[0]);
         uint256 pointsLeft = pointsModule().getPoints(_voters[0]);
@@ -66,7 +66,7 @@ contract SBTBalancePointsTest is Test, Accounts {
         assertEq(pointsLeft, VOTE_AMOUNT / 2);
         assertEq(allocatedPoints, VOTE_AMOUNT / 2);
 
-        pointsModule().allocatePoints(_voters[0], VOTE_AMOUNT / 2);
+        pointsModule().allocatePoints(_voters[0], VOTE_AMOUNT / 2, "");
 
         allocatedPoints = pointsModule().getAllocatedPoints(_voters[0]);
         pointsLeft = pointsModule().getPoints(_voters[0]);
@@ -88,7 +88,7 @@ contract SBTBalancePointsTest is Test, Accounts {
     function test_releasePoints_partial() public {
         _allocatePoints(0);
 
-        pointsModule().releasePoints(_voters[0], VOTE_AMOUNT / 2);
+        pointsModule().releasePoints(_voters[0], VOTE_AMOUNT / 2, "");
 
         uint256 allocatedPoints = pointsModule().getAllocatedPoints(_voters[0]);
         uint256 pointsLeft = pointsModule().getPoints(_voters[0]);
@@ -96,7 +96,7 @@ contract SBTBalancePointsTest is Test, Accounts {
         assertEq(allocatedPoints, VOTE_AMOUNT / 2);
         assertEq(pointsLeft, VOTE_AMOUNT / 2);
 
-        pointsModule().releasePoints(_voters[0], VOTE_AMOUNT / 2);
+        pointsModule().releasePoints(_voters[0], VOTE_AMOUNT / 2, "");
 
         allocatedPoints = pointsModule().getAllocatedPoints(_voters[0]);
         pointsLeft = pointsModule().getPoints(_voters[0]);
@@ -110,28 +110,28 @@ contract SBTBalancePointsTest is Test, Accounts {
 
         vm.prank(voter0());
         vm.expectRevert("Only contest");
-        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT);
+        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT, "");
 
         vm.expectRevert("Only contest");
         vm.prank(someGuy());
-        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT);
+        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT, "");
     }
 
     function testRevertAllocate_nonZero() public {
         _initialize();
 
         vm.expectRevert("Amount must be greater than 0");
-        pointsModule().allocatePoints(voter0(), 0);
+        pointsModule().allocatePoints(voter0(), 0, "");
     }
 
     function testRevertAllocate_insufficient() public {
         _initialize();
 
         vm.expectRevert("Insufficient points available");
-        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT + 1);
+        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT + 1, "");
 
         vm.expectRevert("Insufficient points available");
-        pointsModule().allocatePoints(someGuy(), VOTE_AMOUNT);
+        pointsModule().allocatePoints(someGuy(), VOTE_AMOUNT, "");
     }
 
     function testRevertRelease_nonContest() public {
@@ -139,50 +139,50 @@ contract SBTBalancePointsTest is Test, Accounts {
 
         vm.prank(voter0());
         vm.expectRevert("Only contest");
-        pointsModule().releasePoints(voter0(), VOTE_AMOUNT);
+        pointsModule().releasePoints(voter0(), VOTE_AMOUNT, "");
 
         vm.expectRevert("Only contest");
         vm.prank(someGuy());
-        pointsModule().releasePoints(voter0(), VOTE_AMOUNT);
+        pointsModule().releasePoints(voter0(), VOTE_AMOUNT, "");
     }
 
     function testRevertRelease_nonZero() public {
         _initialize();
 
         vm.expectRevert("Amount must be greater than 0");
-        pointsModule().releasePoints(voter0(), 0);
+        pointsModule().releasePoints(voter0(), 0, "");
     }
 
     function testRevertRelease_insufficient() public {
         _initialize();
 
         vm.expectRevert("Insufficient points allocated");
-        pointsModule().releasePoints(voter0(), VOTE_AMOUNT + 1);
+        pointsModule().releasePoints(voter0(), VOTE_AMOUNT + 1, "");
 
         vm.expectRevert("Insufficient points allocated");
-        pointsModule().releasePoints(someGuy(), VOTE_AMOUNT);
+        pointsModule().releasePoints(someGuy(), VOTE_AMOUNT, "");
     }
 
     function testRevertClaimPoints() public {
         _initialize();
 
         vm.expectRevert("This contract does not require users to claim points.");
-        pointsModule().claimPoints();
+        pointsModule().claimPoints(address(0), "");
     }
 
     function testRevertAllocate_doublespend() public {
         _initialize();
 
-        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT);
+        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT, "");
 
         vm.expectRevert("Insufficient points available");
-        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT);
+        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT, "");
     }
 
     function testRevertAllocate_doublespend_transfer() public {
         _initialize();
 
-        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT);
+        pointsModule().allocatePoints(voter0(), VOTE_AMOUNT, "");
 
         vm.expectRevert("SBT: Transfers are not allowed");
         vm.startPrank(voter0());
@@ -214,7 +214,7 @@ contract SBTBalancePointsTest is Test, Accounts {
             uint256 allocatedPoints = pointsModule().getAllocatedPoints(_voters[i]);
             assertEq(allocatedPoints, 0);
 
-            pointsModule().allocatePoints(_voters[i], VOTE_AMOUNT);
+            pointsModule().allocatePoints(_voters[i], VOTE_AMOUNT, "");
             allocatedPoints = pointsModule().getAllocatedPoints(_voters[i]);
             assertEq(allocatedPoints, VOTE_AMOUNT);
         }
@@ -227,7 +227,7 @@ contract SBTBalancePointsTest is Test, Accounts {
             uint256 points = pointsModule().getPoints(_voters[i]);
             assertEq(points, VOTE_AMOUNT);
 
-            pointsModule().allocatePoints(_voters[i], VOTE_AMOUNT);
+            pointsModule().allocatePoints(_voters[i], VOTE_AMOUNT, "");
             points = pointsModule().getPoints(_voters[i]);
             assertEq(points, 0);
         }
@@ -240,7 +240,7 @@ contract SBTBalancePointsTest is Test, Accounts {
             bool hasPoints = pointsModule().hasVotingPoints(_voters[i], VOTE_AMOUNT);
             assertTrue(hasPoints);
 
-            pointsModule().allocatePoints(_voters[i], VOTE_AMOUNT);
+            pointsModule().allocatePoints(_voters[i], VOTE_AMOUNT, "");
             hasPoints = pointsModule().hasVotingPoints(_voters[i], VOTE_AMOUNT);
             assertFalse(hasPoints);
         }
@@ -256,7 +256,7 @@ contract SBTBalancePointsTest is Test, Accounts {
         vm.expectEmit(true, false, false, true);
         emit PointsReleased(_voters[_voter], VOTE_AMOUNT);
 
-        pointsModule().releasePoints(_voters[_voter], VOTE_AMOUNT);
+        pointsModule().releasePoints(_voters[_voter], VOTE_AMOUNT, "");
     }
 
     function _allocatePoints(uint256 _voter) internal {
@@ -264,7 +264,7 @@ contract SBTBalancePointsTest is Test, Accounts {
         vm.expectEmit(true, false, false, true);
         emit PointsAllocated(_voters[_voter], VOTE_AMOUNT);
 
-        pointsModule().allocatePoints(_voters[_voter], VOTE_AMOUNT);
+        pointsModule().allocatePoints(_voters[_voter], VOTE_AMOUNT, "");
     }
 
     function _initialize() internal {
