@@ -66,8 +66,8 @@ contract RunFactory is Script {
 
         // _addSBTPointsModule();
 
-        __buildGrantShips();
-        // __buildHatsPoster();
+        // __buildGrantShips();
+        __buildHatsPoster();
 
         // __setupNewFactoryWithModules(deployer);
 

@@ -120,6 +120,10 @@ contract Accounts is StdCheats {
         return keccak256(abi.encodePacked("choiceId6"));
     }
 
+    function protestVote() public pure returns (bytes32) {
+        return keccak256(abi.encodePacked("protestVote"));
+    }
+
     /// Stem admin
     function stemAdmin1() public returns (address) {
         return makeAddr("stem_admin1");
