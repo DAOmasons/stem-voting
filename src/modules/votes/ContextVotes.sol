@@ -1,21 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-// import "forge-std/Test.sol";
-
-import "../../interfaces/IVotes.sol";
 import {Metadata} from "../../core/Metadata.sol";
-import {Contest} from "../../Contest.sol";
-import {DualTokenPointsV0} from "../points/DualTokenPointsV0.sol";
-
-import {ContestStatus} from "../../core/ContestStatus.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
+import {Contest} from "../../Contest.sol";
+import {ContestStatus} from "../../core/ContestStatus.sol";
+import {IVotes} from "../../interfaces/IVotes.sol";
 
-/// @title DualTokenTimedV0
+/// @title ContextVotes
 /// @author @jord<https://github.com/jordanlesich>
-/// @notice Timed voting module that incorporates a dual token voting strategy.
-/// @notice this module is NOT PURELY MODULAR, requires DualTokenPointsV0
-contract DualTokenTimedV0 is IVotes {
+/// @notice Dual registry votes module that records the votes for core DAO and context DAO tokens
+contract ContextVotesV0 is IVotes {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -39,7 +34,7 @@ contract DualTokenTimedV0 is IVotes {
     /// ===============================
 
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "DualTokenTimed_v0.2.0";
+    string public constant MODULE_NAME = "Context_v0.0.1";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Votes;
@@ -49,10 +44,6 @@ contract DualTokenTimedV0 is IVotes {
 
     /// @notice Context token contract address
     address public contextToken;
-
-    /// @notice Reference to the point module
-    /// @dev This point module must implement DualTokenPointsV0
-    DualTokenPointsV0 public pointModule;
 
     /// @notice Reference to the contest contract
     Contest public contest;
@@ -74,16 +65,6 @@ contract DualTokenTimedV0 is IVotes {
     /// @dev choiceId => voter => amount
     mapping(bytes32 => mapping(address => uint256)) public daoVotes;
 
-    /// @notice Mapping of voter to total amount of votes
-    /// @dev voter => totalVotes
-    /// @notice inelegant, but necessary --researching a better solution
-    mapping(address => uint256) public daoVotesForVoter;
-
-    /// @notice Mapping of voter to total amount of votes
-    /// @dev voter => totalVotes
-    /// @notice inelegant, but necessary --researching a better solution
-    mapping(address => uint256) public contextVotesForVoter;
-
     /// @notice Mapping of choiceId to total votes for that choice
     /// @dev choiceId => totalVotes
     mapping(bytes32 => uint256) public totalContextVotesForChoice;
@@ -91,6 +72,12 @@ contract DualTokenTimedV0 is IVotes {
     /// @notice Mapping of choiceId to total votes for that choice
     /// @dev choiceId => totalVotes
     mapping(bytes32 => uint256) public totalDaoVotesForChoice;
+
+    /// @notice Mapping of voter to total amount of votes
+    uint256 public totalDaoVotes;
+
+    /// @notice Mapping of voter to total amount of votes
+    uint256 public totalContextVotes;
 
     /// ===============================
     /// ========== Modifiers ==========
@@ -144,10 +131,6 @@ contract DualTokenTimedV0 is IVotes {
 
         require(startTime == 0, "Voting has already started");
 
-        require(_pointModule != address(0), "Invalid point module");
-
-        pointModule = DualTokenPointsV0(_pointModule);
-
         if (_startTime == 0) {
             startTime = block.timestamp;
         } else {
@@ -183,21 +166,13 @@ contract DualTokenTimedV0 is IVotes {
         require(isAcceptedToken(_votingToken), "Invalid voting token");
 
         if (_votingToken == daoToken) {
-            uint256 votedAmount = daoVotesForVoter[_voter];
-
-            require(pointModule.getDaoVotingPower(_voter) - votedAmount >= _amount, "Insufficient voting power");
-
             daoVotes[_choiceId][_voter] += _amount;
             totalDaoVotesForChoice[_choiceId] += _amount;
-            daoVotesForVoter[_voter] += _amount;
+            totalDaoVotes += _amount;
         } else {
-            uint256 votedAmount = contextVotesForVoter[_voter];
-
-            require(pointModule.getContextVotingPower(_voter) - votedAmount >= _amount, "Insufficient voting power");
-
             contextVotes[_choiceId][_voter] += _amount;
             totalContextVotesForChoice[_choiceId] += _amount;
-            contextVotesForVoter[_voter] += _amount;
+            totalContextVotes += _amount;
         }
 
         emit VoteCast(_voter, _choiceId, _amount, _reason, _votingToken);
@@ -217,15 +192,15 @@ contract DualTokenTimedV0 is IVotes {
         require(isAcceptedToken(_votingToken), "Invalid voting token");
 
         if (_votingToken == daoToken) {
-            require(daoVotesForVoter[_voter] >= _amount, "Insufficient votes");
-
+            require(daoVotes[_choiceId][_voter] >= _amount, "Insufficient votes");
             daoVotes[_choiceId][_voter] -= _amount;
             totalDaoVotesForChoice[_choiceId] -= _amount;
+            totalDaoVotes -= _amount;
         } else {
-            require(contextVotesForVoter[_voter] >= _amount, "Insufficient votes");
-
+            require(contextVotes[_choiceId][_voter] >= _amount, "Insufficient votes");
             contextVotes[_choiceId][_voter] -= _amount;
             totalContextVotesForChoice[_choiceId] -= _amount;
+            totalContextVotes -= _amount;
         }
 
         emit VoteRetracted(_voter, _choiceId, _amount, _reason, _votingToken);
@@ -235,6 +210,9 @@ contract DualTokenTimedV0 is IVotes {
     /// ========== Getters ============
     /// ===============================
 
+    /// @notice Checks if a token is accepted
+    /// @param _token The address of the token
+    /// @return True if the token is accepted
     function isAcceptedToken(address _token) public view returns (bool) {
         return _token == daoToken || _token == contextToken;
     }
