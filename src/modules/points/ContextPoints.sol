@@ -4,15 +4,22 @@ pragma solidity ^0.8.13;
 import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.sol";
 import {IPoints} from "../../interfaces/IPoints.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
+import {Metadata} from "../../core/Metadata.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 /// @title ContextPoints
 /// @author @jord<https://github.com/jordanlesich>
 /// @notice Points module that tests a Dual Token voting strategy between a core DAO and a smaller community DAO (context token).
-contract ContextPoints is IPoints {
+contract ContextPointsV0 is IPoints {
     /// ===============================
     /// ========== Events =============
     /// ===============================
+
+    /// @notice Emitted when a user allocates points
+    event PointsAllocated(address indexed user, uint256 amount, address token);
+
+    /// @notice Emitted when a user releases points
+    event PointsReleased(address indexed user, uint256 amount, address token);
 
     /// @notice Emitted once the points module is initialized
     event Initialized(address contest, address daoToken, address contextToken, uint256 votingCheckpoint);
@@ -43,7 +50,11 @@ contract ContextPoints is IPoints {
 
     /// @notice Mapping of user to allocated points
     /// @dev voterAddress => allocated points
-    mapping(address => uint256) public allocatedPoints;
+    mapping(address => uint256) public daoTokenPoints;
+
+    /// @notice Mapping of user to allocated points
+    /// @dev voterAddress => allocated points
+    mapping(address => uint256) public contextPoints;
 
     /// ===============================
     /// ========== Modifiers ==========
@@ -66,7 +77,6 @@ contract ContextPoints is IPoints {
     /// @param _contest The address of the contest contract
     /// @param _initData The initialization data
     /// @dev Bytes data includes the address of the voting token and the voting checkpoint
-
     function initialize(address _contest, bytes calldata _initData) public {
         (address _daoToken, address _contextToken, uint256 _votingCheckpoint) =
             abi.decode(_initData, (address, address, uint256));
@@ -90,45 +100,92 @@ contract ContextPoints is IPoints {
         require(_amount > 0, "Amount must be greater than 0");
         require(hasVotingPoints(_user, _amount, _data), "Insufficient points available");
 
-        allocatedPoints[_user] += _amount;
+        (, address votingToken) = abi.decode(_data, (Metadata, address));
+        require(isValidToken(votingToken), "Invalid voting token");
 
-        emit PointsAllocated(_user, _amount);
+        if (votingToken == address(daoToken)) {
+            daoTokenPoints[_user] += _amount;
+        } else {
+            contextPoints[_user] += _amount;
+        }
+
+        emit PointsAllocated(_user, _amount, votingToken);
     }
 
-    function releasePoints(address _user, uint256 _amount, bytes memory) external onlyContest {
-        // require(_amount > 0, "Amount must be greater than 0");
-        // require(allocatedPoints[_user] >= _amount, "Insufficient points allocated");
+    /// @notice Releases points from a user
+    /// @param _user The address of the user
+    /// @param _amount The amount of points to release
+    /// @param _data The voting token
+    function releasePoints(address _user, uint256 _amount, bytes memory _data) external onlyContest {
+        require(_amount > 0, "Amount must be greater than 0");
 
-        // allocatedPoints[_user] -= _amount;
+        (, address votingToken) = abi.decode(_data, (Metadata, address));
 
-        // emit PointsReleased(_user, _amount);
+        require(isValidToken(votingToken), "Invalid voting token");
+
+        if (votingToken == address(daoToken)) {
+            require(daoTokenPoints[_user] >= _amount, "Insufficient points allocated");
+            daoTokenPoints[_user] -= _amount;
+        } else {
+            require(contextPoints[_user] >= _amount, "Insufficient points allocated");
+            contextPoints[_user] -= _amount;
+        }
+
+        emit PointsReleased(_user, _amount, votingToken);
     }
 
+    /// @notice Claims points from the user
+    /// @dev This contract does not require users to claim points. Will revert if called.
     function claimPoints(address, bytes memory) public pure {
         revert("This contract does not require users to claim points.");
+    }
+
+    /// @notice Gets the total available points for a user
+    /// @param user The address of the user
+    /// @param votingToken The voting token address
+    function getPoints(address user, address votingToken) public view returns (uint256) {
+        if (votingToken == address(daoToken)) {
+            return daoToken.getPastVotes(user, votingCheckpoint);
+        } else {
+            return contextToken.balanceOf(user);
+        }
     }
 
     /// @notice Checks if a user has the specified voting points
     /// @param _user The address of the user
     /// @param _amount The amount of points to check
     function hasVotingPoints(address _user, uint256 _amount, bytes memory _data) public view returns (bool) {
-        (, address votingToken) = abi.decode(_data, (uint8, address));
+        (, address votingToken) = abi.decode(_data, (Metadata, address));
+
+        require(isValidToken(votingToken), "Invalid voting token");
+
+        uint256 totalVotingPoints = getPoints(_user, votingToken);
+
+        if (votingToken == address(daoToken)) {
+            return totalVotingPoints - daoTokenPoints[_user] >= _amount;
+        } else {
+            return totalVotingPoints - contextPoints[_user] >= _amount;
+        }
+    }
+
+    /// @notice Checks if a user has allocated the specified amount
+    /// @param _user The address of the user
+    /// @param _amount The amount of points to check
+    /// @param _data The voting token
+    function hasAllocatedPoints(address _user, uint256 _amount, bytes memory _data) public view returns (bool) {
+        (, address votingToken) = abi.decode(_data, (Metadata, address));
 
         require(isValidToken(votingToken), "Invalid voting token");
 
         if (votingToken == address(daoToken)) {
-            return daoToken.getPastVotes(_user, votingCheckpoint) >= _amount;
+            return daoTokenPoints[_user] >= _amount;
         } else {
-            return contextToken.balanceOf(_user) >= _amount;
+            return contextPoints[_user] >= _amount;
         }
-
-        // return getPoints(_user) >= _amount;
     }
 
-    function hasAllocatedPoints(address _user, uint256 _amount, bytes memory) public view returns (bool) {
-        // return getAllocatedPoints(_user) >= _amount;
-    }
-
+    /// @notice Checks if a token is valid
+    /// @param _token The address of the token
     function isValidToken(address _token) public view returns (bool) {
         return _token == address(daoToken) || _token == address(contextToken);
     }
