@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import {Contest} from "../../Contest.sol";
+
 import {Metadata} from "../../core/Metadata.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
-import {Contest} from "../../Contest.sol";
 import {ContestStatus} from "../../core/ContestStatus.sol";
+
 import {IVotes} from "../../interfaces/IVotes.sol";
 
 /// @title ContextVotes
