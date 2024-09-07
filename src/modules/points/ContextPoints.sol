@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
+// import {Test, console} from "forge-std/Test.sol";
 
 import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.sol";
 import {IPoints} from "../../interfaces/IPoints.sol";
@@ -162,8 +162,6 @@ contract ContextPointsV0 is IPoints {
         require(isValidToken(votingToken), "Invalid voting token");
 
         uint256 totalVotingPoints = getPoints(_user, votingToken);
-
-        console.log("totalVotingPoints: ", totalVotingPoints);
 
         if (votingToken == address(daoToken)) {
             return totalVotingPoints - daoTokenPoints[_user] >= _amount;

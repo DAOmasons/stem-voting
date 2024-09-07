@@ -120,6 +120,105 @@ contract ContextPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accounts
         assertTrue(hasDaoPointsLeft);
     }
 
+    function test_allocatePoints_dao_partial() public {
+        _allocatePoints(0, daoTokenAmount / 2, address(arbToken()));
+
+        uint256 allocatedDaoPoints = pointsModule.daoTokenPoints(_voters[0]);
+        uint256 allocatedContextPoints = pointsModule.contextPoints(_voters[0]);
+
+        bytes memory _daoData = abi.encode(_metadata, address(arbToken()));
+        bytes memory _contextData = abi.encode(_metadata, address(loot()));
+
+        bool hasDaoPointsLeft = pointsModule.hasVotingPoints(_voters[0], 1, _daoData);
+        bool hasContextPointsLeft = pointsModule.hasVotingPoints(_voters[0], 0, _contextData);
+
+        assertEq(allocatedDaoPoints, daoTokenAmount / 2);
+        assertEq(allocatedContextPoints, 0);
+
+        assertTrue(hasDaoPointsLeft);
+        assertTrue(hasContextPointsLeft);
+    }
+
+    function test_releasePoints_context_total() public {
+        _allocatePoints(0, contextTokenAmount, address(loot()));
+        _releasePoints(0, contextTokenAmount, address(loot()));
+
+        uint256 allocatedContextPoints = pointsModule.contextPoints(_voters[0]);
+        uint256 allocatedDaoPoints = pointsModule.daoTokenPoints(_voters[0]);
+
+        bytes memory _contextData = abi.encode(_metadata, address(loot()));
+        bytes memory _daoData = abi.encode(_metadata, address(arbToken()));
+
+        bool hasContextPointsLeft = pointsModule.hasVotingPoints(_voters[0], 0, _contextData);
+        bool hasDaoPointsLeft = pointsModule.hasVotingPoints(_voters[0], 0, _daoData);
+
+        assertEq(allocatedContextPoints, 0);
+        assertEq(allocatedDaoPoints, 0);
+
+        assertTrue(hasContextPointsLeft);
+        assertTrue(hasDaoPointsLeft);
+    }
+
+    function test_releasePoints_dao_total() public {
+        _allocatePoints(0, daoTokenAmount, address(arbToken()));
+        _releasePoints(0, daoTokenAmount, address(arbToken()));
+
+        uint256 allocatedContextPoints = pointsModule.contextPoints(_voters[0]);
+        uint256 allocatedDaoPoints = pointsModule.daoTokenPoints(_voters[0]);
+
+        bytes memory _contextData = abi.encode(_metadata, address(loot()));
+        bytes memory _daoData = abi.encode(_metadata, address(arbToken()));
+
+        bool hasContextPointsLeft = pointsModule.hasVotingPoints(_voters[0], 0, _contextData);
+        bool hasDaoPointsLeft = pointsModule.hasVotingPoints(_voters[0], 0, _daoData);
+
+        assertEq(allocatedContextPoints, 0);
+        assertEq(allocatedDaoPoints, 0);
+
+        assertTrue(hasContextPointsLeft);
+        assertTrue(hasDaoPointsLeft);
+    }
+
+    function test_releasePoints_context_partial() public {
+        _allocatePoints(0, contextTokenAmount, address(loot()));
+        _releasePoints(0, contextTokenAmount / 2, address(loot()));
+
+        uint256 allocatedContextPoints = pointsModule.contextPoints(_voters[0]);
+        uint256 allocatedDaoPoints = pointsModule.daoTokenPoints(_voters[0]);
+
+        bytes memory _contextData = abi.encode(_metadata, address(loot()));
+        bytes memory _daoData = abi.encode(_metadata, address(arbToken()));
+
+        bool hasContextPointsLeft = pointsModule.hasVotingPoints(_voters[0], 0, _contextData);
+        bool hasDaoPointsLeft = pointsModule.hasVotingPoints(_voters[0], 0, _daoData);
+
+        assertEq(allocatedContextPoints, contextTokenAmount / 2);
+        assertEq(allocatedDaoPoints, 0);
+
+        assertTrue(hasContextPointsLeft);
+        assertTrue(hasDaoPointsLeft);
+    }
+
+    function test_releasePoints_dao_partial() public {
+        _allocatePoints(0, daoTokenAmount, address(arbToken()));
+        _releasePoints(0, daoTokenAmount / 2, address(arbToken()));
+
+        uint256 allocatedContextPoints = pointsModule.contextPoints(_voters[0]);
+        uint256 allocatedDaoPoints = pointsModule.daoTokenPoints(_voters[0]);
+
+        bytes memory _contextData = abi.encode(_metadata, address(loot()));
+        bytes memory _daoData = abi.encode(_metadata, address(arbToken()));
+
+        bool hasContextPointsLeft = pointsModule.hasVotingPoints(_voters[0], 0, _contextData);
+        bool hasDaoPointsLeft = pointsModule.hasVotingPoints(_voters[0], 0, _daoData);
+
+        assertEq(allocatedContextPoints, 0);
+        assertEq(allocatedDaoPoints, daoTokenAmount / 2);
+
+        assertTrue(hasContextPointsLeft);
+        assertTrue(hasDaoPointsLeft);
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
@@ -208,12 +307,12 @@ contract ContextPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accounts
         pointsModule.allocatePoints(_voters[_voter], _amount, _data);
     }
 
-    // function _releasePoints(uint256 _voter) internal {
-    //     _allocatePoints(_voter);
+    function _releasePoints(uint256 _voter, uint256 _amount, address _token) internal {
+        vm.expectEmit(true, false, false, true);
+        emit PointsReleased(_voters[_voter], _amount, _token);
 
-    //     vm.expectEmit(true, false, false, true);
-    //     emit PointsReleased(_voters[_voter], voteAmount);
+        bytes memory _data = abi.encode(_metadata, _token);
 
-    //     pointsModule.releasePoints(_voters[_voter], voteAmount, "");
-    // }
+        pointsModule.releasePoints(_voters[_voter], _amount, _data);
+    }
 }
