@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {IPoints} from "../../interfaces/IPoints.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
@@ -8,7 +9,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 /// @title ERC20VotesPoints
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
 /// @notice Points module that uses an a voters token balance to allocate points. This module is recommended for use with the SBT voting token, where values cannot be transferred or doublespent during the vote.
-contract SBTBalancePoints is IPoints {
+contract SBTBalancePoints is IPoints, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -21,9 +22,6 @@ contract SBTBalancePoints is IPoints {
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Points;
-
-    /// @notice Whether the module has been initialized
-    bool private initialized;
 
     /// @notice Reference to the voting token contract
     IERC20 public voteToken;
@@ -56,14 +54,11 @@ contract SBTBalancePoints is IPoints {
     /// @param _contest The address of the contest contract
     /// @param _initData The initialization data
     /// @dev Bytes data includes the address of the voting token
-    function initialize(address _contest, bytes calldata _initData) external {
-        require(initialized == false, "Already initialized");
-
+    function initialize(address _contest, bytes calldata _initData) external initializer {
         (address _token) = abi.decode(_initData, (address));
 
         contest = _contest;
         voteToken = IERC20(_token);
-        initialized = true;
 
         emit Initialized(_contest, _token);
     }

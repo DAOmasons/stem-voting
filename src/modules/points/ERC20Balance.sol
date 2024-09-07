@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+
 import "../../interfaces/IERC20.sol";
 import "../../interfaces/IPoints.sol";
 import "../../core/ModuleType.sol";
 
 // ERC20 balanceOf Points contract
-contract ERC20Balance is IPoints {
+contract ERC20Balance is IPoints, Initializable {
     /// @notice The name and version of the module
     string public constant MODULE_NAME = "ERC20Balance_v0.2.0";
 
@@ -19,18 +21,12 @@ contract ERC20Balance is IPoints {
     mapping(address => uint256) public totalVotingPoints; // Total points that a user can use for voting
     mapping(address => uint256) public allocatedPoints; // Points currently allocated for voting
 
-    /// @notice Whether the module has been initialized
-    bool private initialized;
-
     //TODO initializer, should take bytes to destructure
-    function initialize(address _contest, bytes memory _initData) public {
-        require(initialized == false, "Already initialized");
-
+    function initialize(address _contest, bytes memory _initData) public initializer {
         (address _tokenAddress, uint256 duration) = abi.decode(_initData, (address, uint256));
         contest = _contest;
         token = IERC20(_tokenAddress);
         claimEndTime = block.timestamp + duration;
-        initialized = true;
     }
 
     modifier onlyContest() {

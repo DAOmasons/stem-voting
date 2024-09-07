@@ -1,27 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+
 import {ContestStatus} from "../../core/ContestStatus.sol";
 import {Contest} from "../../Contest.sol";
 import {IExecution} from "../../interfaces/IExecution.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 
-contract EmptyExecution is IExecution {
+contract EmptyExecution is IExecution, Initializable {
     string public constant MODULE_NAME = "EmptyExecution_v0.1.1";
 
     ModuleType public constant MODULE_TYPE = ModuleType.Execution;
 
     Contest public contest;
 
-    /// @notice Whether the module has been initialized
-    bool private initialized;
-
-    function initialize(address _contest, bytes memory) public {
-        require(initialized == false, "Already initialized");
-
+    function initialize(address _contest, bytes memory) public initializer {
         contest = Contest(_contest);
-
-        initialized = true;
     }
 
     function execute(bytes memory) public {

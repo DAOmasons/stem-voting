@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.sol";
 import {IPoints} from "../../interfaces/IPoints.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
@@ -8,7 +9,7 @@ import {ModuleType} from "../../core/ModuleType.sol";
 /// @title ERC20VotesPoints
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
 /// @notice Points module that uses ERC20Votes to allocate points to voters based on their delegated voting balance at particular checkpoints
-contract ERC20VotesPoints is IPoints {
+contract ERC20VotesPoints is IPoints, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -40,9 +41,6 @@ contract ERC20VotesPoints is IPoints {
     /// @dev voterAddress => allocated points
     mapping(address => uint256) public allocatedPoints;
 
-    /// @notice Whether the module has been initialized
-    bool private initialized;
-
     /// ===============================
     /// ========== Modifiers ==========
     /// ===============================
@@ -65,17 +63,11 @@ contract ERC20VotesPoints is IPoints {
     /// @param _initData The initialization data
     /// @dev Bytes data includes the address of the voting token and the voting checkpoint
     function initialize(address _contest, bytes calldata _initData) public {
-        require(initialized == false, "Already initialized");
-
         (address _token, uint256 _votingCheckpoint) = abi.decode(_initData, (address, uint256));
-
-        require(initialized == false, "Already initialized");
 
         votingCheckpoint = _votingCheckpoint;
         voteToken = IVotes(_token);
         contest = _contest;
-
-        initialized = true;
 
         emit Initialized(_contest, _token, _votingCheckpoint);
     }

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/IVotes.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 
-contract BaseVotes is IVotes {
+contract BaseVotes is IVotes, Initializable {
     address public contest;
 
     /// @notice The name and version of the module
@@ -12,9 +13,6 @@ contract BaseVotes is IVotes {
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Votes;
-
-    /// @notice Whether the module has been initialized
-    bool private initialized;
 
     mapping(bytes32 => mapping(address => uint256)) public votes; // Mapping from choice to voter to vote count
     mapping(bytes32 => uint256) public totalVotesForChoice; // Total votes per choice
@@ -28,11 +26,8 @@ contract BaseVotes is IVotes {
         _;
     }
 
-    function initialize(address _contest, bytes memory) public {
-        require(initialized == false, "Already initialized");
-
+    function initialize(address _contest, bytes memory) public initializer {
         contest = _contest;
-        initialized = true;
     }
 
     function vote(address _voter, bytes32 choiceId, uint256 amount, bytes memory) public onlyContest {

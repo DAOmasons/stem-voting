@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {ReentrancyGuard} from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 
 import "./interfaces/IFinalizationStrategy.sol";
 import "./interfaces/IVotes.sol";
@@ -14,7 +15,7 @@ import {ContestStatus} from "./core/ContestStatus.sol";
 /// @title Stem Contest
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
 /// @notice Simple, minimalistic TCR Voting contract that composes voting, allocation, choices, and execution modules and orders their interactions
-contract Contest is ReentrancyGuard {
+contract Contest is ReentrancyGuard, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -109,7 +110,7 @@ contract Contest is ReentrancyGuard {
 
     /// @notice Initialize the strategy
     /// @param  _initData The data to initialize the contest (votes, points, choices, execution, isContinuous, isRetractable)
-    function initialize(bytes memory _initData) public {
+    function initialize(bytes memory _initData) public initializer {
         (
             address _votesContract,
             address _pointsContract,

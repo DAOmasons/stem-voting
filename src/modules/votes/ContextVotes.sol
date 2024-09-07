@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {Contest} from "../../Contest.sol";
 
 import {Metadata} from "../../core/Metadata.sol";
@@ -12,7 +13,7 @@ import {IVotes} from "../../interfaces/IVotes.sol";
 /// @title ContextVotes
 /// @author @jord<https://github.com/jordanlesich>
 /// @notice Dual registry votes module that records the votes for core DAO and context DAO tokens
-contract ContextVotesV0 is IVotes {
+contract ContextVotesV0 is IVotes, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -40,9 +41,6 @@ contract ContextVotesV0 is IVotes {
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Votes;
-
-    /// @notice Whether the module has been initialized
-    bool private initialized;
 
     /// @notice DAO token contract address
     address public daoToken;
@@ -116,8 +114,6 @@ contract ContextVotesV0 is IVotes {
     /// @param _initParams The initialization data
     /// @dev Bytes data includes the duration of the voting period
     function initialize(address _contest, bytes memory _initParams) public {
-        require(initialized == false, "Already initialized");
-
         (uint256 _duration, address _daoToken, address _contextToken) =
             abi.decode(_initParams, (uint256, address, address));
 
@@ -126,7 +122,6 @@ contract ContextVotesV0 is IVotes {
 
         daoToken = _daoToken;
         contextToken = _contextToken;
-        initialized = true;
 
         emit Initialized(_contest, _duration, _daoToken, _contextToken);
     }

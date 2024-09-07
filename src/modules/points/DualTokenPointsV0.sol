@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.sol";
 import {IPoints} from "../../interfaces/IPoints.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
@@ -18,7 +19,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 /// @title DualTokenPoints
 /// @author @jord<https://github.com/jordanlesich>
 /// @notice Points module that tests a Dual Token voting strategy between a core DAO and a smaller community DAO (context token).
-contract DualTokenPointsV0 is IPoints {
+contract DualTokenPointsV0 is IPoints, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -35,9 +36,6 @@ contract DualTokenPointsV0 is IPoints {
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Points;
-
-    /// @notice Whether the module has been initialized
-    bool private initialized;
 
     /// @notice Reference to the voting token contract
     /// @dev This voting token must implement IVotes
@@ -78,9 +76,7 @@ contract DualTokenPointsV0 is IPoints {
     /// @param _contest The address of the contest contract
     /// @param _initData The initialization data
     /// @dev Bytes data includes the address of the voting token and the voting checkpoint
-    function initialize(address _contest, bytes calldata _initData) public {
-        require(initialized == false, "Already initialized");
-
+    function initialize(address _contest, bytes calldata _initData) public initializer {
         (address _daoToken, address _contextToken, uint256 _votingCheckpoint) =
             abi.decode(_initData, (address, address, uint256));
 
@@ -88,8 +84,6 @@ contract DualTokenPointsV0 is IPoints {
         voteToken = IVotes(_daoToken);
         contextToken = IERC20(_contextToken);
         contest = _contest;
-
-        initialized = true;
 
         emit Initialized(_contest, _daoToken, _contextToken, _votingCheckpoint);
     }
