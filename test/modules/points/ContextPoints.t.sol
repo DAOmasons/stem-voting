@@ -307,12 +307,60 @@ contract ContextPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accounts
         pointsModule.allocatePoints(voter0(), daoTokenAmount, _data);
     }
 
-    function testRevert_releasePoints_notContest() public {
-        _setupVotes();
+    function testRevert_allocate_notContest() public {
+        _initialize();
 
-        // vm.expectRevert("Only contest");
-        // bytes memory _data = abi.encode(_metadata, address(loot()));
-        // pointsModule.releasePoints(voter0(), contextTokenAmount, _data);
+        bytes memory _data = abi.encode(_metadata, address(loot()));
+        vm.expectRevert("Only contest");
+
+        vm.startPrank(someGuy());
+        pointsModule.allocatePoints(voter0(), contextTokenAmount, _data);
+        vm.stopPrank();
+    }
+
+    function testRevert_release_notContest() public {
+        _initialize();
+
+        bytes memory _data = abi.encode(_metadata, address(loot()));
+        vm.expectRevert("Only contest");
+
+        vm.startPrank(someGuy());
+        pointsModule.releasePoints(voter0(), contextTokenAmount, _data);
+        vm.stopPrank();
+    }
+
+    function testRevert_release_nonZero() public {
+        _initialize();
+
+        vm.expectRevert("Amount must be greater than 0");
+
+        bytes memory _data = abi.encode(_metadata, address(loot()));
+        pointsModule.releasePoints(voter0(), 0, _data);
+    }
+
+    function testRevert_release_invalidToken() public {
+        _initialize();
+
+        vm.expectRevert("Invalid token");
+        bytes memory _data = abi.encode(_metadata, someGuy());
+        pointsModule.releasePoints(voter0(), contextTokenAmount, _data);
+    }
+
+    function testRevert_release_notAllocated() public {
+        _initialize();
+
+        vm.expectRevert("Insufficient points allocated");
+        bytes memory _data = abi.encode(_metadata, address(loot()));
+        pointsModule.releasePoints(voter0(), 1, _data);
+
+        _data = abi.encode(_metadata, address(arbToken()));
+        vm.expectRevert("Insufficient points allocated");
+        pointsModule.releasePoints(voter0(), 1, _data);
+
+        pointsModule.allocatePoints(voter0(), contextTokenAmount, _data);
+
+        pointsModule.releasePoints(voter0(), 1, _data);
+        pointsModule.releasePoints(voter0(), contextTokenAmount - 1, _data);
     }
 
     //////////////////////////////
@@ -381,16 +429,6 @@ contract ContextPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accounts
         bytes memory initData = abi.encode(address(arbToken()), address(loot()), snapshotBlock);
 
         pointsModule.initialize(address(this), initData);
-    }
-
-    function _allocatePoints_contextToken(uint256 _voter) internal {
-        _initialize();
-        vm.expectEmit(true, false, false, true);
-
-        bytes memory _data = abi.encode(_metadata, address(loot()));
-
-        emit PointsAllocated(_voters[_voter], contextTokenAmount, address(loot()));
-        pointsModule.allocatePoints(_voters[_voter], contextTokenAmount, _data);
     }
 
     function _allocatePoints(uint256 _voter, uint256 _amount, address _token) internal {

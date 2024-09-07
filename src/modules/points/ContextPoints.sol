@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-// import {Test, console} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 
 import {IVotes} from "openzeppelin-contracts/contracts/governance/utils/IVotes.sol";
 import {IPoints} from "../../interfaces/IPoints.sol";
@@ -134,6 +134,9 @@ contract ContextPointsV0 is IPoints {
             require(daoTokenPoints[_user] >= _amount, "Insufficient points allocated");
             daoTokenPoints[_user] -= _amount;
         } else {
+            uint256 contextPoints2 = contextPoints[_user];
+            console.log("releasePoints", _amount, votingToken, contextPoints2);
+
             require(contextPoints[_user] >= _amount, "Insufficient points allocated");
             contextPoints[_user] -= _amount;
         }
