@@ -44,6 +44,9 @@ contract DualTokenTimedV0 is IVotes {
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Votes;
 
+    /// @notice Whether the module has been initialized
+    bool private initialized;
+
     /// @notice DAO token contract address
     address public daoToken;
 
@@ -121,6 +124,8 @@ contract DualTokenTimedV0 is IVotes {
     /// @param _initParams The initialization data
     /// @dev Bytes data includes the duration of the voting period
     function initialize(address _contest, bytes memory _initParams) public {
+        require(initialized == false, "Already initialized");
+
         (uint256 _duration, address _daoToken, address _contextToken) =
             abi.decode(_initParams, (uint256, address, address));
 
@@ -129,6 +134,7 @@ contract DualTokenTimedV0 is IVotes {
 
         daoToken = _daoToken;
         contextToken = _contextToken;
+        initialized = true;
 
         emit Initialized(_contest, _duration, _daoToken, _contextToken);
     }

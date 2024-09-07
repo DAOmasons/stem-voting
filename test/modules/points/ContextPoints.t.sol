@@ -357,10 +357,47 @@ contract ContextPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accounts
         vm.expectRevert("Insufficient points allocated");
         pointsModule.releasePoints(voter0(), 1, _data);
 
-        pointsModule.allocatePoints(voter0(), contextTokenAmount, _data);
+        pointsModule.allocatePoints(voter0(), daoTokenAmount, _data);
 
         pointsModule.releasePoints(voter0(), 1, _data);
-        pointsModule.releasePoints(voter0(), contextTokenAmount - 1, _data);
+        pointsModule.releasePoints(voter0(), daoTokenAmount - 1, _data);
+
+        vm.expectRevert("Insufficient points allocated");
+        _data = abi.encode(_metadata, address(arbToken()));
+        pointsModule.releasePoints(voter0(), 1, _data);
+    }
+
+    //////////////////////////////
+    // Getters
+    //////////////////////////////
+
+    function test_getPoints() public {
+        _initialize();
+
+        uint256 contextPoints = pointsModule.getPoints(voter0(), address(loot()));
+        uint256 daoPoints = pointsModule.getPoints(voter0(), address(arbToken()));
+
+        assertEq(contextPoints, contextTokenAmount);
+        assertEq(daoPoints, daoTokenAmount);
+
+        contextPoints = pointsModule.getPoints(someGuy(), address(loot()));
+        daoPoints = pointsModule.getPoints(someGuy(), address(arbToken()));
+
+        assertEq(contextPoints, 0);
+        assertEq(daoPoints, 0);
+    }
+
+    function test_hasVotingPoints() public {
+        _allocatePoints(0, contextTokenAmount, address(loot()));
+
+        bytes memory _data = abi.encode(_metadata, address(loot()));
+
+        bool hasContextPoints = pointsModule.hasVotingPoints(_voters[0], 1, _data);
+
+        console.log("hasContextPoints", hasContextPoints);
+        console.log(loot().balanceOf(_voters[0]));
+
+        // assertFalse(pointsModule.hasVotingPoints(_voters[0], 1, _data));
     }
 
     //////////////////////////////

@@ -17,6 +17,9 @@ contract AllowList is IChoices {
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Choices;
 
+    /// @notice Whether the module has been initialized
+    bool private initialized;
+
     mapping(bytes32 => ChoiceData) private choices;
     mapping(address => bool) public allowedAccounts;
 
@@ -35,6 +38,7 @@ contract AllowList is IChoices {
     constructor() {}
 
     function initialize(address _contest, bytes calldata _initData) external override {
+        require(initialized == false, "Already initialized");
         owner = _contest;
 
         (address[] memory _allowedAccounts) = abi.decode(_initData, (address[]));
@@ -42,6 +46,8 @@ contract AllowList is IChoices {
         for (uint256 i = 0; i < _allowedAccounts.length; i++) {
             allowedAccounts[_allowedAccounts[i]] = true;
         }
+
+        initialized = true;
     }
 
     function registerChoice(bytes32 choiceId, bytes calldata _data) external override onlyAllowed {

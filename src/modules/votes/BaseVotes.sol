@@ -13,6 +13,9 @@ contract BaseVotes is IVotes {
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Votes;
 
+    /// @notice Whether the module has been initialized
+    bool private initialized;
+
     mapping(bytes32 => mapping(address => uint256)) public votes; // Mapping from choice to voter to vote count
     mapping(bytes32 => uint256) public totalVotesForChoice; // Total votes per choice
 
@@ -26,7 +29,10 @@ contract BaseVotes is IVotes {
     }
 
     function initialize(address _contest, bytes memory) public {
+        require(initialized == false, "Already initialized");
+
         contest = _contest;
+        initialized = true;
     }
 
     function vote(address _voter, bytes32 choiceId, uint256 amount, bytes memory) public onlyContest {

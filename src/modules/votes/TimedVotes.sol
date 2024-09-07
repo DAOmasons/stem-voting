@@ -40,6 +40,9 @@ contract TimedVotes is IVotes {
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Execution;
 
+    /// @notice Whether the module has been initialized
+    bool private initialized;
+
     /// @notice Reference to the contest contract
     Contest public contest;
 
@@ -89,10 +92,13 @@ contract TimedVotes is IVotes {
     /// @param _initParams The initialization data
     /// @dev Bytes data includes the duration of the voting period
     function initialize(address _contest, bytes memory _initParams) public {
+        require(initialized == false, "Already initialized");
+
         (uint256 _duration) = abi.decode(_initParams, (uint256));
 
         contest = Contest(_contest);
         duration = _duration;
+        initialized = true;
 
         emit Initialized(_contest, _duration);
     }

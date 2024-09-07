@@ -13,8 +13,15 @@ contract EmptyExecution is IExecution {
 
     Contest public contest;
 
+    /// @notice Whether the module has been initialized
+    bool private initialized;
+
     function initialize(address _contest, bytes memory) public {
+        require(initialized == false, "Already initialized");
+
         contest = Contest(_contest);
+
+        initialized = true;
     }
 
     function execute(bytes memory) public {

@@ -36,6 +36,9 @@ contract DualTokenPointsV0 is IPoints {
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Points;
 
+    /// @notice Whether the module has been initialized
+    bool private initialized;
+
     /// @notice Reference to the voting token contract
     /// @dev This voting token must implement IVotes
     IVotes public voteToken;
@@ -76,6 +79,8 @@ contract DualTokenPointsV0 is IPoints {
     /// @param _initData The initialization data
     /// @dev Bytes data includes the address of the voting token and the voting checkpoint
     function initialize(address _contest, bytes calldata _initData) public {
+        require(initialized == false, "Already initialized");
+
         (address _daoToken, address _contextToken, uint256 _votingCheckpoint) =
             abi.decode(_initData, (address, address, uint256));
 
@@ -83,6 +88,8 @@ contract DualTokenPointsV0 is IPoints {
         voteToken = IVotes(_daoToken);
         contextToken = IERC20(_contextToken);
         contest = _contest;
+
+        initialized = true;
 
         emit Initialized(_contest, _daoToken, _contextToken, _votingCheckpoint);
     }

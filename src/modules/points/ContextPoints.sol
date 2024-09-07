@@ -36,6 +36,9 @@ contract ContextPointsV0 is IPoints {
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Points;
 
+    /// @notice Whether the module has been initialized
+    bool private initialized;
+
     /// @notice Reference to the voting token contract
     /// @dev This voting token must implement IVotes
     IVotes public daoToken;
@@ -80,6 +83,8 @@ contract ContextPointsV0 is IPoints {
     /// @param _initData The initialization data
     /// @dev Bytes data includes the address of the voting token and the voting checkpoint
     function initialize(address _contest, bytes calldata _initData) public {
+        require(initialized == false, "Already initialized");
+
         (address _daoToken, address _contextToken, uint256 _votingCheckpoint) =
             abi.decode(_initData, (address, address, uint256));
 
@@ -92,6 +97,7 @@ contract ContextPointsV0 is IPoints {
         daoToken = IVotes(_daoToken);
         contextToken = IERC20(_contextToken);
         contest = _contest;
+        initialized = true;
 
         emit Initialized(_contest, _daoToken, _contextToken, _votingCheckpoint);
     }
@@ -134,9 +140,6 @@ contract ContextPointsV0 is IPoints {
             require(daoTokenPoints[_user] >= _amount, "Insufficient points allocated");
             daoTokenPoints[_user] -= _amount;
         } else {
-            uint256 contextPoints2 = contextPoints[_user];
-            console.log("releasePoints", _amount, votingToken, contextPoints2);
-
             require(contextPoints[_user] >= _amount, "Insufficient points allocated");
             contextPoints[_user] -= _amount;
         }
@@ -173,6 +176,9 @@ contract ContextPointsV0 is IPoints {
         if (votingToken == address(daoToken)) {
             return totalVotingPoints - daoTokenPoints[_user] >= _amount;
         } else {
+            console.log("Context points: ", contextPoints[_user]);
+            console.log("Context amount: ", _amount);
+            console.log("Context total: ", totalVotingPoints);
             return totalVotingPoints - contextPoints[_user] >= _amount;
         }
     }

@@ -46,6 +46,9 @@ contract HatsAllowList is IChoices {
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Choices;
 
+    /// @notice Whether the module has been initialized
+    bool private initialized;
+
     /// @notice Reference to the Hats Protocol contract
     IHats public hats;
 
@@ -93,6 +96,8 @@ contract HatsAllowList is IChoices {
     /// @param _initData The initialization data for the contract
     /// @dev Bytes data includes the hats address, hatId, and prepopulated choices
     function initialize(address _contest, bytes calldata _initData) external override {
+        require(initialized == false, "Already initialized");
+
         (address _hats, uint256 _hatId, bytes[] memory _prepopulatedChoices) =
             abi.decode(_initData, (address, uint256, bytes[]));
 
@@ -111,6 +116,8 @@ contract HatsAllowList is IChoices {
                 }
             }
         }
+
+        initialized = true;
 
         emit Initialized(_contest, _hats, _hatId);
     }

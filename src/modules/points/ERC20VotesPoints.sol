@@ -40,6 +40,9 @@ contract ERC20VotesPoints is IPoints {
     /// @dev voterAddress => allocated points
     mapping(address => uint256) public allocatedPoints;
 
+    /// @notice Whether the module has been initialized
+    bool private initialized;
+
     /// ===============================
     /// ========== Modifiers ==========
     /// ===============================
@@ -62,11 +65,17 @@ contract ERC20VotesPoints is IPoints {
     /// @param _initData The initialization data
     /// @dev Bytes data includes the address of the voting token and the voting checkpoint
     function initialize(address _contest, bytes calldata _initData) public {
+        require(initialized == false, "Already initialized");
+
         (address _token, uint256 _votingCheckpoint) = abi.decode(_initData, (address, uint256));
+
+        require(initialized == false, "Already initialized");
 
         votingCheckpoint = _votingCheckpoint;
         voteToken = IVotes(_token);
         contest = _contest;
+
+        initialized = true;
 
         emit Initialized(_contest, _token, _votingCheckpoint);
     }

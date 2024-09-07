@@ -22,6 +22,9 @@ contract SBTBalancePoints is IPoints {
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Points;
 
+    /// @notice Whether the module has been initialized
+    bool private initialized;
+
     /// @notice Reference to the voting token contract
     IERC20 public voteToken;
 
@@ -54,10 +57,13 @@ contract SBTBalancePoints is IPoints {
     /// @param _initData The initialization data
     /// @dev Bytes data includes the address of the voting token
     function initialize(address _contest, bytes calldata _initData) external {
+        require(initialized == false, "Already initialized");
+
         (address _token) = abi.decode(_initData, (address));
 
         contest = _contest;
         voteToken = IERC20(_token);
+        initialized = true;
 
         emit Initialized(_contest, _token);
     }
