@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/IChoices.sol";
 import "../../core/ModuleType.sol";
 
 // Allow listed choice contract
-contract AllowList is IChoices {
+contract AllowList is IChoices, Initializable {
     struct ChoiceData {
         string uri;
         bytes data;
@@ -16,9 +17,6 @@ contract AllowList is IChoices {
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Choices;
-
-    /// @notice Whether the module has been initialized
-    bool private initialized;
 
     mapping(bytes32 => ChoiceData) private choices;
     mapping(address => bool) public allowedAccounts;
@@ -37,8 +35,7 @@ contract AllowList is IChoices {
 
     constructor() {}
 
-    function initialize(address _contest, bytes calldata _initData) external override {
-        require(initialized == false, "Already initialized");
+    function initialize(address _contest, bytes calldata _initData) external override initializer {
         owner = _contest;
 
         (address[] memory _allowedAccounts) = abi.decode(_initData, (address[]));
@@ -46,8 +43,6 @@ contract AllowList is IChoices {
         for (uint256 i = 0; i < _allowedAccounts.length; i++) {
             allowedAccounts[_allowedAccounts[i]] = true;
         }
-
-        initialized = true;
     }
 
     function registerChoice(bytes32 choiceId, bytes calldata _data) external override onlyAllowed {

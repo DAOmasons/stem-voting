@@ -63,6 +63,14 @@ contract ContextPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accounts
         assertEq(address(pointsModule.contextToken()), address(loot()));
     }
 
+    function test_initialize_twice() public {
+        _initialize();
+        vm.expectRevert("Initializable: contract is already initialized");
+        bytes memory initData = abi.encode(address(arbToken()), address(loot()), snapshotBlock);
+
+        pointsModule.initialize(address(this), initData);
+    }
+
     function test_allocatePoints_context_total() public {
         _allocatePoints(0, contextTokenAmount, address(loot()));
 
