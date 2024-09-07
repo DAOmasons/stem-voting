@@ -83,6 +83,11 @@ contract ContextPointsV0 is IPoints {
         (address _daoToken, address _contextToken, uint256 _votingCheckpoint) =
             abi.decode(_initData, (address, address, uint256));
 
+        require(
+            _daoToken != address(0) && _contextToken != address(0) && _contest != address(0) && _votingCheckpoint > 0,
+            "Invalid init param"
+        );
+
         votingCheckpoint = _votingCheckpoint;
         daoToken = IVotes(_daoToken);
         contextToken = IERC20(_contextToken);
@@ -103,7 +108,7 @@ contract ContextPointsV0 is IPoints {
         require(hasVotingPoints(_user, _amount, _data), "Insufficient points available");
 
         (, address votingToken) = abi.decode(_data, (Metadata, address));
-        require(isValidToken(votingToken), "Invalid voting token");
+        require(isValidToken(votingToken), "Invalid token");
 
         if (votingToken == address(daoToken)) {
             daoTokenPoints[_user] += _amount;
@@ -123,7 +128,7 @@ contract ContextPointsV0 is IPoints {
 
         (, address votingToken) = abi.decode(_data, (Metadata, address));
 
-        require(isValidToken(votingToken), "Invalid voting token");
+        require(isValidToken(votingToken), "Invalid token");
 
         if (votingToken == address(daoToken)) {
             require(daoTokenPoints[_user] >= _amount, "Insufficient points allocated");
@@ -146,6 +151,7 @@ contract ContextPointsV0 is IPoints {
     /// @param user The address of the user
     /// @param votingToken The voting token address
     function getPoints(address user, address votingToken) public view returns (uint256) {
+        require(isValidToken(votingToken), "Invalid token");
         if (votingToken == address(daoToken)) {
             return daoToken.getPastVotes(user, votingCheckpoint);
         } else {
@@ -158,8 +164,6 @@ contract ContextPointsV0 is IPoints {
     /// @param _amount The amount of points to check
     function hasVotingPoints(address _user, uint256 _amount, bytes memory _data) public view returns (bool) {
         (, address votingToken) = abi.decode(_data, (Metadata, address));
-
-        require(isValidToken(votingToken), "Invalid voting token");
 
         uint256 totalVotingPoints = getPoints(_user, votingToken);
 
@@ -177,7 +181,7 @@ contract ContextPointsV0 is IPoints {
     function hasAllocatedPoints(address _user, uint256 _amount, bytes memory _data) public view returns (bool) {
         (, address votingToken) = abi.decode(_data, (Metadata, address));
 
-        require(isValidToken(votingToken), "Invalid voting token");
+        require(isValidToken(votingToken), "Invalid token");
 
         if (votingToken == address(daoToken)) {
             return daoTokenPoints[_user] >= _amount;

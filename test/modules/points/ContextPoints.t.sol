@@ -220,6 +220,102 @@ contract ContextPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accounts
     }
 
     //////////////////////////////
+    // Reverts
+    //////////////////////////////
+
+    function testRevert_init_nonzero() public {
+        bytes memory initData = abi.encode(address(arbToken()), address(loot()), 0);
+
+        vm.expectRevert("Invalid init param");
+        pointsModule.initialize(address(this), initData);
+
+        initData = abi.encode(address(0), address(loot()), snapshotBlock);
+
+        vm.expectRevert("Invalid init param");
+        pointsModule.initialize(address(this), initData);
+
+        initData = abi.encode(address(arbToken()), address(0), snapshotBlock);
+
+        vm.expectRevert("Invalid init param");
+        pointsModule.initialize(address(this), initData);
+
+        initData = abi.encode(address(arbToken()), address(loot()), snapshotBlock);
+        pointsModule.initialize(address(this), initData);
+    }
+
+    function testRevert_claimPoints() public {
+        vm.expectRevert("This contract does not require users to claim points.");
+
+        pointsModule.claimPoints(address(0), "");
+    }
+
+    function testRevert_getPoints_InvalidToken() public {
+        _initialize();
+
+        vm.expectRevert("Invalid token");
+        pointsModule.getPoints(address(0), address(0));
+    }
+
+    function testRevert_allocatePoints_amount_nonZero() public {
+        _initialize();
+
+        vm.expectRevert("Amount must be greater than 0");
+
+        pointsModule.allocatePoints(voter0(), 0, "");
+    }
+
+    function testRevert_allocatePoints_amount_overAllocation() public {
+        _initialize();
+
+        vm.expectRevert("Insufficient points available");
+
+        bytes memory _data = abi.encode(_metadata, address(loot()));
+
+        pointsModule.allocatePoints(voter0(), contextTokenAmount + 1, _data);
+        _data = abi.encode(_metadata, address(arbToken()));
+
+        vm.expectRevert("Insufficient points available");
+        pointsModule.allocatePoints(voter0(), daoTokenAmount + 1, _data);
+    }
+
+    function testRevert_allocatePoints_notAllocated() public {
+        _initialize();
+
+        vm.expectRevert("Insufficient points available");
+
+        bytes memory _data = abi.encode(_metadata, address(loot()));
+
+        pointsModule.allocatePoints(someGuy(), contextTokenAmount, _data);
+
+        _data = abi.encode(_metadata, address(arbToken()));
+
+        vm.expectRevert("Insufficient points available");
+
+        pointsModule.allocatePoints(someGuy(), daoTokenAmount, _data);
+    }
+
+    function testRevert_allocatePoints_invalidToken() public {
+        _initialize();
+
+        vm.expectRevert("Invalid token");
+        bytes memory _data = abi.encode(_metadata, someGuy());
+        pointsModule.allocatePoints(voter0(), contextTokenAmount, _data);
+
+        _data = abi.encode(_metadata, someGuy());
+
+        vm.expectRevert("Invalid token");
+        pointsModule.allocatePoints(voter0(), daoTokenAmount, _data);
+    }
+
+    function testRevert_releasePoints_notContest() public {
+        _setupVotes();
+
+        // vm.expectRevert("Only contest");
+        // bytes memory _data = abi.encode(_metadata, address(loot()));
+        // pointsModule.releasePoints(voter0(), contextTokenAmount, _data);
+    }
+
+    //////////////////////////////
     // Helpers
     //////////////////////////////
 
