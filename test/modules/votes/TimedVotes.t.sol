@@ -84,6 +84,15 @@ contract TimedVotingTest is Test, Accounts, MockContestSetup {
     // Reverts
     //////////////////////////////
 
+    function testInitialize_twice() public {
+        _inititalize();
+
+        vm.expectRevert("Initializable: contract is already initialized");
+
+        bytes memory data = abi.encode(TWO_WEEKS);
+        timedVotesModule.initialize(address(mockContest()), data);
+    }
+
     function testRevert_setVotingTime_now_contestNotVoteStatus() public {
         _inititalize();
 

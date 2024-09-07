@@ -62,7 +62,7 @@ contract ERC20VotesPoints is IPoints, Initializable {
     /// @param _contest The address of the contest contract
     /// @param _initData The initialization data
     /// @dev Bytes data includes the address of the voting token and the voting checkpoint
-    function initialize(address _contest, bytes calldata _initData) public {
+    function initialize(address _contest, bytes calldata _initData) public initializer {
         (address _token, uint256 _votingCheckpoint) = abi.decode(_initData, (address, uint256));
 
         votingCheckpoint = _votingCheckpoint;

@@ -167,6 +167,16 @@ contract DualTokenPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accoun
     // Reverts
     //////////////////////////////
 
+    function testInitialize_twice() public {
+        _initialize();
+
+        vm.expectRevert("Initializable: contract is already initialized");
+
+        bytes memory initData = abi.encode(address(arbToken()), address(loot()), snapshotBlock);
+
+        pointsModule.initialize(address(this), initData);
+    }
+
     function testRevertAllocate_nonContest() public {
         _initialize();
 

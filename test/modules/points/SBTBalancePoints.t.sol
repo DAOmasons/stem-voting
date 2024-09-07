@@ -45,6 +45,16 @@ contract SBTBalancePointsTest is Test, Accounts {
         assertEq(pointsModule().contest(), address(this));
     }
 
+    function testInitialize_twice() public {
+        _initialize();
+
+        vm.expectRevert("Initializable: contract is already initialized");
+
+        bytes memory initData = abi.encode(address(voteToken()));
+
+        pointsModule().initialize(address(this), initData);
+    }
+
     function test_allocatePoints_total() public {
         _allocatePoints(0);
 

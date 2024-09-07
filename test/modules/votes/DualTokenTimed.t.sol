@@ -155,6 +155,14 @@ contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockCon
     // Reverts
     /////////////////////////////
 
+    function testInitialize_twice() public {
+        _inititalize();
+
+        vm.expectRevert("Initializable: contract is already initialized");
+        bytes memory data = abi.encode(TWO_WEEKS, address(arbToken()), address(loot()));
+        votesModule.initialize(address(mockContest()), data);
+    }
+
     function testRevert_setVotingTime_now_contestNotVoteStatus() public {
         _inititalize();
 

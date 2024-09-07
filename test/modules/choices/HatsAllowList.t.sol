@@ -170,6 +170,16 @@ contract HatsAllowListTest is HatsSetup {
     // Reverts
     //////////////////////////////
 
+    function testInitialize_twice() public {
+        _initialize();
+
+        bytes memory data = abi.encode(address(hats()), facilitator1().id, "");
+
+        vm.expectRevert("Initializable: contract is already initialized");
+
+        hatsAllowList.initialize(address(mockContest), data);
+    }
+
     function testRevert_register_notPopulating() public {
         _initialize();
 

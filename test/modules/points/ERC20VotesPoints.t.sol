@@ -152,6 +152,16 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
     // Reverts
     //////////////////////////////
 
+    function testInitialize_twice() public {
+        _initialize();
+
+        vm.expectRevert("Initializable: contract is already initialized");
+
+        bytes memory initData = abi.encode(address(arbToken()), snapshotBlock);
+
+        pointsModule.initialize(address(this), initData);
+    }
+
     function testRevertAllocate_nonContest() public {
         _initialize();
 
