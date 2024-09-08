@@ -23,7 +23,6 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
     );
 
     ContextVotesV0 votesModule;
-    // ContextPointsV0 pointsModule;
 
     uint256 startBlock = 208213640;
     uint256 delegateBlock = startBlock + 10;
@@ -78,6 +77,51 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
         assertEq(votesModule.endTime(), block.timestamp + TWO_WEEKS);
     }
 
+    function testSingleVote_context() public {
+        _initialize();
+        _setupVoting_now();
+        _vote_context();
+
+        assertEq(votesModule.contextVotes(choice1(), address(voter1())), _contextAmount);
+        assertEq(votesModule.totalContextVotesForChoice(choice1()), _contextAmount);
+        assertEq(votesModule.totalContextVotes(), _contextAmount);
+
+        assertEq(votesModule.daoVotes(choice1(), address(voter1())), 0);
+        assertEq(votesModule.totalDaoVotesForChoice(choice1()), 0);
+        assertEq(votesModule.totalDaoVotes(), 0);
+    }
+
+    function testSingleVote_dao() public {
+        _initialize();
+        _setupVoting_now();
+        _vote_dao();
+
+        assertEq(votesModule.daoVotes(choice1(), address(voter1())), _daoAmount);
+        assertEq(votesModule.totalDaoVotesForChoice(choice1()), _daoAmount);
+        assertEq(votesModule.totalDaoVotes(), _daoAmount);
+
+        assertEq(votesModule.contextVotes(choice1(), address(voter1())), 0);
+        assertEq(votesModule.totalContextVotesForChoice(choice1()), 0);
+        assertEq(votesModule.totalContextVotes(), 0);
+    }
+
+    function testVote_both() public {
+        _initialize();
+        _setupVoting_now();
+        _vote_dao();
+        _vote_context();
+
+        assertEq(votesModule.daoVotes(choice1(), address(voter1())), _daoAmount);
+        assertEq(votesModule.totalDaoVotesForChoice(choice1()), _daoAmount);
+        assertEq(votesModule.totalDaoVotes(), _daoAmount);
+
+        assertEq(votesModule.contextVotes(choice1(), address(voter1())), _contextAmount);
+        assertEq(votesModule.totalContextVotesForChoice(choice1()), _contextAmount);
+        assertEq(votesModule.totalContextVotes(), _contextAmount);
+
+        assertEq(votesModule.getTotalVotesForChoice(choice1()), _voteAmount);
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -95,7 +139,23 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
     // Helpers
     //////////////////////////////
 
-    function _vote_context() public {}
+    function _vote_dao() public {
+        vm.expectEmit(true, false, false, true);
+        emit VoteCast(voter1(), choice1(), _daoAmount, _reason, address(arbToken()));
+
+        vm.startPrank(address(mockContest()));
+        votesModule.vote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(arbToken())));
+        vm.stopPrank();
+    }
+
+    function _vote_context() public {
+        vm.expectEmit(true, false, false, true);
+        emit VoteCast(voter1(), choice1(), _contextAmount, _reason, address(loot()));
+
+        vm.startPrank(address(mockContest()));
+        votesModule.vote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+        vm.stopPrank();
+    }
 
     function _setupVoting_now() public {
         mockContest().cheatStatus(ContestStatus.Voting);
