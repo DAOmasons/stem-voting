@@ -15,15 +15,15 @@ import {Accounts} from "../../setup/Accounts.t.sol";
 import {BaalSetupLive} from "../../setup/BaalSetup.t.sol";
 
 contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockContestSetup, Accounts {
-    event Initialized(address contest, uint256 duration, address daoToken, address contextToken);
-    event VotingStarted(uint256 startTime, uint256 endTime, address pointModule);
+    event Initialized(address contest, address daoToken, address contextToken);
+    event VotingStarted(uint256 startTime, uint256 endTime);
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason, address _votingToken);
     event VoteRetracted(
         address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason, address _votingToken
     );
 
     ContextVotesV0 votesModule;
-    ContextPointsV0 pointsModule;
+    // ContextPointsV0 pointsModule;
 
     uint256 startBlock = 208213640;
     uint256 delegateBlock = startBlock + 10;
@@ -50,7 +50,6 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
         __setupMockContest();
 
         votesModule = new ContextVotesV0();
-        pointsModule = new ContextPointsV0();
 
         // Forge block.timestamp starts at 0
         // warp into the future so we can test
@@ -63,13 +62,56 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
     // Base Functionality Tests
     //////////////////////////////
 
+    function testInitialize() public {
+        _initialize();
+
+        assertEq(address(votesModule.contest()), address(mockContest()));
+        assertEq(votesModule.daoToken(), address(arbToken()));
+        assertEq(votesModule.contextToken(), address(loot()));
+    }
+
+    function testSetupVoting_now() public {
+        _initialize();
+        _setupVoting_now();
+
+        assertEq(votesModule.startTime(), block.timestamp);
+        assertEq(votesModule.endTime(), block.timestamp + TWO_WEEKS);
+    }
+
+    //////////////////////////////
+    // Reverts
+    //////////////////////////////
+
     function testInitialize_twice() public {
-        // _initialize();
+        _initialize();
 
-        // vm.expectRevert("Initializable: contract is already initialized");
+        bytes memory _data = abi.encode(address(arbToken()), address(loot()));
+        vm.expectRevert("Initializable: contract is already initialized");
 
-        // bytes memory initData = abi.encode(address(voteToken()));
+        votesModule.initialize(address(this), _data);
+    }
 
-        // pointsModule().initialize(address(this), initData);
+    //////////////////////////////
+    // Helpers
+    //////////////////////////////
+
+    function _vote_context() public {}
+
+    function _setupVoting_now() public {
+        mockContest().cheatStatus(ContestStatus.Voting);
+
+        vm.expectEmit(true, false, false, true);
+        emit VotingStarted(block.timestamp, block.timestamp + TWO_WEEKS);
+
+        votesModule.setupVoting(0, TWO_WEEKS);
+    }
+
+    function _initialize() public {
+        bytes memory _data = abi.encode(address(arbToken()), address(loot()));
+
+        vm.expectEmit(true, false, false, true);
+
+        emit Initialized(address(mockContest()), address(arbToken()), address(loot()));
+        votesModule.initialize(address(mockContest()), _data);
     }
 }

@@ -19,10 +19,10 @@ contract ContextVotesV0 is IVotes, Initializable {
     /// ===============================
 
     /// @notice Emitted when the contract is initialized
-    event Initialized(address contest, uint256 duration, address daoToken, address contextToken);
+    event Initialized(address contest, address daoToken, address contextToken);
 
     /// @notice Emitted when voting has started
-    event VotingStarted(uint256 startTime, uint256 endTime, address pointModule);
+    event VotingStarted(uint256 startTime, uint256 endTime);
 
     /// @notice Emitted when a vote is cast
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason, address _votingToken);
@@ -56,9 +56,6 @@ contract ContextVotesV0 is IVotes, Initializable {
 
     /// @notice The end time of the voting period
     uint256 public endTime;
-
-    /// @notice The duration of the voting period
-    uint256 public duration;
 
     /// @notice Mapping of choiceId to voter to vote amount
     /// @dev choiceId => voter => amount
@@ -113,17 +110,15 @@ contract ContextVotesV0 is IVotes, Initializable {
     /// @param _contest The address of the contest contract
     /// @param _initParams The initialization data
     /// @dev Bytes data includes the duration of the voting period
-    function initialize(address _contest, bytes memory _initParams) public {
-        (uint256 _duration, address _daoToken, address _contextToken) =
-            abi.decode(_initParams, (uint256, address, address));
+    function initialize(address _contest, bytes memory _initParams) public initializer {
+        (address _daoToken, address _contextToken) = abi.decode(_initParams, (address, address));
 
         contest = Contest(_contest);
-        duration = _duration;
 
         daoToken = _daoToken;
         contextToken = _contextToken;
 
-        emit Initialized(_contest, _duration, _daoToken, _contextToken);
+        emit Initialized(_contest, _daoToken, _contextToken);
     }
 
     /// ===============================
@@ -132,7 +127,8 @@ contract ContextVotesV0 is IVotes, Initializable {
 
     /// @notice Sets the start time of the voting period, links points module
     /// @param _startTime The start time of the voting period
-    function setupVoting(uint256 _startTime, address _pointModule) public {
+    /// @param _duration The duration of the voting period
+    function setupVoting(uint256 _startTime, uint256 _duration) public {
         require(contest.isStatus(ContestStatus.Voting), "Contest is not in voting state");
 
         require(startTime == 0, "Voting has already started");
@@ -145,9 +141,9 @@ contract ContextVotesV0 is IVotes, Initializable {
             startTime = _startTime;
         }
 
-        endTime = startTime + duration;
+        endTime = startTime + _duration;
 
-        emit VotingStarted(startTime, endTime, _pointModule);
+        emit VotingStarted(startTime, endTime);
     }
 
     /// @notice Finalizes the voting period
