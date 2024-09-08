@@ -80,7 +80,7 @@ contract ContextVotesV0 is IVotes, Initializable {
     uint256 public totalContextVotes;
 
     /// @notice Whether the module has been initialized
-    bool public votingActive = false;
+    bool public votingActive;
 
     /// ===============================
     /// ========== Modifiers ==========

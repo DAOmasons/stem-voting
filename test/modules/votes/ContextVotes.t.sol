@@ -122,6 +122,27 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
         assertEq(votesModule.getTotalVotesForChoice(choice1()), _voteAmount);
     }
 
+    function testVote_both_partial() public {
+        _initialize();
+        _setupVoting_now();
+
+        vm.startPrank(address(mockContest()));
+
+        votesModule.vote(voter1(), choice1(), _daoAmount / 2, abi.encode(_reason, address(arbToken())));
+        votesModule.vote(voter1(), choice1(), _contextAmount / 2, abi.encode(_reason, address(loot())));
+
+        assertEq(votesModule.daoVotes(choice1(), address(voter1())), _daoAmount / 2);
+        assertEq(votesModule.contextVotes(choice1(), address(voter1())), _contextAmount / 2);
+
+        votesModule.vote(voter1(), choice1(), _daoAmount / 2, abi.encode(_reason, address(arbToken())));
+        votesModule.vote(voter1(), choice1(), _contextAmount / 2, abi.encode(_reason, address(loot())));
+
+        assertEq(votesModule.daoVotes(choice1(), address(voter1())), _daoAmount);
+        assertEq(votesModule.contextVotes(choice1(), address(voter1())), _contextAmount);
+
+        vm.stopPrank();
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
