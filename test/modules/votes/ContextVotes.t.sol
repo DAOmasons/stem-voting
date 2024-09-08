@@ -53,8 +53,6 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
         // Forge block.timestamp starts at 0
         // warp into the future so we can test
         vm.warp(INIT_TIME);
-
-        mockContest().cheatStatus(ContestStatus.Voting);
     }
 
     //////////////////////////////
@@ -143,6 +141,36 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
         vm.stopPrank();
     }
 
+    function testVote_retract_context() public {
+        _initialize();
+        _setupVoting_now();
+        _vote_context();
+        _retract_context();
+
+        assertEq(votesModule.contextVotes(choice1(), address(voter1())), 0);
+        assertEq(votesModule.totalContextVotesForChoice(choice1()), 0);
+        assertEq(votesModule.totalContextVotes(), 0);
+    }
+
+    function testVote_retract_dao() public {
+        _initialize();
+        _setupVoting_now();
+        _vote_dao();
+        _retract_dao();
+
+        assertEq(votesModule.daoVotes(choice1(), address(voter1())), 0);
+        assertEq(votesModule.totalDaoVotesForChoice(choice1()), 0);
+        assertEq(votesModule.totalDaoVotes(), 0);
+    }
+
+    function testVote_finalizeVoting() public {
+        _initialize();
+        _setupVoting_now();
+        _vote_dao();
+        _retract_dao();
+        _finalizeVoting();
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -156,9 +184,78 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
         votesModule.initialize(address(this), _data);
     }
 
+    function testRevert_setupVoting_alreadyStarted() public {
+        _initialize();
+        _setupVoting_now();
+        vm.expectRevert("Voting has already started");
+        votesModule.setupVoting(0, TWO_WEEKS);
+    }
+
+    function testRevert_setupVoting_notInitialized() public {
+        _initialize();
+
+        vm.expectRevert("Contest is not in voting state");
+        votesModule.setupVoting(0, TWO_WEEKS);
+    }
+
+    function testRevert_setupVoting_pastStartTime() public {
+        _initialize();
+
+        mockContest().cheatStatus(ContestStatus.Voting);
+
+        vm.expectRevert("Start time must be in the future");
+        votesModule.setupVoting(block.timestamp, TWO_WEEKS);
+
+        vm.expectRevert("Start time must be in the future");
+        votesModule.setupVoting(block.timestamp - 1, TWO_WEEKS);
+
+        votesModule.setupVoting(block.timestamp + 1, TWO_WEEKS);
+    }
+
+    function testRevert_vote_onlyContest() public {
+        _initialize();
+        _setupVoting_now();
+
+        vm.expectRevert("Only contest");
+        votesModule.vote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(0)));
+    }
+
+    function testRevert_vote_invalidToken() public {
+        _initialize();
+        _setupVoting_now();
+
+        vm.expectRevert("Invalid token");
+        vm.startPrank(address(mockContest()));
+        votesModule.vote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(0)));
+        vm.stopPrank();
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
+
+    function _finalizeVoting() private {
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+        votesModule.finalizeVoting();
+    }
+
+    function _retract_dao() public {
+        vm.expectEmit(true, false, false, true);
+        emit VoteRetracted(voter1(), choice1(), _daoAmount, _reason, address(arbToken()));
+
+        vm.startPrank(address(mockContest()));
+        votesModule.retractVote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(arbToken())));
+        vm.stopPrank();
+    }
+
+    function _retract_context() public {
+        vm.expectEmit(true, false, false, true);
+        emit VoteRetracted(voter1(), choice1(), _contextAmount, _reason, address(loot()));
+
+        vm.startPrank(address(mockContest()));
+        votesModule.retractVote(voter1(), choice1(), _contextAmount, abi.encode(_reason, address(loot())));
+        vm.stopPrank();
+    }
 
     function _vote_dao() public {
         vm.expectEmit(true, false, false, true);

@@ -165,7 +165,7 @@ contract ContextVotesV0 is IVotes, Initializable {
     {
         (Metadata memory _reason, address _votingToken) = abi.decode(_data, (Metadata, address));
 
-        require(isAcceptedToken(_votingToken), "Invalid voting token");
+        require(isAcceptedToken(_votingToken), "Invalid token");
 
         if (_votingToken == daoToken) {
             daoVotes[_choiceId][_voter] += _amount;
@@ -191,7 +191,7 @@ contract ContextVotesV0 is IVotes, Initializable {
     {
         (Metadata memory _reason, address _votingToken) = abi.decode(_data, (Metadata, address));
 
-        require(isAcceptedToken(_votingToken), "Invalid voting token");
+        require(isAcceptedToken(_votingToken), "Invalid token");
 
         if (_votingToken == daoToken) {
             require(daoVotes[_choiceId][_voter] >= _amount, "Insufficient votes");
@@ -235,7 +235,7 @@ contract ContextVotesV0 is IVotes, Initializable {
         view
         returns (uint256)
     {
-        require(isAcceptedToken(tokenAddress), "Invalid voting token");
+        require(isAcceptedToken(tokenAddress), "Invalid token");
 
         if (tokenAddress == daoToken) {
             return daoVotes[_choiceId][voter];
