@@ -230,6 +230,63 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
         vm.stopPrank();
     }
 
+    function testRevert_retractVote_onlyContest() public {
+        _initialize();
+        _setupVoting_now();
+        _vote_dao();
+
+        vm.expectRevert("Only contest");
+        votesModule.retractVote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(0)));
+    }
+
+    function testRevert_retractVote_invalidToken() public {
+        _initialize();
+        _setupVoting_now();
+        _vote_dao();
+
+        vm.expectRevert("Invalid token");
+        vm.startPrank(address(mockContest()));
+        votesModule.retractVote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(0)));
+        vm.stopPrank();
+    }
+
+    function testRevert_retractVote_insufficientBalance() public {
+        _initialize();
+        _setupVoting_now();
+        _vote_dao();
+
+        vm.expectRevert("Insufficient votes");
+
+        vm.startPrank(address(mockContest()));
+        votesModule.retractVote(voter1(), choice1(), _daoAmount + 1, abi.encode(_reason, address(arbToken())));
+        vm.stopPrank();
+    }
+
+    function testRevert_notVotingPeriod() public {
+        _initialize();
+
+        vm.expectRevert("Must vote within voting period");
+        vm.startPrank(address(mockContest()));
+        votesModule.vote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(0)));
+
+        mockContest().cheatStatus(ContestStatus.Voting);
+        votesModule.setupVoting(block.timestamp + 1, TWO_WEEKS);
+
+        vm.expectRevert("Must vote within voting period");
+        votesModule.vote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(0)));
+
+        vm.warp(block.timestamp + 1);
+
+        votesModule.vote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(loot())));
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        vm.expectRevert("Must vote within voting period");
+        votesModule.vote(voter1(), choice1(), _daoAmount, abi.encode(_reason, address(loot())));
+
+        vm.stopPrank();
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
