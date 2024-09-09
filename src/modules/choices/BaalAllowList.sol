@@ -18,6 +18,7 @@ struct ChoiceData {
     bool exists;
 }
 
+/// @notice Enum for the holder type
 enum HolderType {
     None,
     Share,
@@ -30,14 +31,23 @@ contract BaalAllowList is IChoices, Initializable {
     /// ========== Events =============
     /// ===============================
 
-    // /// @notice Emitted when the contract is initialized
-    // event Initialized(address contest, address hatsAddress, uint256 hatId);
+    // @notice Emitted when the contract is initialized
+    event Initialized(
+        address _contest,
+        address daoAddress,
+        address lootToken,
+        address sharesToken,
+        HolderType _holderType,
+        uint256 _holderThreshold,
+        uint256 _startTime,
+        uint256 _endTime
+    );
 
-    // /// @notice Emitted when a choice is registered
-    // event Registered(bytes32 choiceId, ChoiceData choiceData, address contest);
+    // @notice Emitted when a choice is registered
+    event Registered(bytes32 choiceId, ChoiceData choiceData, address contest);
 
-    // /// @notice Emitted when a choice is removed
-    // event Removed(bytes32 choiceId, address contest);
+    // @notice Emitted when a choice is removed
+    event Removed(bytes32 choiceId, address contest);
 
     /// ===============================
     /// ========== Storage ============
@@ -134,6 +144,8 @@ contract BaalAllowList is IChoices, Initializable {
 
         holderType = _holderType;
 
+        holderThreshold = _holderThreshold;
+
         if (_startTime == 0) {
             startTime = block.timestamp;
         } else {
@@ -143,25 +155,63 @@ contract BaalAllowList is IChoices, Initializable {
         }
 
         endTime = startTime + _duration;
+
+        emit Initialized(
+            _contest,
+            _daoAddress,
+            address(lootToken),
+            address(sharesToken),
+            holderType,
+            holderThreshold,
+            startTime,
+            endTime
+        );
     }
 
-    function registerChoice(bytes32 choiceId, bytes memory data)
+    /// ===============================
+    /// ========== Setters ============
+    /// ===============================
+
+    /// @notice Registers a choice with the contract
+    /// @param _choiceId The unique identifier for the choice
+    /// @param _data The data for the choice
+    /// @dev Bytes data includes the metadata and choice data
+    function registerChoice(bytes32 _choiceId, bytes memory _data)
         external
         onlyValidTime
         onlyContestPopulating
         onlyHolder
-    {}
+    {
+        (bytes memory _choiceData, Metadata memory _metadata) = abi.decode(_data, (bytes, Metadata));
 
-    function removeChoice(bytes32 choiceId, bytes memory data)
-        external
-        onlyValidTime
-        onlyContestPopulating
-        onlyHolder
-    {}
+        choices[_choiceId] = ChoiceData(_metadata, _choiceData, true);
 
-    function isValidChoice(bytes32 choiceId) public view returns (bool) {
-        return true;
+        emit Registered(_choiceId, choices[_choiceId], address(contest));
     }
 
-    function finalizeVoting() public onlyDuringPopulation {}
+    /// @notice Removes a choice from the contract
+    /// @param _choiceId The unique identifier for the choice
+    function removeChoice(bytes32 _choiceId, bytes memory) external onlyValidTime onlyContestPopulating onlyHolder {
+        require(isValidChoice(_choiceId), "Choice does not exist");
+
+        delete choices[_choiceId];
+
+        emit Removed(_choiceId, address(contest));
+    }
+
+    /// @notice Finalizes the choices for the contest
+    function finalizeChoices() external onlyContestPopulating {
+        require(block.timestamp >= endTime, "Population period has not ended");
+        contest.finalizeChoices();
+    }
+
+    /// ===============================
+    /// ========== Getters ============
+    /// ===============================
+
+    /// @notice Checks if a choice is valid
+    /// @param _choiceId The unique identifier for the choice
+    function isValidChoice(bytes32 _choiceId) public view returns (bool) {
+        return choices[_choiceId].exists;
+    }
 }
