@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 import {HatsSetup} from "./hatsSetup.t.sol";
 import {console} from "forge-std/Test.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 interface IContest {
     function getTotalVotesForChoice(bytes32 choiceId) external view returns (uint256);

@@ -1,8 +1,9 @@
 [profile.default]
+evm_version = "cancun"
 fs_permissions = [{access = "read-write", path = "./"}]
 libs = ["lib"]
 out = "out"
-solc-version = "0.8.16"
+solc-version = "0.8.24"
 src = "src"
 test = "test"
 
