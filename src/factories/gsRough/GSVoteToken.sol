@@ -6,6 +6,10 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Pausable.so
 
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
+// WARNING: DEFUNCT CONTRACT. DO NOT USE. Requires more testing
+// This contract is no longer in use.
+// This contract functionality does not work as intended with upgrade to OZ v5
+
 contract GSVotingToken is ERC20, Ownable {
     constructor(string memory name, string memory symbol, uint256 initialSupply, address _holder)
         ERC20(name, symbol)

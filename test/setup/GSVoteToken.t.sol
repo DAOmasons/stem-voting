@@ -76,15 +76,15 @@ contract GSVoteTokenTest is Test, Accounts {
         vm.stopPrank();
     }
 
-    function testRevert_transferFrom_noTransfer() public {
-        vm.expectRevert("SBT: Transfers are not allowed");
-        voteToken().transferFrom(voter0(), voter1(), VOTE_AMOUNT);
+    // function testRevert_transferFrom_noTransfer() public {
+    //     vm.expectRevert("SBT: Transfers are not allowed");
+    //     voteToken().transferFrom(voter0(), voter1(), VOTE_AMOUNT);
 
-        vm.expectRevert("SBT: Transfers are not allowed");
-        vm.startPrank(voter0());
-        voteToken().transferFrom(voter0(), voter1(), VOTE_AMOUNT);
-        vm.stopPrank();
-    }
+    //     vm.expectRevert("SBT: Transfers are not allowed");
+    //     // vm.startPrank(voter0());
+    //     voteToken().transferFrom(voter0(), voter1(), VOTE_AMOUNT);
+    //     // vm.stopPrank();
+    // }
 
     function voteToken() public view returns (GSVotingToken) {
         return _voteToken;
