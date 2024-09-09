@@ -10,21 +10,8 @@ import {Metadata} from "../../core/Metadata.sol";
 import {ContestStatus} from "../../core/ContestStatus.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 import {Contest} from "../../Contest.sol";
-
-/// @notice Struct to hold the metadata and bytes data of a choice
-struct ChoiceData {
-    Metadata metadata;
-    bytes data;
-    bool exists;
-}
-
-/// @notice Enum for the holder type
-enum HolderType {
-    None,
-    Share,
-    Loot,
-    Both
-}
+import {HolderType} from "../../core/BaalUtils.sol";
+import {BasicChoice} from "../../core/Choice.sol";
 
 contract BaalAllowList is IChoices, Initializable {
     /// ===============================
@@ -44,7 +31,7 @@ contract BaalAllowList is IChoices, Initializable {
     );
 
     // @notice Emitted when a choice is registered
-    event Registered(bytes32 choiceId, ChoiceData choiceData, address contest);
+    event Registered(bytes32 choiceId, BasicChoice choiceData, address contest);
 
     // @notice Emitted when a choice is removed
     event Removed(bytes32 choiceId, address contest);
@@ -84,8 +71,8 @@ contract BaalAllowList is IChoices, Initializable {
     uint256 public endTime;
 
     /// @notice This maps the data for each choice to its choiceId
-    /// @dev choiceId => ChoiceData
-    mapping(bytes32 => ChoiceData) public choices;
+    /// @dev choiceId => BasicChoice
+    mapping(bytes32 => BasicChoice) public choices;
 
     /// @notice Ensures the contest is in the populating state
     /// @dev The contest must be in the populating state
@@ -94,11 +81,15 @@ contract BaalAllowList is IChoices, Initializable {
         _;
     }
 
+    /// @notice Ensures the block timestamp is during the population period
+    /// @dev The block timestamp must be during the population period
     modifier onlyValidTime() {
         require(block.timestamp >= startTime && block.timestamp <= endTime, "Not during population period");
         _;
     }
 
+    /// @notice Ensures the holder is allowed to manage choices
+    /// @dev The holder must be allowed to manage choices
     modifier onlyHolder() {
         if (holderType == HolderType.None) {
             _;
@@ -184,7 +175,7 @@ contract BaalAllowList is IChoices, Initializable {
     {
         (bytes memory _choiceData, Metadata memory _metadata) = abi.decode(_data, (bytes, Metadata));
 
-        choices[_choiceId] = ChoiceData(_metadata, _choiceData, true);
+        choices[_choiceId] = BasicChoice(_metadata, _choiceData, true);
 
         emit Registered(_choiceId, choices[_choiceId], address(contest));
     }
