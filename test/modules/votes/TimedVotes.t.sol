@@ -12,6 +12,8 @@ import {ContestStatus} from "../../../src/core/ContestStatus.sol";
 contract TimedVotingTest is Test, Accounts, MockContestSetup {
     TimedVotes timedVotesModule;
 
+    error InvalidInitialization();
+
     event Initialized(address contest, uint256 duration);
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
     event VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
@@ -87,7 +89,7 @@ contract TimedVotingTest is Test, Accounts, MockContestSetup {
     function testInitialize_twice() public {
         _inititalize();
 
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(InvalidInitialization.selector);
 
         bytes memory data = abi.encode(TWO_WEEKS);
         timedVotesModule.initialize(address(mockContest()), data);

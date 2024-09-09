@@ -9,6 +9,8 @@ import {BaalSetupLive} from "../../setup/BaalSetup.t.sol";
 import {Metadata} from "../../../src/core/Metadata.sol";
 
 contract ContextPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accounts {
+    error InvalidInitialization();
+
     event Initialized(address contest, address token, uint256 votingCheckpoint);
     event PointsAllocated(address indexed user, uint256 amount, address token);
     event PointsReleased(address indexed user, uint256 amount, address token);
@@ -65,7 +67,7 @@ contract ContextPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accounts
 
     function test_initialize_twice() public {
         _initialize();
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(InvalidInitialization.selector);
         bytes memory initData = abi.encode(address(arbToken()), address(loot()), snapshotBlock);
 
         pointsModule.initialize(address(this), initData);

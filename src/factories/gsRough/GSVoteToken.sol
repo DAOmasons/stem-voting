@@ -7,7 +7,10 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Pausable.so
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 contract GSVotingToken is ERC20, Ownable {
-    constructor(string memory name, string memory symbol, uint256 initialSupply, address _holder) ERC20(name, symbol) {
+    constructor(string memory name, string memory symbol, uint256 initialSupply, address _holder)
+        ERC20(name, symbol)
+        Ownable(msg.sender)
+    {
         _mint(_holder, initialSupply);
     }
 
@@ -19,15 +22,8 @@ contract GSVotingToken is ERC20, Ownable {
         _burn(account, amount);
     }
 
-    function _transfer(address, address, uint256) internal pure override {
-        require(false, "SBT: Transfers are not allowed");
-    }
-
-    function transfer(address, uint256) public pure override returns (bool) {
-        require(false, "SBT: Transfers are not allowed");
-    }
-
-    function transferFrom(address, address, uint256) public pure override returns (bool) {
-        require(false, "SBT: Transfers are not allowed");
+    function _update(address from, address to, uint256 amount) internal override {
+        require(from == address(0) || to == address(0), "SBT: Transfers are not allowed");
+        super._update(from, to, amount);
     }
 }

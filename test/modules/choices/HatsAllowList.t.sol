@@ -10,6 +10,8 @@ import {MockContest} from "../../setup/MockContest.sol";
 import {ContestStatus} from "../../../src/core/ContestStatus.sol";
 
 contract HatsAllowListTest is HatsSetup {
+    error InvalidInitialization();
+
     event Initialized(address contest, address hatsAddress, uint256 hatId);
 
     event Registered(bytes32 choiceId, HatsAllowList.ChoiceData choiceData, address contest);
@@ -175,7 +177,7 @@ contract HatsAllowListTest is HatsSetup {
 
         bytes memory data = abi.encode(address(hats()), facilitator1().id, "");
 
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(InvalidInitialization.selector);
 
         hatsAllowList.initialize(address(mockContest), data);
     }

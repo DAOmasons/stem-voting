@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
+
 import {Test, console} from "forge-std/Test.sol";
 import {Accounts} from "./Accounts.t.sol";
 import {GSVotingToken} from "../../src/factories/gsRough/GSVoteToken.sol";
 
 contract GSVoteTokenTest is Test, Accounts {
+    error OwnableUnauthorizedAccount(address account);
+
     GSVotingToken internal _voteToken;
     uint256 internal constant VOTE_AMOUNT = 1_000e18;
     uint256 internal constant SUPPLY_AT_SETUP = 24_000e18;
@@ -44,18 +48,18 @@ contract GSVoteTokenTest is Test, Accounts {
     }
 
     function testRevert_unauthorized() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectPartialRevert(OwnableUnauthorizedAccount.selector);
         vm.startPrank(voter0());
         voteToken().burn(voter0(), VOTE_AMOUNT);
         vm.stopPrank();
 
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectPartialRevert(OwnableUnauthorizedAccount.selector);
 
         vm.startPrank(voter0());
         voteToken().mint(voter0(), VOTE_AMOUNT);
         vm.stopPrank();
 
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectPartialRevert(OwnableUnauthorizedAccount.selector);
 
         vm.startPrank(someGuy());
         voteToken().mint(someGuy(), VOTE_AMOUNT);

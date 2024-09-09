@@ -15,6 +15,8 @@ import {Accounts} from "../../setup/Accounts.t.sol";
 import {BaalSetupLive} from "../../setup/BaalSetup.t.sol";
 
 contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockContestSetup, Accounts {
+    error InvalidInitialization();
+
     event Initialized(address contest, address daoToken, address contextToken);
     event VotingStarted(uint256 startTime, uint256 endTime);
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason, address _votingToken);
@@ -179,7 +181,7 @@ contract ContextVotesV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockConte
         _initialize();
 
         bytes memory _data = abi.encode(address(arbToken()), address(loot()));
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(InvalidInitialization.selector);
 
         votesModule.initialize(address(this), _data);
     }

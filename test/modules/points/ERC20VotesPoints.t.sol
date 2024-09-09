@@ -7,6 +7,8 @@ import {ERC20VotesPoints} from "../../../src/modules/points/ERC20VotesPoints.sol
 import {Accounts} from "../../setup/Accounts.t.sol";
 
 contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
+    error InvalidInitialization();
+
     event Initialized(address contest, address token, uint256 votingCheckpoint);
     event PointsAllocated(address indexed user, uint256 amount);
     event PointsReleased(address indexed user, uint256 amount);
@@ -155,7 +157,7 @@ contract ERC20VotesPointsTest is Test, ARBTokenSetupLive, Accounts {
     function testInitialize_twice() public {
         _initialize();
 
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(InvalidInitialization.selector);
 
         bytes memory initData = abi.encode(address(arbToken()), snapshotBlock);
 

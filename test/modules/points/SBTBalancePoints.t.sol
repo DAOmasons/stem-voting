@@ -8,6 +8,8 @@ import {GSVotingToken} from "../../../src/factories/gsRough/GSVoteToken.sol";
 import {Accounts} from "../../setup/Accounts.t.sol";
 
 contract SBTBalancePointsTest is Test, Accounts {
+    error InvalidInitialization();
+
     event Initialized(address contest, address token);
     event PointsAllocated(address indexed user, uint256 amount);
     event PointsReleased(address indexed user, uint256 amount);
@@ -48,7 +50,7 @@ contract SBTBalancePointsTest is Test, Accounts {
     function testInitialize_twice() public {
         _initialize();
 
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(InvalidInitialization.selector);
 
         bytes memory initData = abi.encode(address(voteToken()));
 

@@ -12,6 +12,8 @@ contract DualTokenPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accoun
     event PointsAllocated(address indexed user, uint256 amount);
     event PointsReleased(address indexed user, uint256 amount);
 
+    error InvalidInitialization();
+
     address[] _voters;
 
     uint256 startBlock = 208213640;
@@ -170,7 +172,7 @@ contract DualTokenPointsV0Test is Test, ARBTokenSetupLive, BaalSetupLive, Accoun
     function testInitialize_twice() public {
         _initialize();
 
-        vm.expectRevert("Initializable: contract is already initialized");
+        vm.expectRevert(InvalidInitialization.selector);
 
         bytes memory initData = abi.encode(address(arbToken()), address(loot()), snapshotBlock);
 
