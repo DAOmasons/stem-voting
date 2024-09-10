@@ -68,7 +68,7 @@ contract BaalPointsV0Test is Test, BaalSetupLive, Accounts {
             assertEq(shares().getPastVotes(_voters[i], block.timestamp - 1), voteAmount);
         }
 
-        // A vote who gets voting power after shouldn't be have any points
+        // A voter who gets voting power after shouldn't be have a balance, but not past votes
 
         address[] memory newVoters = new address[](1);
         uint256[] memory balances = new uint256[](1);
@@ -84,5 +84,14 @@ contract BaalPointsV0Test is Test, BaalSetupLive, Accounts {
 
         assertEq(shares().balanceOf(voter3()), voteAmount);
         assertEq(shares().getPastVotes(voter3(), block.timestamp - 1), 0);
+
+        // some random guy shouldn't have any voting power
+        assertEq(shares().getPastVotes(someGuy(), block.timestamp - 1), 0);
+
+        // but if we jump ahead voter3 should have voting power
+
+        vm.warp(block.timestamp + ONE_HOUR);
+
+        assertEq(shares().getPastVotes(voter3(), block.timestamp - 1), voteAmount);
     }
 }
