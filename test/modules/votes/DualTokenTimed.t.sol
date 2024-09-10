@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 
@@ -15,6 +15,8 @@ import {Accounts} from "../../setup/Accounts.t.sol";
 import {BaalSetupLive} from "../../setup/BaalSetup.t.sol";
 
 contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockContestSetup, Accounts {
+    error InvalidInitialization();
+
     event Initialized(address contest, uint256 duration, address daoToken, address contextToken);
     event VotingStarted(uint256 startTime, uint256 endTime, address pointModule);
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason, address _votingToken);
@@ -154,6 +156,14 @@ contract DualTokenTimedV0Test is Test, ARBTokenSetupLive, BaalSetupLive, MockCon
     //////////////////////////////
     // Reverts
     /////////////////////////////
+
+    function testInitialize_twice() public {
+        _inititalize();
+
+        vm.expectRevert(InvalidInitialization.selector);
+        bytes memory data = abi.encode(TWO_WEEKS, address(arbToken()), address(loot()));
+        votesModule.initialize(address(mockContest()), data);
+    }
 
     function testRevert_setVotingTime_now_contestNotVoteStatus() public {
         _inititalize();

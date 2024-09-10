@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
-import "forge-std/Test.sol";
-
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/IVotes.sol";
 import {Metadata} from "../../core/Metadata.sol";
 import {Contest} from "../../Contest.sol";
@@ -13,7 +12,7 @@ import {ModuleType} from "../../core/ModuleType.sol";
 /// @title TimedVotes
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
 /// @notice Timed voting module that allows voters to cast votes within a specified time period
-contract TimedVotes is IVotes {
+contract TimedVotes is IVotes, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -39,6 +38,9 @@ contract TimedVotes is IVotes {
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Execution;
+
+    /// @notice Whether the module has been initialized
+    bool private initialized;
 
     /// @notice Reference to the contest contract
     Contest public contest;
@@ -88,7 +90,7 @@ contract TimedVotes is IVotes {
     /// @param _contest The address of the contest contract
     /// @param _initParams The initialization data
     /// @dev Bytes data includes the duration of the voting period
-    function initialize(address _contest, bytes memory _initParams) public {
+    function initialize(address _contest, bytes memory _initParams) public initializer {
         (uint256 _duration) = abi.decode(_initParams, (uint256));
 
         contest = Contest(_contest);

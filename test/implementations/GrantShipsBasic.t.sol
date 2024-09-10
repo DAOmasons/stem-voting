@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 import {GrantShipsSetup} from "../setup/GrantShipsSetup.t.sol";
@@ -52,7 +52,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         assertEq(contest().executionModule(), address(executionModule()));
         assertEq(contest().isContinuous(), false);
         assertEq(contest().isRetractable(), true);
-        assertEq(contest().CONTEST_VERSION(), "0.1.0");
+        assertEq(contest().CONTEST_VERSION(), "0.2.0");
 
         assertEq(uint8(contest().contestStatus()), uint8(ContestStatus.Populating));
     }
@@ -124,8 +124,8 @@ contract GrantShipsBasic is GrantShipsSetup {
         // Points are properly allocated for user
         assertEq(pointsModule().allocatedPoints(arbVoter(0)), VOTE_AMOUNT);
         assertEq(pointsModule().getAllocatedPoints(arbVoter(0)), VOTE_AMOUNT);
-        assertTrue(pointsModule().hasAllocatedPoints(arbVoter(0), VOTE_AMOUNT));
-        assertFalse(pointsModule().hasVotingPoints(arbVoter(0), 1));
+        assertTrue(pointsModule().hasAllocatedPoints(arbVoter(0), VOTE_AMOUNT, ""));
+        assertFalse(pointsModule().hasVotingPoints(arbVoter(0), 1, ""));
     }
 
     function testRetract_single() public {

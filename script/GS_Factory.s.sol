@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
@@ -9,7 +9,6 @@ import {SBTBalancePoints} from "../src/modules/points/SBTBalancePoints.sol";
 import {FastFactory} from "../src/factories/gsRough/FastFactory.sol";
 import {TimedVotes} from "../src/modules/votes/TimedVotes.sol";
 import {Metadata} from "../src/core/Metadata.sol";
-import {DummyVotingToken} from "./DummyVotingToken.sol";
 import {Contest} from "../src/Contest.sol";
 import {EmptyExecution} from "../src/modules/execution/EmptyExecution.sol";
 import {IModule} from "../src/interfaces/IModule.sol";

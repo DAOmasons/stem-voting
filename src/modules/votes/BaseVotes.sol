@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/IVotes.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 
-contract BaseVotes is IVotes {
+contract BaseVotes is IVotes, Initializable {
     address public contest;
 
     /// @notice The name and version of the module
@@ -25,7 +26,7 @@ contract BaseVotes is IVotes {
         _;
     }
 
-    function initialize(address _contest, bytes memory) public {
+    function initialize(address _contest, bytes memory) public initializer {
         contest = _contest;
     }
 

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
-import {ReentrancyGuard} from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 
 import "./interfaces/IFinalizationStrategy.sol";
 import "./interfaces/IVotes.sol";
@@ -14,7 +15,7 @@ import {ContestStatus} from "./core/ContestStatus.sol";
 /// @title Stem Contest
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
 /// @notice Simple, minimalistic TCR Voting contract that composes voting, allocation, choices, and execution modules and orders their interactions
-contract Contest is ReentrancyGuard {
+contract Contest is ReentrancyGuard, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -38,7 +39,7 @@ contract Contest is ReentrancyGuard {
     /// ================================
 
     /// @notice Contest version
-    string public constant CONTEST_VERSION = "0.1.0";
+    string public constant CONTEST_VERSION = "0.2.0";
 
     /// @notice Reference to the Voting contract module.
     IVotes public votesModule;
@@ -82,15 +83,15 @@ contract Contest is ReentrancyGuard {
 
     /// @notice Modifier to check if the voter has enough points to allocate
     /// @dev Throws if voter does not have enough points to allocate
-    modifier onlyCanAllocate(address _voter, uint256 _amount) {
-        require(pointsModule.hasVotingPoints(_voter, _amount), "Insufficient points available");
+    modifier onlyCanAllocate(address _voter, uint256 _amount, bytes memory _data) {
+        require(pointsModule.hasVotingPoints(_voter, _amount, _data), "Insufficient points available");
         _;
     }
 
     /// @notice Modifier to check if the voter has enough points allocated
     /// @dev Throws if voter does not have enough points allocated
-    modifier onlyHasAllocated(address _voter, uint256 _amount) {
-        require(pointsModule.hasAllocatedPoints(_voter, _amount), "Insufficient points allocated");
+    modifier onlyHasAllocated(address _voter, uint256 _amount, bytes memory _data) {
+        require(pointsModule.hasAllocatedPoints(_voter, _amount, _data), "Insufficient points allocated");
         _;
     }
 
@@ -109,7 +110,7 @@ contract Contest is ReentrancyGuard {
 
     /// @notice Initialize the strategy
     /// @param  _initData The data to initialize the contest (votes, points, choices, execution, isContinuous, isRetractable)
-    function initialize(bytes memory _initData) public {
+    function initialize(bytes memory _initData) public initializer {
         (
             address _votesContract,
             address _pointsContract,
@@ -149,8 +150,8 @@ contract Contest is ReentrancyGuard {
     /// ===============================
 
     /// @notice Claim points from the Points module
-    function claimPoints() public virtual onlyVotingPeriod {
-        pointsModule.claimPoints();
+    function claimPoints(bytes memory _data) public virtual onlyVotingPeriod {
+        pointsModule.claimPoints(msg.sender, _data);
     }
 
     /// @notice Vote on a choice
@@ -163,7 +164,7 @@ contract Contest is ReentrancyGuard {
         nonReentrant
         onlyVotingPeriod
         onlyValidChoice(_choiceId)
-        onlyCanAllocate(msg.sender, _amount)
+        onlyCanAllocate(msg.sender, _amount, _data)
     {
         _vote(_choiceId, _amount, _data);
     }
@@ -179,7 +180,7 @@ contract Contest is ReentrancyGuard {
         onlyVotingPeriod
         onlyContestRetractable
         onlyValidChoice(_choiceId)
-        onlyHasAllocated(msg.sender, _amount)
+        onlyHasAllocated(msg.sender, _amount, _data)
     {
         _retractVote(_choiceId, _amount, _data);
     }
@@ -197,10 +198,10 @@ contract Contest is ReentrancyGuard {
         onlyContestRetractable
         onlyValidChoice(_oldChoiceId)
         onlyValidChoice(_newChoiceId)
-        onlyHasAllocated(msg.sender, _amount)
+        onlyHasAllocated(msg.sender, _amount, _data)
     {
         _retractVote(_oldChoiceId, _amount, _data);
-        require(pointsModule.hasVotingPoints(msg.sender, _amount), "Insufficient points available");
+        require(pointsModule.hasVotingPoints(msg.sender, _amount, _data), "Insufficient points available");
         _vote(_newChoiceId, _amount, _data);
     }
 
@@ -214,7 +215,7 @@ contract Contest is ReentrancyGuard {
         uint256[] memory _amounts,
         bytes[] memory _data,
         uint256 _totalAmount
-    ) public virtual nonReentrant onlyVotingPeriod onlyCanAllocate(msg.sender, _totalAmount) {
+    ) public virtual nonReentrant onlyVotingPeriod {
         require(
             _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
             "Array mismatch: Invalid input length"
@@ -223,6 +224,7 @@ contract Contest is ReentrancyGuard {
         uint256 totalAmount = 0;
 
         for (uint256 i = 0; i < _choiceIds.length;) {
+            require(pointsModule.hasVotingPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points available");
             require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
             totalAmount += _amounts[i];
 
@@ -246,7 +248,7 @@ contract Contest is ReentrancyGuard {
         uint256[] memory _amounts,
         bytes[] memory _data,
         uint256 _totalAmount
-    ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable onlyHasAllocated(msg.sender, _totalAmount) {
+    ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
         require(
             _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
             "Array mismatch: Invalid input length"
@@ -255,6 +257,7 @@ contract Contest is ReentrancyGuard {
         uint256 totalAmount = 0;
 
         for (uint256 i = 0; i < _choiceIds.length;) {
+            require(pointsModule.hasAllocatedPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points allocated");
             require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
             totalAmount += _amounts[i];
 
@@ -322,7 +325,7 @@ contract Contest is ReentrancyGuard {
     /// @param _amount The amount of points to vote with
     /// @param _data Additional data to include with the vote
     function _vote(bytes32 _choiceId, uint256 _amount, bytes memory _data) internal {
-        pointsModule.allocatePoints(msg.sender, _amount);
+        pointsModule.allocatePoints(msg.sender, _amount, _data);
         votesModule.vote(msg.sender, _choiceId, _amount, _data);
     }
 
@@ -331,7 +334,7 @@ contract Contest is ReentrancyGuard {
     /// @param _amount The amount of points to retract
     /// @param _data Additional data to include with the retraction
     function _retractVote(bytes32 _choiceId, uint256 _amount, bytes memory _data) internal {
-        pointsModule.releasePoints(msg.sender, _amount);
+        pointsModule.releasePoints(msg.sender, _amount, _data);
         votesModule.retractVote(msg.sender, _choiceId, _amount, _data);
     }
 

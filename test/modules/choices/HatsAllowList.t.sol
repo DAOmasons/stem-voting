@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 
@@ -10,6 +10,8 @@ import {MockContest} from "../../setup/MockContest.sol";
 import {ContestStatus} from "../../../src/core/ContestStatus.sol";
 
 contract HatsAllowListTest is HatsSetup {
+    error InvalidInitialization();
+
     event Initialized(address contest, address hatsAddress, uint256 hatId);
 
     event Registered(bytes32 choiceId, HatsAllowList.ChoiceData choiceData, address contest);
@@ -46,6 +48,7 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     function test_register_choice() public {
+        _initialize();
         _register_choice();
 
         (Metadata memory _metadata, bytes memory _choiceData, bool _exists) = hatsAllowList.choices(choice1());
@@ -57,6 +60,7 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     function test_overwrite_choice() public {
+        _initialize();
         _register_choice();
 
         (Metadata memory _metadata, bytes memory _choiceData, bool _exists) = hatsAllowList.choices(choice1());
@@ -82,6 +86,7 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     function test_remove_choice() public {
+        _initialize();
         _remove_choice();
 
         (Metadata memory _metadata, bytes memory _choiceData, bool _exists) = hatsAllowList.choices(choice1());
@@ -167,6 +172,16 @@ contract HatsAllowListTest is HatsSetup {
     // Reverts
     //////////////////////////////
 
+    function testInitialize_twice() public {
+        _initialize();
+
+        bytes memory data = abi.encode(address(hats()), facilitator1().id, "");
+
+        vm.expectRevert(InvalidInitialization.selector);
+
+        hatsAllowList.initialize(address(mockContest), data);
+    }
+
     function testRevert_register_notPopulating() public {
         _initialize();
 
@@ -193,6 +208,7 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     function testRevert_remove_notFacilitator() public {
+        _initialize();
         _register_choice();
 
         vm.expectRevert("Caller is not wearer or in good standing");
@@ -234,6 +250,7 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     function testRevert_remove_notGoodStanding() public {
+        _initialize();
         _register_choice();
 
         // Top Hat sets ineligible
@@ -282,6 +299,7 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     function testRevert_remove_notWearer() public {
+        _initialize();
         _register_choice();
 
         // Top Hat gives removes facilitator's hat and gives it to some guy
@@ -302,6 +320,7 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     function testRevert_choiceDoesNotExist() public {
+        _initialize();
         _register_choice();
 
         vm.expectRevert("Choice does not exist");
@@ -311,6 +330,7 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     function testRevert_remove_notPopulating() public {
+        _initialize();
         _register_choice();
 
         mockContest.cheatStatus(ContestStatus.Voting);
@@ -371,6 +391,7 @@ contract HatsAllowListTest is HatsSetup {
     //////////////////////////////
 
     function _finalizeChoices() internal {
+        _initialize();
         _register_choice();
         _remove_choice();
 
@@ -393,8 +414,6 @@ contract HatsAllowListTest is HatsSetup {
     }
 
     function _register_choice() internal {
-        _initialize();
-
         mockContest.cheatStatus(ContestStatus.Populating);
 
         vm.expectEmit(true, false, false, true);

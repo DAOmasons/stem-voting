@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 
@@ -11,6 +11,8 @@ import {ContestStatus} from "../../../src/core/ContestStatus.sol";
 
 contract TimedVotingTest is Test, Accounts, MockContestSetup {
     TimedVotes timedVotesModule;
+
+    error InvalidInitialization();
 
     event Initialized(address contest, uint256 duration);
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
@@ -83,6 +85,15 @@ contract TimedVotingTest is Test, Accounts, MockContestSetup {
     //////////////////////////////
     // Reverts
     //////////////////////////////
+
+    function testInitialize_twice() public {
+        _inititalize();
+
+        vm.expectRevert(InvalidInitialization.selector);
+
+        bytes memory data = abi.encode(TWO_WEEKS);
+        timedVotesModule.initialize(address(mockContest()), data);
+    }
 
     function testRevert_setVotingTime_now_contestNotVoteStatus() public {
         _inititalize();

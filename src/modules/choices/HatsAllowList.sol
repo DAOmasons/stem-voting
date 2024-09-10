@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 import "../../interfaces/IChoices.sol";
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 
 import {IHats} from "hats-protocol/Interfaces/IHats.sol";
 import {Contest} from "../../Contest.sol";
@@ -11,7 +12,7 @@ import {ModuleType} from "../../core/ModuleType.sol";
 /// @title HatsAllowList
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
 /// @notice Uses Hats to permission the selection of choices for a contest
-contract HatsAllowList is IChoices {
+contract HatsAllowList is IChoices, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -92,7 +93,7 @@ contract HatsAllowList is IChoices {
     /// @param _contest The address of the Contest contract
     /// @param _initData The initialization data for the contract
     /// @dev Bytes data includes the hats address, hatId, and prepopulated choices
-    function initialize(address _contest, bytes calldata _initData) external override {
+    function initialize(address _contest, bytes calldata _initData) external override initializer {
         (address _hats, uint256 _hatId, bytes[] memory _prepopulatedChoices) =
             abi.decode(_initData, (address, uint256, bytes[]));
 

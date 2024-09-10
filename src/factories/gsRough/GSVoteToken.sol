@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
+// WARNING: DEFUNCT CONTRACT. DO NOT USE. Requires more testing
+// This contract is no longer in use.
+// This contract functionality does not work as intended with upgrade to OZ v5
+
 contract GSVotingToken is ERC20, Ownable {
-    constructor(string memory name, string memory symbol, uint256 initialSupply, address _holder) ERC20(name, symbol) {
+    constructor(string memory name, string memory symbol, uint256 initialSupply, address _holder)
+        ERC20(name, symbol)
+        Ownable(msg.sender)
+    {
         _mint(_holder, initialSupply);
     }
 
@@ -19,15 +26,8 @@ contract GSVotingToken is ERC20, Ownable {
         _burn(account, amount);
     }
 
-    function _transfer(address, address, uint256) internal pure override {
-        require(false, "SBT: Transfers are not allowed");
-    }
-
-    function transfer(address, uint256) public pure override returns (bool) {
-        require(false, "SBT: Transfers are not allowed");
-    }
-
-    function transferFrom(address, address, uint256) public pure override returns (bool) {
-        require(false, "SBT: Transfers are not allowed");
+    function _update(address from, address to, uint256 amount) internal override {
+        require(from == address(0) || to == address(0), "SBT: Transfers are not allowed");
+        super._update(from, to, amount);
     }
 }

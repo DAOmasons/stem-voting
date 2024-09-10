@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
+import "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import "../../interfaces/IChoices.sol";
 import "../../core/ModuleType.sol";
 
 // Allow listed choice contract
-contract AllowList is IChoices {
+contract AllowList is IChoices, Initializable {
     struct ChoiceData {
         string uri;
         bytes data;
@@ -34,7 +35,7 @@ contract AllowList is IChoices {
 
     constructor() {}
 
-    function initialize(address _contest, bytes calldata _initData) external override {
+    function initialize(address _contest, bytes calldata _initData) external override initializer {
         owner = _contest;
 
         (address[] memory _allowedAccounts) = abi.decode(_initData, (address[]));
