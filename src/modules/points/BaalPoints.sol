@@ -11,9 +11,20 @@ import {ModuleType} from "../../core/ModuleType.sol";
 import {HolderType} from "../../core/BaalUtils.sol";
 
 contract BaalPoints is IPoints, Initializable {
+    /// ===============================
+    /// ========== Events =============
+    /// ===============================
+
+    // @dev voterAddress => allocated points
+
+    /// @notice Emitted when the contract is initialized
     event Initialized(
         address contest, address dao, address sharesToken, address lootToken, uint256 checkpoint, HolderType holderType
     );
+
+    /// ===============================
+    /// ========== Storage ============
+    /// ===============================
 
     /// @notice The name and version of the module
     string public constant MODULE_NAME = "BaalPoints_v0.0.1";
@@ -21,19 +32,33 @@ contract BaalPoints is IPoints, Initializable {
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Choices;
 
+    /// @notice dao address for this module
     address public dao;
 
+    // @notice reference to the DAO voting token
     IBaalToken public sharesToken;
+
+    // @notice reference to the DAO non-voting token
     IBaalToken public lootToken;
+
+    // @notice The contest that this module belongs to
     Contest public contest;
 
+    // @notice The checkpoint to use for voting balances
     uint256 public checkpoint;
 
+    // @notice The holder type for this module (share, loot, or both)
     HolderType public holderType;
 
+    // @notice Mapping of user to allocated points
+    // @dev voterAddress => allocated points
     mapping(address => uint256) public allocatedPoints;
 
     constructor() {}
+
+    /// ===============================
+    /// ========== Init ===============
+    /// ===============================
 
     function initialize(address _contest, bytes memory _initData) public initializer {
         (address _daoAddress, uint256 _checkpoint, HolderType _holderType) =
@@ -54,23 +79,9 @@ contract BaalPoints is IPoints, Initializable {
         emit Initialized(_contest, _daoAddress, _baal.sharesToken(), _baal.lootToken(), _checkpoint, _holderType);
     }
 
-    function getPoints(address voter) public view returns (uint256) {
-        if (holderType == HolderType.Loot) {
-            return lootToken.getPastVotes(voter, checkpoint);
-        } else if (holderType == HolderType.Share) {
-            return sharesToken.getPastVotes(voter, checkpoint);
-        } else {
-            return lootToken.getPastVotes(voter, checkpoint) + sharesToken.getPastVotes(voter, checkpoint);
-        }
-    }
-
-    function allocatePoints(address _voter, uint256 _amount, bytes memory _data) public {
-        require(_amount > 0, "Amount must be greater than 0");
-        require(hasVotingPoints(_voter, _amount, _data), "Insufficient points available");
-        allocatedPoints[_voter] += _amount;
-
-        emit PointsAllocated(_voter, _amount);
-    }
+    /// ===============================
+    /// ========== Setters ============
+    /// ===============================
 
     function releasePoints(address _voter, uint256 _amount, bytes memory _data) public {
         require(_amount > 0, "Amount must be greater than 0");
@@ -90,5 +101,27 @@ contract BaalPoints is IPoints, Initializable {
 
     function hasAllocatedPoints(address _voter, uint256 _amount, bytes memory) public view returns (bool) {
         return allocatedPoints[_voter] >= _amount;
+    }
+
+    /// ===============================
+    /// ========== Getters ============
+    /// ===============================
+
+    function getPoints(address voter) public view returns (uint256) {
+        if (holderType == HolderType.Loot) {
+            return lootToken.getPastVotes(voter, checkpoint);
+        } else if (holderType == HolderType.Share) {
+            return sharesToken.getPastVotes(voter, checkpoint);
+        } else {
+            return lootToken.getPastVotes(voter, checkpoint) + sharesToken.getPastVotes(voter, checkpoint);
+        }
+    }
+
+    function allocatePoints(address _voter, uint256 _amount, bytes memory _data) public {
+        require(_amount > 0, "Amount must be greater than 0");
+        require(hasVotingPoints(_voter, _amount, _data), "Insufficient points available");
+        allocatedPoints[_voter] += _amount;
+
+        emit PointsAllocated(_voter, _amount);
     }
 }
