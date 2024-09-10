@@ -10,7 +10,7 @@ import {Contest} from "../../Contest.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 import {HolderType} from "../../core/BaalUtils.sol";
 
-contract BaalPoints is IPoints, Initializable {
+contract BaalPointsV0 is IPoints, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================

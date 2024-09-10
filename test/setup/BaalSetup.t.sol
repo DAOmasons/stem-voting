@@ -9,12 +9,23 @@ import {Accounts} from "./Accounts.t.sol";
 contract BaalSetupLive is Test {
     address constant DAO_ADDRESS = 0x5B448757A34402DEAcC7729B79003408CDfe1438;
 
+    // Test DAO that implements new OZ V5 ERC20Votes standard
+    // implemented on Sepolia
+    address constant TEST_DAO = 0x7eaeE24356E081EAE9fd8Fc6C7336406fbA0f057;
+
     IBaal internal _baal;
     IBaalToken internal _loot;
     IBaalToken internal _shares;
 
     function __setUpBaal() internal {
         _baal = IBaal(DAO_ADDRESS);
+
+        _loot = IBaalToken(_baal.lootToken());
+        _shares = IBaalToken(_baal.sharesToken());
+    }
+
+    function __setUpBaalWithNewToken() internal {
+        _baal = IBaal(TEST_DAO);
 
         _loot = IBaalToken(_baal.lootToken());
         _shares = IBaalToken(_baal.sharesToken());
