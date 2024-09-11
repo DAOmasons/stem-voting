@@ -44,12 +44,15 @@ contract Prepop is IChoices, Initializable {
     /// @param _contest The contest that this module belongs to
     /// @param _initData The data for the choices
     function initialize(address _contest, bytes calldata _initData) external initializer {
+        require(_contest != address(0), "Prepop requires a valid contest");
         (BasicChoice[] memory _choices, bytes32[] memory _choiceIds) = abi.decode(_initData, (BasicChoice[], bytes32[]));
 
         contest = Contest(_contest);
 
         require(_choices.length > 1, "Prepop requires at least 2 choices");
         require(_choiceIds.length == _choices.length, "Array lengths do not match");
+
+        emit Initialized(_contest);
 
         for (uint256 i = 0; i < _choices.length; i++) {
             choices[_choiceIds[i]] = _choices[i];
@@ -58,8 +61,6 @@ contract Prepop is IChoices, Initializable {
         }
 
         contest.finalizeChoices();
-
-        emit Initialized(_contest);
     }
 
     /// ===============================
