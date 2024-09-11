@@ -69,12 +69,12 @@ contract Prepop is IChoices, Initializable {
 
     /// @notice Registers a choice with the contract. NOT USED in this contract.
     function registerChoice(bytes32, bytes memory) external pure {
-        revert("Prepop only registers choices on init");
+        revert("Prepop does not implement registerChoice");
     }
 
     /// @notice Removes a choice from the contract. NOT USED in this contract.
     function removeChoice(bytes32, bytes memory) external pure {
-        revert("Prepop does not remove choices");
+        revert("Prepop does not implement removeChoice");
     }
 
     /// ===============================

@@ -10,6 +10,8 @@ import {ContestStatus} from "../../../src/core/ContestStatus.sol";
 import {MockContestSetup} from "../../setup/MockContest.sol";
 
 contract PrepopTest is Test, Accounts, MockContestSetup {
+    error InvalidInitialization();
+
     /// @notice Emitted when the contract is initialized
     event Initialized(address contest);
 
@@ -96,7 +98,7 @@ contract PrepopTest is Test, Accounts, MockContestSetup {
 
         choices[0] = basicChoice1;
 
-        vm.expectRevert("Prepop requires at least two choices");
+        vm.expectRevert("Prepop requires at least 2 choices");
         choiceModule.initialize(address(mockContest()), abi.encode(choices, choiceIds));
     }
 
@@ -114,6 +116,45 @@ contract PrepopTest is Test, Accounts, MockContestSetup {
 
         vm.expectRevert("Array lengths do not match");
         choiceModule.initialize(address(mockContest()), abi.encode(choices, choiceIds));
+    }
+
+    function testRevert_init_twice() public {
+        _initalize();
+
+        bytes32[] memory choiceIds = new bytes32[](3);
+
+        choiceIds[0] = choice1();
+        choiceIds[1] = choice2();
+        choiceIds[2] = choice3();
+
+        BasicChoice[] memory choices = new BasicChoice[](3);
+
+        choices[0] = basicChoice1;
+        choices[1] = basicChoice2;
+        choices[2] = basicChoice3;
+
+        vm.expectRevert(InvalidInitialization.selector);
+        choiceModule.initialize(address(mockContest()), abi.encode(choices, choiceIds));
+    }
+
+    function testRevert_registerChoice() public {
+        _initalize();
+
+        vm.expectRevert("Prepop does not implement registerChoice");
+
+        choiceModule.registerChoice("", "");
+    }
+
+    //////////////////////////////
+    // Getters
+    //////////////////////////////
+
+    function testValidChoice() public {
+        _initalize();
+
+        assertTrue(choiceModule.isValidChoice(choice1()));
+        assertTrue(choiceModule.isValidChoice(choice2()));
+        assertTrue(choiceModule.isValidChoice(choice3()));
     }
 
     //////////////////////////////
