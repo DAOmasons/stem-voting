@@ -15,8 +15,6 @@ contract BaalPointsV0 is IPoints, Initializable {
     /// ========== Events =============
     /// ===============================
 
-    // @dev voterAddress => allocated points
-
     /// @notice Emitted when the contract is initialized
     event Initialized(
         address contest, address dao, address sharesToken, address lootToken, uint256 checkpoint, HolderType holderType
@@ -30,7 +28,7 @@ contract BaalPointsV0 is IPoints, Initializable {
     string public constant MODULE_NAME = "BaalPoints_v0.0.1";
 
     /// @notice The type of module
-    ModuleType public constant MODULE_TYPE = ModuleType.Choices;
+    ModuleType public constant MODULE_TYPE = ModuleType.Points;
 
     /// @notice dao address for this module
     address public dao;
@@ -42,7 +40,7 @@ contract BaalPointsV0 is IPoints, Initializable {
     IBaalToken public lootToken;
 
     // @notice The contest that this module belongs to
-    Contest public contest;
+    address public contest;
 
     // @notice The checkpoint to use for voting balances
     uint256 public checkpoint;
@@ -54,13 +52,25 @@ contract BaalPointsV0 is IPoints, Initializable {
     // @dev voterAddress => allocated points
     mapping(address => uint256) public allocatedPoints;
 
+    /// @notice Only the contest contract can call this function
+    /// @dev The caller must be the contest contract
+    modifier onlyContest() {
+        require(msg.sender == contest, "Only contest");
+        _;
+    }
+
     constructor() {}
 
     /// ===============================
     /// ========== Init ===============
     /// ===============================
 
+    /// @notice Initializes the points module
+    /// @param _contest The contest that this module belongs to
+    /// @param _initData The data for the points module
     function initialize(address _contest, bytes memory _initData) public initializer {
+        require(_contest != address(0), "Invalid contest address");
+
         (address _daoAddress, uint256 _checkpoint, HolderType _holderType) =
             abi.decode(_initData, (address, uint256, HolderType));
 
@@ -74,7 +84,7 @@ contract BaalPointsV0 is IPoints, Initializable {
 
         sharesToken = IBaalToken(_baal.sharesToken());
         lootToken = IBaalToken(_baal.lootToken());
-        contest = Contest(_contest);
+        contest = _contest;
 
         emit Initialized(_contest, _daoAddress, _baal.sharesToken(), _baal.lootToken(), _checkpoint, _holderType);
     }
@@ -83,7 +93,21 @@ contract BaalPointsV0 is IPoints, Initializable {
     /// ========== Setters ============
     /// ===============================
 
-    function releasePoints(address _voter, uint256 _amount, bytes memory _data) public {
+    /// @notice This function checks if the user has enough voting power and records the amount spent
+    /// @dev _voter must be a valid address
+    /// @dev _amount of token voted
+    function allocatePoints(address _voter, uint256 _amount, bytes memory _data) public onlyContest {
+        require(_amount > 0, "Amount must be greater than 0");
+        require(hasVotingPoints(_voter, _amount, _data), "Insufficient points available");
+        allocatedPoints[_voter] += _amount;
+
+        emit PointsAllocated(_voter, _amount);
+    }
+
+    /// @notice This function checks if the user has enough allocated points and subtracts them from allocation
+    /// @dev _voter must be a valid address
+    /// @dev _amount of token released
+    function releasePoints(address _voter, uint256 _amount, bytes memory _data) public onlyContest {
         require(_amount > 0, "Amount must be greater than 0");
         require(hasAllocatedPoints(_voter, _amount, _data), "Insufficient points allocated");
         allocatedPoints[_voter] -= _amount;
@@ -91,22 +115,17 @@ contract BaalPointsV0 is IPoints, Initializable {
         emit PointsReleased(_voter, _amount);
     }
 
+    /// @notice This function reverts. Claim points is not used by this contract
     function claimPoints(address, bytes memory) public pure {
         revert("This contract does not require users to claim points.");
-    }
-
-    function hasVotingPoints(address _voter, uint256 _amount, bytes memory) public view returns (bool) {
-        return getPoints(_voter) + allocatedPoints[_voter] >= _amount;
-    }
-
-    function hasAllocatedPoints(address _voter, uint256 _amount, bytes memory) public view returns (bool) {
-        return allocatedPoints[_voter] >= _amount;
     }
 
     /// ===============================
     /// ========== Getters ============
     /// ===============================
 
+    /// @notice This function returns the voting power of the user
+    /// @dev _voter must be a valid address
     function getPoints(address voter) public view returns (uint256) {
         if (holderType == HolderType.Loot) {
             return lootToken.getPastVotes(voter, checkpoint);
@@ -117,11 +136,17 @@ contract BaalPointsV0 is IPoints, Initializable {
         }
     }
 
-    function allocatePoints(address _voter, uint256 _amount, bytes memory _data) public {
-        require(_amount > 0, "Amount must be greater than 0");
-        require(hasVotingPoints(_voter, _amount, _data), "Insufficient points available");
-        allocatedPoints[_voter] += _amount;
+    /// @notice This function returns the allocated points of the user
+    /// @dev _voter checking their allocated points
+    /// @dev _amount of token to be released
+    function hasAllocatedPoints(address _voter, uint256 _amount, bytes memory) public view returns (bool) {
+        return allocatedPoints[_voter] >= _amount;
+    }
 
-        emit PointsAllocated(_voter, _amount);
+    /// @notice This function returns the voting power of the user
+    /// @dev _voter checking their voting power
+    /// @dev _amount of token to be a
+    function hasVotingPoints(address _voter, uint256 _amount, bytes memory) public view returns (bool) {
+        return getPoints(_voter) + allocatedPoints[_voter] >= _amount;
     }
 }
