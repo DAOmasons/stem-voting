@@ -94,8 +94,8 @@ contract BaalPointsV0 is IPoints, Initializable {
     /// ===============================
 
     /// @notice This function checks if the user has enough voting power and records the amount spent
-    /// @dev _voter must be a valid address
-    /// @dev _amount of token voted
+    /// @param _voter who is allocating their funds
+    /// @param _amount of token allocated
     function allocatePoints(address _voter, uint256 _amount, bytes memory _data) public onlyContest {
         require(_amount > 0, "Amount must be greater than 0");
         require(hasVotingPoints(_voter, _amount, _data), "Insufficient points available");
@@ -105,8 +105,8 @@ contract BaalPointsV0 is IPoints, Initializable {
     }
 
     /// @notice This function checks if the user has enough allocated points and subtracts them from allocation
-    /// @dev _voter must be a valid address
-    /// @dev _amount of token released
+    /// @param _voter who is releasing their funds
+    /// @param _amount of token released
     function releasePoints(address _voter, uint256 _amount, bytes memory _data) public onlyContest {
         require(_amount > 0, "Amount must be greater than 0");
         require(hasAllocatedPoints(_voter, _amount, _data), "Insufficient points allocated");
@@ -125,7 +125,7 @@ contract BaalPointsV0 is IPoints, Initializable {
     /// ===============================
 
     /// @notice This function returns the voting power of the user
-    /// @dev _voter must be a valid address
+    /// @param voter who is checking their voting power
     function getPoints(address voter) public view returns (uint256) {
         if (holderType == HolderType.Loot) {
             return lootToken.getPastVotes(voter, checkpoint);
@@ -137,15 +137,15 @@ contract BaalPointsV0 is IPoints, Initializable {
     }
 
     /// @notice This function returns the allocated points of the user
-    /// @dev _voter checking their allocated points
-    /// @dev _amount of token to be released
+    /// @param _voter who is checking their allocated points
+    /// @param _amount of token to be allocated
     function hasAllocatedPoints(address _voter, uint256 _amount, bytes memory) public view returns (bool) {
         return allocatedPoints[_voter] >= _amount;
     }
 
     /// @notice This function returns the voting power of the user
-    /// @dev _voter checking their voting power
-    /// @dev _amount of token to be a
+    /// @param _voter who is checking their voting power
+    /// @param _amount of token to be allocated
     function hasVotingPoints(address _voter, uint256 _amount, bytes memory) public view returns (bool) {
         return getPoints(_voter) + allocatedPoints[_voter] >= _amount;
     }
