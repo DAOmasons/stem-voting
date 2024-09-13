@@ -145,6 +145,14 @@ contract PrepopTest is Test, Accounts, MockContestSetup {
         choiceModule.registerChoice("", "");
     }
 
+    function testRevert_removeChoice() public {
+        _initalize();
+
+        vm.expectRevert("Prepop does not implement removeChoice");
+
+        choiceModule.removeChoice("", "");
+    }
+
     //////////////////////////////
     // Getters
     //////////////////////////////

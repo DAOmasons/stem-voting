@@ -20,14 +20,15 @@ contract BaalAllowList is IChoices, Initializable {
 
     // @notice Emitted when the contract is initialized
     event Initialized(
-        address _contest,
+        address contest,
         address daoAddress,
         address lootToken,
         address sharesToken,
-        HolderType _holderType,
-        uint256 _holderThreshold,
-        uint256 _startTime,
-        uint256 _endTime
+        HolderType holderType,
+        uint256 holderThreshold,
+        bool timed,
+        uint256 startTime,
+        uint256 endTime
     );
 
     // @notice Emitted when a choice is registered
@@ -70,6 +71,9 @@ contract BaalAllowList is IChoices, Initializable {
     /// @notice end time of the population period
     uint256 public endTime;
 
+    /// @notice is the population round timed
+    bool public timed;
+
     /// @notice This maps the data for each choice to its choiceId
     /// @dev choiceId => BasicChoice
     mapping(bytes32 => BasicChoice) public choices;
@@ -84,7 +88,7 @@ contract BaalAllowList is IChoices, Initializable {
     /// @notice Ensures the block timestamp is during the population period
     /// @dev The block timestamp must be during the population period
     modifier onlyValidTime() {
-        require(block.timestamp >= startTime && block.timestamp <= endTime, "Not during population period");
+        require(!timed || block.timestamp >= startTime && block.timestamp <= endTime, "Not during population period");
         _;
     }
 
@@ -137,12 +141,15 @@ contract BaalAllowList is IChoices, Initializable {
 
         holderThreshold = _holderThreshold;
 
-        if (_startTime == 0) {
+        if (_duration == 0 && _startTime == 0) {
+            timed = false;
+        } else if (_startTime == 0) {
             startTime = block.timestamp;
+            timed = true;
         } else {
             require(_startTime > block.timestamp, "Start time must be in the future");
-
             startTime = _startTime;
+            timed = true;
         }
 
         endTime = startTime + _duration;
@@ -154,6 +161,7 @@ contract BaalAllowList is IChoices, Initializable {
             address(sharesToken),
             holderType,
             holderThreshold,
+            timed,
             startTime,
             endTime
         );
