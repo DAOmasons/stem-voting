@@ -21,6 +21,7 @@ contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
         address sharesToken,
         HolderType holderType,
         uint256 holderThreshold,
+        uint256 checkpoint,
         bool timed,
         uint256 startTime,
         uint256 endTime
@@ -36,11 +37,16 @@ contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
     bytes choiceData2 = "choice2";
     bytes choiceData3 = "choice3";
 
-    BasicChoice basicChoice1 = BasicChoice(metadata, choiceData, true);
-    BasicChoice basicChoice2 = BasicChoice(metadata2, choiceData2, true);
-    BasicChoice basicChoice3 = BasicChoice(metadata3, choiceData3, true);
-
     uint256 TWO_WEEKS = 1209600;
+
+    uint256 voteAmount = 1000e18;
+
+    address[] _voters;
+
+    uint256 _mintTime;
+    uint256 _voteTime;
+
+    uint256 constant ONE_HOUR = 3600;
 
     function setUp() public {
         vm.createSelectFork({blockNumber: 6668489, urlOrAlias: "sepolia"});
@@ -50,6 +56,7 @@ contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
         __setUpBaalWithNewToken();
 
         choiceModule = new BaalGateV0();
+        _setupVoters();
     }
 
     //////////////////////////////
@@ -98,6 +105,43 @@ contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
         assertEq(choiceModule.endTime(), block.timestamp + TWO_WEEKS + TWO_WEEKS);
     }
 
+    function test_registerChoice_initNotTimed() public {
+        _init_notTimed(HolderType.Share);
+        _register(voter1());
+
+        BasicChoice memory registeredChoice = choiceModule.getChoice(choice1());
+        assertEq(registeredChoice.metadata.protocol, metadata.protocol);
+        assertEq(registeredChoice.metadata.pointer, metadata.pointer);
+        assertEq(registeredChoice.data, choiceData);
+        assertEq(registeredChoice.exists, true);
+    }
+
+    function test_registerChoice_initNow() public {
+        _init_now(HolderType.Share);
+        _register(voter1());
+
+        BasicChoice memory registeredChoice = choiceModule.getChoice(choice1());
+        assertEq(registeredChoice.metadata.protocol, metadata.protocol);
+        assertEq(registeredChoice.metadata.pointer, metadata.pointer);
+        assertEq(registeredChoice.data, choiceData);
+        assertEq(registeredChoice.exists, true);
+    }
+
+    function test_registerChoice_initLater() public {
+        _init_later(HolderType.Share);
+        vm.warp(block.timestamp + TWO_WEEKS);
+
+        _register(voter1());
+
+        BasicChoice memory registeredChoice = choiceModule.getChoice(choice1());
+        assertEq(registeredChoice.metadata.protocol, metadata.protocol);
+        assertEq(registeredChoice.metadata.pointer, metadata.pointer);
+        assertEq(registeredChoice.data, choiceData);
+        assertEq(registeredChoice.exists, true);
+    }
+
+    function test_remove_choice() public {}
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -105,6 +149,14 @@ contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
     //////////////////////////////
     // Helpers
     //////////////////////////////
+
+    function _register(address _registrar) public {
+        bytes memory _data = abi.encode(choiceData, metadata);
+
+        vm.startPrank(_registrar);
+        choiceModule.registerChoice(choice1(), _data);
+        vm.stopPrank();
+    }
 
     function _init_notTimed(HolderType _holderType) public {
         _init(0, 0, _holderType);
@@ -119,12 +171,15 @@ contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
     }
 
     function _init(uint256 _startTime, uint256 _duration, HolderType _holderType) public {
-        bytes memory _data = abi.encode(address(dao()), _startTime, _duration, _holderType, 1e17);
+        bytes memory _data = abi.encode(address(dao()), _startTime, _duration, _holderType, _voteTime - 1, 1e17);
 
         bool timed = _startTime == 0 && _duration == 0 ? false : true;
         uint256 startTime = timed && _startTime == 0 ? block.timestamp : _startTime;
 
+        mockContest().cheatStatus(ContestStatus.Populating);
+
         vm.expectEmit(true, false, false, true);
+
         emit Initialized(
             address(mockContest()),
             address(dao()),
@@ -132,11 +187,38 @@ contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
             address(shares()),
             _holderType,
             1e17,
+            _voteTime - 1,
             timed,
             startTime,
             startTime + _duration
         );
 
         choiceModule.initialize(address(mockContest()), _data);
+    }
+
+    function _setupVoters() public {
+        _voters = new address[](3);
+
+        _voters[0] = voter0();
+        _voters[1] = voter1();
+        _voters[2] = voter2();
+
+        uint256[] memory balances = new uint256[](3);
+
+        balances[0] = voteAmount;
+        balances[1] = voteAmount;
+        balances[2] = voteAmount;
+
+        address avatar = dao().avatar();
+
+        vm.startPrank(avatar);
+        dao().mintShares(_voters, balances);
+        dao().mintLoot(_voters, balances);
+        vm.stopPrank();
+
+        _mintTime = block.timestamp;
+        _voteTime = _mintTime + ONE_HOUR;
+
+        vm.warp(_voteTime);
     }
 }

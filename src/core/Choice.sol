@@ -8,4 +8,5 @@ struct BasicChoice {
     Metadata metadata;
     bytes data;
     bool exists;
+    address registrar;
 }

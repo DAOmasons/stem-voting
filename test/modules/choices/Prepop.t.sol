@@ -28,9 +28,9 @@ contract PrepopTest is Test, Accounts, MockContestSetup {
     bytes choiceData2 = "choice2";
     bytes choiceData3 = "choice3";
 
-    BasicChoice basicChoice1 = BasicChoice(metadata, choiceData, true);
-    BasicChoice basicChoice2 = BasicChoice(metadata2, choiceData2, true);
-    BasicChoice basicChoice3 = BasicChoice(metadata3, choiceData3, true);
+    BasicChoice basicChoice1 = BasicChoice(metadata, choiceData, true, address(0));
+    BasicChoice basicChoice2 = BasicChoice(metadata2, choiceData2, true, address(0));
+    BasicChoice basicChoice3 = BasicChoice(metadata3, choiceData3, true, address(0));
 
     function setUp() public {
         __setupMockContest();
@@ -46,23 +46,29 @@ contract PrepopTest is Test, Accounts, MockContestSetup {
 
         assertEq(address(choiceModule.contest()), address(mockContest()));
 
-        (Metadata memory _metadata1, bytes memory _choiceData1, bool _exists1) = choiceModule.choices(choice1());
-        (Metadata memory _metadata2, bytes memory _choiceData2, bool _exists2) = choiceModule.choices(choice2());
-        (Metadata memory _metadata3, bytes memory _choiceData3, bool _exists3) = choiceModule.choices(choice3());
+        (Metadata memory _metadata1, bytes memory _choiceData1, bool _exists1, address _registrar1) =
+            choiceModule.choices(choice1());
+        (Metadata memory _metadata2, bytes memory _choiceData2, bool _exists2, address _registrar2) =
+            choiceModule.choices(choice2());
+        (Metadata memory _metadata3, bytes memory _choiceData3, bool _exists3, address _registrar3) =
+            choiceModule.choices(choice3());
 
         assertEq(_metadata1.protocol, metadata.protocol);
         assertEq(_metadata1.pointer, metadata.pointer);
         assertEq(_choiceData1, choiceData);
+        assertEq(_registrar1, address(0));
         assertEq(_exists1, true);
 
         assertEq(_metadata2.protocol, metadata2.protocol);
         assertEq(_metadata2.pointer, metadata2.pointer);
         assertEq(_choiceData2, choiceData2);
+        assertEq(_registrar2, address(0));
         assertEq(_exists2, true);
 
         assertEq(_metadata3.protocol, metadata3.protocol);
         assertEq(_metadata3.pointer, metadata3.pointer);
         assertEq(_choiceData3, choiceData3);
+        assertEq(_registrar3, address(0));
         assertEq(_exists3, true);
 
         assertEq(uint8(mockContest().contestStatus()), uint8(ContestStatus.Voting));
