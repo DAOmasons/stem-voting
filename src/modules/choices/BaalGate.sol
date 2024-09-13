@@ -6,7 +6,7 @@ import "lib/Baal/contracts/interfaces/IBaal.sol";
 import "lib/Baal/contracts/interfaces/IBaalToken.sol";
 import "../../interfaces/IChoices.sol";
 
-import {console} from "forge-std/Test.sol";
+// import {console} from "forge-std/Test.sol";
 
 import {Metadata} from "../../core/Metadata.sol";
 import {ContestStatus} from "../../core/ContestStatus.sol";
@@ -65,7 +65,7 @@ contract BaalGateV0 is IChoices, Initializable {
     HolderType public holderType;
 
     /// @notice The threshold of the holder
-    uint256 holderThreshold;
+    uint256 public holderThreshold;
 
     /// @notice start time of the population period
     uint256 public startTime;
