@@ -6,6 +6,8 @@ import "lib/Baal/contracts/interfaces/IBaal.sol";
 import "lib/Baal/contracts/interfaces/IBaalToken.sol";
 import "../../interfaces/IChoices.sol";
 
+import {console} from "forge-std/Test.sol";
+
 import {Metadata} from "../../core/Metadata.sol";
 import {ContestStatus} from "../../core/ContestStatus.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
@@ -13,7 +15,7 @@ import {Contest} from "../../Contest.sol";
 import {HolderType} from "../../core/BaalUtils.sol";
 import {BasicChoice} from "../../core/Choice.sol";
 
-contract BaalAllowList is IChoices, Initializable {
+contract BaalGateV0 is IChoices, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -42,7 +44,7 @@ contract BaalAllowList is IChoices, Initializable {
     /// ===============================
 
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "BaalAllowList_v0.0.1";
+    string public constant MODULE_NAME = "BaalGate_v0.2.0";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Choices;
