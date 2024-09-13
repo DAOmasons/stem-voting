@@ -28,9 +28,9 @@ contract PrepopTest is Test, Accounts, MockContestSetup {
     bytes choiceData2 = "choice2";
     bytes choiceData3 = "choice3";
 
-    BasicChoice basicChoice1 = BasicChoice(metadata, choiceData, true, address(0));
-    BasicChoice basicChoice2 = BasicChoice(metadata2, choiceData2, true, address(0));
-    BasicChoice basicChoice3 = BasicChoice(metadata3, choiceData3, true, address(0));
+    BasicChoice basicChoice1 = BasicChoice(metadata, choiceData, true, address(1));
+    BasicChoice basicChoice2 = BasicChoice(metadata2, choiceData2, true, address(1));
+    BasicChoice basicChoice3 = BasicChoice(metadata3, choiceData3, true, address(1));
 
     function setUp() public {
         __setupMockContest();
@@ -56,19 +56,19 @@ contract PrepopTest is Test, Accounts, MockContestSetup {
         assertEq(_metadata1.protocol, metadata.protocol);
         assertEq(_metadata1.pointer, metadata.pointer);
         assertEq(_choiceData1, choiceData);
-        assertEq(_registrar1, address(0));
+        assertEq(_registrar1, address(1));
         assertEq(_exists1, true);
 
         assertEq(_metadata2.protocol, metadata2.protocol);
         assertEq(_metadata2.pointer, metadata2.pointer);
         assertEq(_choiceData2, choiceData2);
-        assertEq(_registrar2, address(0));
+        assertEq(_registrar2, address(1));
         assertEq(_exists2, true);
 
         assertEq(_metadata3.protocol, metadata3.protocol);
         assertEq(_metadata3.pointer, metadata3.pointer);
         assertEq(_choiceData3, choiceData3);
-        assertEq(_registrar3, address(0));
+        assertEq(_registrar3, address(1));
         assertEq(_exists3, true);
 
         assertEq(uint8(mockContest().contestStatus()), uint8(ContestStatus.Voting));

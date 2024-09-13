@@ -13,7 +13,14 @@ import {MockContestSetup} from "../../setup/MockContest.sol";
 
 contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
     error InvalidInitialization();
+    // @notice Emitted when a choice is registered
 
+    event Registered(bytes32 choiceId, BasicChoice choiceData, address contest);
+
+    // @notice Emitted when a choice is removed
+    event Removed(bytes32 choiceId, address contest);
+
+    // @notice Emitted when the contract is initialized
     event Initialized(
         address contest,
         address daoAddress,
@@ -140,19 +147,182 @@ contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
         assertEq(registeredChoice.exists, true);
     }
 
-    function test_remove_choice() public {}
+    function test_remove_choice() public {
+        _init_now(HolderType.Share);
+        _register(voter1());
+        _remove(voter1());
+
+        BasicChoice memory registeredChoice = choiceModule.getChoice(choice1());
+
+        assertEq(registeredChoice.metadata.pointer, "");
+        assertEq(registeredChoice.data, "");
+        assertEq(registeredChoice.metadata.protocol, 0);
+        assertEq(registeredChoice.exists, false);
+    }
+
+    function test_finalize_now() public {
+        _init_now(HolderType.Share);
+        _register(voter1());
+        _remove(voter1());
+
+        vm.warp(block.timestamp + TWO_WEEKS);
+        choiceModule.finalizeChoices();
+    }
+
+    function test_finalize_later() public {
+        _init_later(HolderType.Share);
+        vm.warp(block.timestamp + TWO_WEEKS);
+        _register(voter1());
+        _remove(voter1());
+
+        vm.warp(block.timestamp + TWO_WEEKS + TWO_WEEKS);
+        choiceModule.finalizeChoices();
+    }
 
     //////////////////////////////
     // Reverts
     //////////////////////////////
 
+    function testRevert_init_nonZero() public {
+        bytes memory _data = abi.encode(address(0), 0, TWO_WEEKS, HolderType.Share, _voteTime - 1, 1e17);
+
+        vm.expectRevert("Uninitialized parameters provided");
+        choiceModule.initialize(address(mockContest()), _data);
+
+        _data = abi.encode(address(dao()), 0, TWO_WEEKS, HolderType.None, _voteTime - 1, 1e17);
+
+        vm.expectRevert("Uninitialized parameters provided");
+        choiceModule.initialize(address(mockContest()), _data);
+
+        _data = abi.encode(address(dao()), 0, TWO_WEEKS, HolderType.Loot, 0, 1e17);
+
+        vm.expectRevert("Uninitialized parameters provided");
+        choiceModule.initialize(address(mockContest()), _data);
+
+        _data = abi.encode(address(dao()), 0, TWO_WEEKS, HolderType.Both, _voteTime - 1, 1e17);
+
+        vm.expectRevert("Uninitialized parameters provided");
+        choiceModule.initialize(address(0), _data);
+    }
+
+    function testRevert_init_startsInPast() public {
+        bytes memory _data =
+            abi.encode(address(dao()), block.timestamp - 1, TWO_WEEKS, HolderType.Share, _voteTime - 1, 1e17);
+
+        vm.expectRevert("Start time must be in the future");
+        choiceModule.initialize(address(mockContest()), _data);
+    }
+
+    function testRevert_register_nonInit() public {
+        bytes memory _data = abi.encode(choiceData, metadata);
+
+        vm.expectRevert("Not initialized");
+        vm.startPrank(voter1());
+        choiceModule.registerChoice(choice1(), _data);
+        vm.stopPrank();
+    }
+
+    function testRevert_register_before() public {
+        _init_later(HolderType.Share);
+
+        bytes memory _data = abi.encode(choiceData, metadata);
+
+        vm.expectRevert("Not during population period");
+        vm.startPrank(voter1());
+        choiceModule.registerChoice(choice1(), _data);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + TWO_WEEKS);
+
+        vm.startPrank(voter1());
+        choiceModule.registerChoice(choice1(), _data);
+        vm.stopPrank();
+    }
+
+    function testRevert_register_after() public {
+        _init_later(HolderType.Share);
+
+        bytes memory _data = abi.encode(choiceData, metadata);
+
+        vm.warp(block.timestamp + TWO_WEEKS + TWO_WEEKS + 1);
+
+        vm.expectRevert("Not during population period");
+        vm.startPrank(voter1());
+        choiceModule.registerChoice(choice1(), _data);
+        vm.stopPrank();
+    }
+
+    //check to ensure that non-timed rounds bypass onlyValidTime modifier
+    function testAlt_register_nonTimed() public {
+        _init_notTimed(HolderType.Share);
+
+        bytes memory _data = abi.encode(choiceData, metadata);
+
+        vm.startPrank(voter1());
+        choiceModule.registerChoice(choice1(), _data);
+        vm.stopPrank();
+    }
+
+    function testRevert_register_onlyContestPopulating() public {
+        _init_now(HolderType.Share);
+        bytes memory _data = abi.encode(choiceData, metadata);
+
+        mockContest().cheatStatus(ContestStatus.Voting);
+
+        vm.expectRevert("Contest is not in populating state");
+        vm.startPrank(voter1());
+        choiceModule.registerChoice(choice1(), _data);
+        vm.stopPrank();
+    }
+
+    function testRevert_register_onlyHolder_share() public {
+        _init_now(HolderType.Share);
+        bytes memory _data = abi.encode(choiceData, metadata);
+
+        vm.expectRevert("Insufficient share balance");
+        vm.startPrank(someGuy());
+        choiceModule.registerChoice(choice1(), _data);
+        vm.stopPrank();
+    }
+
+    function testRevert_register_onlyHolder_loot() public {
+        _init_now(HolderType.Loot);
+        bytes memory _data = abi.encode(choiceData, metadata);
+
+        vm.expectRevert("Insufficient loot balance");
+        vm.startPrank(someGuy());
+        choiceModule.registerChoice(choice1(), _data);
+        vm.stopPrank();
+    }
+
+    function testRevert_register_onlyHolder_both() public {
+        _init_now(HolderType.Both);
+        bytes memory _data = abi.encode(choiceData, metadata);
+
+        vm.expectRevert("Insufficient balance");
+        vm.startPrank(someGuy());
+        choiceModule.registerChoice(choice1(), _data);
+        vm.stopPrank();
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
 
+    function _remove(address _registrar) public {
+        vm.expectEmit(true, false, false, true);
+        emit Removed(choice1(), address(mockContest()));
+
+        vm.startPrank(_registrar);
+        choiceModule.removeChoice(choice1(), "");
+        vm.stopPrank();
+    }
+
     function _register(address _registrar) public {
         bytes memory _data = abi.encode(choiceData, metadata);
 
+        vm.expectEmit(true, false, false, true);
+        emit Registered(choice1(), BasicChoice(metadata, choiceData, true, _registrar), address(mockContest()));
         vm.startPrank(_registrar);
         choiceModule.registerChoice(choice1(), _data);
         vm.stopPrank();

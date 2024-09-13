@@ -146,9 +146,10 @@ contract BaalGateV0 is IChoices, Initializable {
             uint256 _holderThreshold
         ) = abi.decode(_initData, (address, uint256, uint256, HolderType, uint256, uint256));
 
-        require(_contest != address(0), "Invalid Contest address");
-        require(_daoAddress != address(0), "Invalid DAO address");
-        require(_checkpoint != 0, "Invalid checkpoint");
+        require(
+            _contest != address(0) && _daoAddress != address(0) && _checkpoint != 0 && _holderType != HolderType.None,
+            "Uninitialized parameters provided"
+        );
 
         contest = Contest(_contest);
 
@@ -236,7 +237,7 @@ contract BaalGateV0 is IChoices, Initializable {
     /// @notice Finalizes the choices for the contest
     function finalizeChoices() external onlyContestPopulating {
         require(block.timestamp >= endTime, "Population period has not ended");
-        require(contest.isContinuous() == false, "Contest is continuous");
+        require(!contest.isContinuous() || !timed, "Contest is continuous");
         contest.finalizeChoices();
     }
 
