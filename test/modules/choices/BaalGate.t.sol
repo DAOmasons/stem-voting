@@ -305,6 +305,30 @@ contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
         vm.stopPrank();
     }
 
+    function testRevert_removeChoice_invalidChoice() public {
+        _init_now(HolderType.Both);
+        _register(voter1());
+
+        vm.expectRevert("Choice does not exist");
+        vm.startPrank(voter1());
+        choiceModule.removeChoice(choice2(), "");
+        vm.stopPrank();
+    }
+
+    function testRevert_removeChoice_onlyRegistrar() public {
+        _init_now(HolderType.Both);
+        _register(voter1());
+
+        vm.expectRevert("Only registrar can remove choice");
+        vm.startPrank(voter2());
+        choiceModule.removeChoice(choice1(), "");
+        vm.stopPrank();
+    }
+
+    function testRevert_removeChoice_only() public {
+        _init_now(HolderType.Both);
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
