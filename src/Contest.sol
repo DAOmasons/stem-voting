@@ -278,7 +278,10 @@ contract Contest is ReentrancyGuard, Initializable {
     /// @notice Finalize the choices
     /// @dev Only callable by the Choices module
     function finalizeChoices() external {
-        require(contestStatus == ContestStatus.Populating, "Contest is not in populating state");
+        require(
+            contestStatus == ContestStatus.Populating || contestStatus == ContestStatus.None,
+            "Contest is not in populating state"
+        );
         require(msg.sender == address(choicesModule), "Only choices module");
         contestStatus = ContestStatus.Voting;
 
