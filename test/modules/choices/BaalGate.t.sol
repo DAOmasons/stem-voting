@@ -325,8 +325,40 @@ contract BaalGateTest is Test, Accounts, MockContestSetup, BaalSetupLive {
         vm.stopPrank();
     }
 
-    function testRevert_removeChoice_only() public {
-        _init_now(HolderType.Both);
+    function testRevert_finalize_beforePeriodComplete() public {
+        _init_now(HolderType.Share);
+        _register(voter1());
+
+        vm.expectRevert("Population period has not ended");
+        vm.startPrank(voter1());
+        choiceModule.finalizeChoices();
+        vm.stopPrank();
+    }
+
+    function testRevert_finalize_notPopulating() public {
+        _init_now(HolderType.Share);
+        _register(voter1());
+
+        mockContest().cheatStatus(ContestStatus.Voting);
+
+        vm.expectRevert("Contest is not in populating state");
+        vm.startPrank(voter1());
+        choiceModule.finalizeChoices();
+        vm.stopPrank();
+    }
+
+    function testRevert_finalize_isContinuous() public {
+        _init_now(HolderType.Share);
+        _register(voter1());
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        mockContest().cheatContinuous(true);
+
+        vm.expectRevert("Contest is continuous");
+        vm.startPrank(voter1());
+        choiceModule.finalizeChoices();
+        vm.stopPrank();
     }
 
     //////////////////////////////
