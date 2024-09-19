@@ -71,19 +71,13 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
         string[4] memory moduleNames;
 
         // votes Module data
-
         moduleData[0] = abi.encode(TWO_WEEKS);
         moduleNames[0] = _timedVotesModuleImpl.MODULE_NAME();
 
-        // assertEq(address(0), address(_timedVotesModule));
-
         // points module data
-
         moduleData[1] = abi.encode(dao(), SNAPSHOT_TIMESTAMP, _holderType);
         moduleNames[1] = _baalPointsImpl.MODULE_NAME();
 
-        console.log(factory().moduleTemplates(_timedVotesModuleImpl.MODULE_NAME()));
-        console.log(address(_timedVotesModuleImpl));
         // choices module data
         BasicChoice[] memory choices = new BasicChoice[](3);
         bytes32[] memory choiceIds = new bytes32[](3);
@@ -100,28 +94,116 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
         moduleNames[2] = _prepopChoicesImpl.MODULE_NAME();
 
         // execution module data
-
         moduleData[3] = abi.encode("");
         moduleNames[3] = _executionModuleImpl.MODULE_NAME();
 
         bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
         (address contestAddress, address[4] memory moduleAddresses) = factory().buildContest(
-            _mockMetadata, _contestInitData, _contestImpl.CONTEST_VERSION(), ContestStatus.Voting, false, "Filter Tag"
+            _mockMetadata, _contestInitData, _contestImpl.CONTEST_VERSION(), ContestStatus.Voting, true, "Filter Tag"
         );
+
+        _contest = Contest(contestAddress);
+        _timedVotesModule = TimedVotes(moduleAddresses[0]);
+        _baalPoints = BaalPointsV0(moduleAddresses[1]);
+        _prepopChoices = Prepop(moduleAddresses[2]);
+        _executionModule = EmptyExecution(moduleAddresses[3]);
+
+        // bytes memory _contestInitData;
+    }
+
+    function __setupAskHausContest(HolderType _holderType) internal {
+        __setUpBaalWithNewToken();
+        _setupVoters();
+        _fastFactorySetup();
+
+        vm.warp(SNAPSHOT_TIMESTAMP);
+
+        bytes[4] memory moduleData;
+        string[4] memory moduleNames;
+
+        // votes Module data
+        moduleData[0] = abi.encode(TWO_WEEKS);
+        moduleNames[0] = _timedVotesModuleImpl.MODULE_NAME();
+
+        // points module data
+        moduleData[1] = abi.encode(dao(), SNAPSHOT_TIMESTAMP, _holderType);
+        moduleNames[1] = _baalPointsImpl.MODULE_NAME();
+
+        // choices module data
+        moduleData[2] =
+            abi.encode(address(dao()), 0, TWO_WEEKS, HolderType.Both, _holderType, SNAPSHOT_TIMESTAMP, SHARE_AMOUNT);
+        moduleNames[2] = _baalChoicesImpl.MODULE_NAME();
+
+        // execution module data
+        moduleData[3] = abi.encode("");
+        moduleNames[3] = _executionModuleImpl.MODULE_NAME();
+
+        bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
+
+        (address contestAddress, address[4] memory moduleAddresses) = factory().buildContest(
+            _mockMetadata,
+            _contestInitData,
+            _contestImpl.CONTEST_VERSION(),
+            ContestStatus.Populating,
+            true,
+            "Filter Tag"
+        );
+
+        vm.warp(VOTE_TIMESTAMP);
 
         _contest = Contest(contestAddress);
         _timedVotesModule = TimedVotes(moduleAddresses[0]);
         _baalPoints = BaalPointsV0(moduleAddresses[1]);
         _baalChoices = BaalGateV0(moduleAddresses[2]);
         _executionModule = EmptyExecution(moduleAddresses[3]);
-
-        // bytes memory _contestInitData;
     }
 
-    function __setupAskHausContest() internal {}
+    function __setupAskHausSignalSession(HolderType _holderType) internal {
+        __setUpBaalWithNewToken();
+        _setupVoters();
+        _fastFactorySetup();
 
-    function __setupAskHausSignalSession() internal {}
+        vm.warp(SNAPSHOT_TIMESTAMP);
+
+        bytes[4] memory moduleData;
+        string[4] memory moduleNames;
+
+        // votes Module data
+        moduleData[0] = abi.encode(TWO_WEEKS);
+        moduleNames[0] = _timedVotesModuleImpl.MODULE_NAME();
+
+        // points module data
+        moduleData[1] = abi.encode(dao(), SNAPSHOT_TIMESTAMP, _holderType);
+        moduleNames[1] = _baalPointsImpl.MODULE_NAME();
+
+        // choices module data
+        moduleData[2] = abi.encode(address(dao()), 0, 0, HolderType.Both, _holderType, SNAPSHOT_TIMESTAMP, SHARE_AMOUNT);
+        moduleNames[2] = _baalChoicesImpl.MODULE_NAME();
+
+        // execution module data
+        moduleData[3] = abi.encode("");
+        moduleNames[3] = _executionModuleImpl.MODULE_NAME();
+
+        bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
+
+        (address contestAddress, address[4] memory moduleAddresses) = factory().buildContest(
+            _mockMetadata,
+            _contestInitData,
+            _contestImpl.CONTEST_VERSION(),
+            ContestStatus.Continuous,
+            true,
+            "Filter Tag"
+        );
+
+        vm.warp(VOTE_TIMESTAMP);
+
+        _contest = Contest(contestAddress);
+        _timedVotesModule = TimedVotes(moduleAddresses[0]);
+        _baalPoints = BaalPointsV0(moduleAddresses[1]);
+        _baalChoices = BaalGateV0(moduleAddresses[2]);
+        _executionModule = EmptyExecution(moduleAddresses[3]);
+    }
 
     function _setupVoters() internal {
         // vm.warp(DELEGATE_TIMESTAMP);
@@ -171,8 +253,6 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
         _prepopChoicesImpl = new Prepop();
         _timedVotesModuleImpl = new TimedVotes();
 
-        console.log("TimedVotes impl address", address(_timedVotesModuleImpl));
-
         _executionModuleImpl = new EmptyExecution();
 
         factory().setContestTemplate(_contestImpl.CONTEST_VERSION(), address(_contestImpl), _mockMetadata);
@@ -187,8 +267,6 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
         assertTrue(factory().admins(stemAdmin1()));
         assertTrue(factory().admins(stemAdmin2()));
 
-        console.log("Module template", factory().moduleTemplates(_timedVotesModuleImpl.MODULE_NAME()));
-
         assertEq(factory().contestTemplates(_contestImpl.CONTEST_VERSION()), address(_contestImpl));
         assertEq(factory().moduleTemplates(_baalPointsImpl.MODULE_NAME()), address(_baalPointsImpl));
         assertEq(factory().moduleTemplates(_baalChoicesImpl.MODULE_NAME()), address(_baalChoicesImpl));
@@ -197,25 +275,29 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
         assertEq(factory().moduleTemplates(_executionModuleImpl.MODULE_NAME()), address(_executionModuleImpl));
     }
 
-    // function choicesModule() public view returns (HatsAllowList) {
-    //     return _choiceModule;
-    // }
+    function prepop() public view returns (Prepop) {
+        return _prepopChoices;
+    }
 
-    // function pointsModule() public view returns (ERC20VotesPoints) {
-    //     return _pointsModule;
-    // }
+    function baalPoints() public view returns (BaalPointsV0) {
+        return _baalPoints;
+    }
 
-    // function votesModule() public view returns (TimedVotes) {
-    //     return _votesModule;
-    // }
+    function baalChoices() public view returns (BaalGateV0) {
+        return _baalChoices;
+    }
 
-    // function executionModule() public view returns (EmptyExecution) {
-    //     return _executionModule;
-    // }
+    function baalVotes() public view returns (TimedVotes) {
+        return _timedVotesModule;
+    }
 
-    // function contest() public view returns (Contest) {
-    //     return _contest;
-    // }
+    function contest() public view returns (Contest) {
+        return _contest;
+    }
+
+    function execution() public view returns (EmptyExecution) {
+        return _executionModule;
+    }
 
     function factory() public view returns (FastFactory) {
         return _factory;

@@ -254,8 +254,6 @@ contract RunFactory is Script {
         // ERC20VotesPoints pointsTemplate = ERC20VotesPoints(getTemplateAddress("points"));
         SBTBalancePoints pointsTemplate = SBTBalancePoints(getTemplateAddress("sbtPoints"));
 
-        console2.log("Points template address: %s", address(pointsTemplate));
-
         TimedVotes votesTemplate = TimedVotes(getTemplateAddress("votes"));
         HatsAllowList choicesTemplate = HatsAllowList(getTemplateAddress("choices"));
         EmptyExecution executionTemplate = EmptyExecution(getTemplateAddress("execution"));
