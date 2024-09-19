@@ -97,6 +97,7 @@ contract FastFactory {
     }
 
     function buildContest(
+        Metadata memory _contestMetadata,
         bytes memory _contestInitData,
         string memory _contestVersion,
         ContestStatus _contestStatus,
@@ -125,6 +126,7 @@ contract FastFactory {
 
         newContest.initialize(
             abi.encode(
+                _contestMetadata,
                 // votesModule
                 moduleAddresses[0],
                 // pointsModule

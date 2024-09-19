@@ -284,6 +284,7 @@ contract RunFactory is Script {
         bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
         (address contestAddress, address[4] memory moduleAddress) = fastFactory.buildContest(
+            _contestMetadata,
             _contestInitData,
             contestTemplate.CONTEST_VERSION(),
             ContestStatus.Populating,

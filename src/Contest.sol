@@ -11,6 +11,7 @@ import "./interfaces/IChoices.sol";
 import "./interfaces/IContest.sol";
 
 import {ContestStatus} from "./core/ContestStatus.sol";
+import {Metadata} from "./core/Metadata.sol";
 
 /// @title Stem Contest
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
@@ -22,6 +23,7 @@ contract Contest is ReentrancyGuard, Initializable {
 
     /// @notice Emitted when the Contest is initialized
     event ContestInitialized(
+        Metadata metadata,
         address votesModule,
         address pointsModule,
         address choicesModule,
@@ -112,13 +114,14 @@ contract Contest is ReentrancyGuard, Initializable {
     /// @param  _initData The data to initialize the contest (votes, points, choices, execution, isContinuous, isRetractable)
     function initialize(bytes memory _initData) public initializer {
         (
+            Metadata memory _metadata,
             address _votesContract,
             address _pointsContract,
             address _choicesContract,
             address _executionContract,
             ContestStatus _contestStatus,
             bool _isRetractable
-        ) = abi.decode(_initData, (address, address, address, address, ContestStatus, bool));
+        ) = abi.decode(_initData, (Metadata, address, address, address, address, ContestStatus, bool));
 
         votesModule = IVotes(_votesContract);
         pointsModule = IPoints(_pointsContract);
@@ -133,6 +136,7 @@ contract Contest is ReentrancyGuard, Initializable {
         }
 
         emit ContestInitialized(
+            _metadata,
             _votesContract,
             _pointsContract,
             _choicesContract,

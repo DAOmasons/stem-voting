@@ -149,7 +149,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
         (address contestAddress, address[4] memory moduleAddress) =
-            factory().buildContest(_contestInitData, "v0.1.0", ContestStatus.Populating, true, "gs_test");
+            factory().buildContest(_mockMetadata, _contestInitData, "v0.1.0", ContestStatus.Populating, true, "gs_test");
 
         _contest = Contest(contestAddress);
         _votesModule = TimedVotes(moduleAddress[0]);
