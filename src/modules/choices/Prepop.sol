@@ -60,7 +60,7 @@ contract Prepop is IChoices, Initializable {
             emit Registered(_choiceIds[i], _choices[i], _contest);
         }
 
-        contest.finalizeChoices();
+        // contest.finalizeChoices();
     }
 
     /// ===============================

@@ -116,9 +116,9 @@ contract Contest is ReentrancyGuard, Initializable {
             address _pointsContract,
             address _choicesContract,
             address _executionContract,
-            bool _isContinuous,
+            ContestStatus _contestStatus,
             bool _isRetractable
-        ) = abi.decode(_initData, (address, address, address, address, bool, bool));
+        ) = abi.decode(_initData, (address, address, address, address, ContestStatus, bool));
 
         votesModule = IVotes(_votesContract);
         pointsModule = IPoints(_pointsContract);
@@ -126,20 +126,18 @@ contract Contest is ReentrancyGuard, Initializable {
         executionModule = _executionContract;
         isRetractable = _isRetractable;
 
-        if (isContinuous) {
-            contestStatus = ContestStatus.Continuous;
-        } else {
-            contestStatus = ContestStatus.Populating;
-        }
+        contestStatus = _contestStatus;
 
-        isContinuous = _isContinuous;
+        if (contestStatus == ContestStatus.Continuous) {
+            isContinuous = true;
+        }
 
         emit ContestInitialized(
             _votesContract,
             _pointsContract,
             _choicesContract,
             _executionContract,
-            _isContinuous,
+            isContinuous,
             _isRetractable,
             contestStatus
         );
@@ -278,10 +276,7 @@ contract Contest is ReentrancyGuard, Initializable {
     /// @notice Finalize the choices
     /// @dev Only callable by the Choices module
     function finalizeChoices() external {
-        require(
-            contestStatus == ContestStatus.Populating || contestStatus == ContestStatus.None,
-            "Contest is not in populating state"
-        );
+        require(contestStatus == ContestStatus.Populating, "Contest is not in populating state");
         require(msg.sender == address(choicesModule), "Only choices module");
         contestStatus = ContestStatus.Voting;
 

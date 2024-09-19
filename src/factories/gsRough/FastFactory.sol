@@ -2,8 +2,9 @@
 pragma solidity ^0.8.24;
 
 import "openzeppelin-contracts/contracts/proxy/Clones.sol";
-import {Metadata} from "../../core/Metadata.sol";
 
+import {Metadata} from "../../core/Metadata.sol";
+import {ContestStatus} from "../../core/ContestStatus.sol";
 import {Contest} from "../../Contest.sol";
 
 import {IModule} from "../../interfaces/IModule.sol";
@@ -98,7 +99,7 @@ contract FastFactory {
     function buildContest(
         bytes memory _contestInitData,
         string memory _contestVersion,
-        bool _isContinuous,
+        ContestStatus _contestStatus,
         bool _isRetractable,
         string memory _filterTag
     ) external returns (address, address[4] memory moduleAddresses) {
@@ -132,7 +133,7 @@ contract FastFactory {
                 moduleAddresses[2],
                 // executionModule
                 moduleAddresses[3],
-                _isContinuous,
+                _contestStatus,
                 _isRetractable
             )
         );

@@ -106,8 +106,9 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
 
         bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
-        (address contestAddress, address[4] memory moduleAddresses) =
-            factory().buildContest(_contestInitData, _contestImpl.CONTEST_VERSION(), false, false, "Filter Tag");
+        (address contestAddress, address[4] memory moduleAddresses) = factory().buildContest(
+            _contestInitData, _contestImpl.CONTEST_VERSION(), ContestStatus.Voting, false, "Filter Tag"
+        );
 
         _contest = Contest(contestAddress);
         _timedVotesModule = TimedVotes(moduleAddresses[0]);
