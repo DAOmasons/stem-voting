@@ -72,8 +72,45 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         assertEq(address(execution().contest()), address(contest()));
     }
 
-    function test_vote() public {
-        _vote(voter1(), choice1(), 1);
+    function test_vote_single_partial() public {
+        _vote(voter1(), choice1(), SHARE_AMOUNT);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), SHARE_AMOUNT);
+        assertEq(baalVotes().totalVotesForChoice(choice1()), SHARE_AMOUNT);
+        assertEq(baalVotes().getTotalVotesForChoice(choice1()), SHARE_AMOUNT);
+
+        assertEq(baalPoints().allocatedPoints(voter1()), SHARE_AMOUNT);
+
+        assertEq(baalPoints().hasVotingPoints(voter1(), voteAmount - SHARE_AMOUNT, ""), true);
+        assertEq(baalPoints().hasAllocatedPoints(voter1(), SHARE_AMOUNT, ""), true);
+    }
+
+    function test_vote_single_full() public {
+        _vote(voter1(), choice1(), voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount);
+        assertEq(baalVotes().totalVotesForChoice(choice1()), voteAmount);
+        assertEq(baalVotes().getTotalVotesForChoice(choice1()), voteAmount);
+
+        assertEq(baalPoints().allocatedPoints(voter1()), voteAmount);
+
+        assertEq(baalPoints().hasVotingPoints(voter1(), 1, ""), false);
+        assertEq(baalPoints().hasAllocatedPoints(voter1(), voteAmount, ""), true);
+    }
+
+    function test_vote_single_full_many() public {
+        _vote(voter1(), choice1(), voteAmount / 3);
+        _vote(voter1(), choice1(), voteAmount / 3);
+        _vote(voter1(), choice1(), voteAmount / 3);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount);
+        assertEq(baalVotes().totalVotesForChoice(choice1()), voteAmount);
+        assertEq(baalVotes().getTotalVotesForChoice(choice1()), voteAmount);
+
+        assertEq(baalPoints().allocatedPoints(voter1()), voteAmount);
+
+        assertEq(baalPoints().hasVotingPoints(voter1(), 1, ""), false);
+        assertEq(baalPoints().hasAllocatedPoints(voter1(), voteAmount, ""), true);
     }
 
     //////////////////////////////
@@ -92,11 +129,15 @@ contract AskHausPollTest is Test, AskHausSetupLive {
     // Helpers
     //////////////////////////////
 
-    function _retract() public {}
-
     function _vote(address _voter, bytes32 _choice, uint256 _amount) public {
         vm.startPrank(_voter);
-        contest().vote(_choice, _amount, "");
+        contest().vote(_choice, _amount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function _retract(address _voter, bytes32 _choice, uint256 _amount) public {
+        vm.startPrank(_voter);
+        contest().retractVote(_choice, _amount, abi.encode(_mockMetadata));
         vm.stopPrank();
     }
 }

@@ -51,6 +51,8 @@ contract TimedVotes is IVotes, Initializable {
     /// @notice The duration of the voting period
     uint256 public duration;
 
+    bool _didAutostart;
+
     /// @notice Mapping of choiceId to voter to vote amount
     /// @dev choiceId => voter => amount
     mapping(bytes32 => mapping(address => uint256)) public votes;
@@ -94,6 +96,7 @@ contract TimedVotes is IVotes, Initializable {
         duration = _duration;
 
         if (_autostart) {
+            _didAutostart = true;
             setVotingTime(_startTime);
         }
 
@@ -107,7 +110,12 @@ contract TimedVotes is IVotes, Initializable {
     /// @notice Sets the start time of the voting period
     /// @param _startTime The start time of the voting period
     function setVotingTime(uint256 _startTime) public {
-        require(contest.isStatus(ContestStatus.Voting), "Contest is not in voting state");
+        /// @Note:
+        /// we need to make sure that this can be called after choices round had completed
+        /// OR we need to be able facilitate an autostart in cases where contest starts at the voting period
+        /// However autostart triggers on module init, so simply checking the contest status is insufficient
+        /// because the contest inits after the module inits
+        require(contest.isStatus(ContestStatus.Voting) || _didAutostart, "Contest is not in voting state");
         require(startTime == 0, "Voting has already started");
 
         if (_startTime == 0) {

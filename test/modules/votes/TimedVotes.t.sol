@@ -57,8 +57,24 @@ contract TimedVotingTest is Test, Accounts, MockContestSetup {
         assertEq(timedVotesModule.endTime(), block.timestamp + TWO_WEEKS);
     }
 
+    function test_init_autostartLater() public {
+        _init_autostart_later();
+
+        assertEq(address(timedVotesModule.contest()), address(mockContest()));
+        assertEq(timedVotesModule.duration(), TWO_WEEKS);
+        assertEq(timedVotesModule.startTime(), block.timestamp + TWO_WEEKS);
+        assertEq(timedVotesModule.endTime(), block.timestamp + TWO_WEEKS * 2);
+    }
+
     function test_autostart_vote() public {
         _vote_autostart();
+
+        assertEq(timedVotesModule.votes(choice1(), address(voter1())), _voteAmount);
+        assertEq(timedVotesModule.totalVotesForChoice(choice1()), _voteAmount);
+    }
+
+    function test_autostart_vote_later() public {
+        _vote_autostart_later();
 
         assertEq(timedVotesModule.votes(choice1(), address(voter1())), _voteAmount);
         assertEq(timedVotesModule.totalVotesForChoice(choice1()), _voteAmount);
@@ -134,6 +150,36 @@ contract TimedVotingTest is Test, Accounts, MockContestSetup {
         timedVotesModule.setVotingTime(block.timestamp - 1);
 
         timedVotesModule.setVotingTime(block.timestamp + 1);
+    }
+
+    function testRevert_autostart_doubleStart() public {
+        _init_autostart();
+
+        vm.expectRevert("Voting has already started");
+        timedVotesModule.setVotingTime(0);
+
+        vm.expectRevert("Voting has already started");
+        timedVotesModule.setVotingTime(block.timestamp + 1);
+    }
+
+    function testRevert_autostart_beforeStart() public {
+        _init_autostart_later();
+
+        vm.expectRevert("Must vote within voting period");
+
+        vm.prank(address(mockContest()));
+        timedVotesModule.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
+
+        vm.warp(block.timestamp + TWO_WEEKS);
+
+        vm.prank(address(mockContest()));
+        timedVotesModule.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        vm.expectRevert("Must vote within voting period");
+        vm.prank(address(mockContest()));
+        timedVotesModule.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
     }
 
     function testRevert_setVotingTime_now_alreadyStarted() public {
@@ -383,13 +429,35 @@ contract TimedVotingTest is Test, Accounts, MockContestSetup {
         timedVotesModule.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
     }
 
+    function _vote_autostart_later() private {
+        _init_autostart_later();
+
+        vm.warp(block.timestamp + TWO_WEEKS);
+
+        vm.expectEmit(true, false, false, true);
+        emit VoteCast(voter1(), choice1(), _voteAmount, _reason);
+
+        vm.prank(address(mockContest()));
+        timedVotesModule.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
+    }
+
     function _init_autostart() private {
         mockContest().cheatStatus(ContestStatus.Voting);
 
-        // vm.expectEmit(true, false, false, true);
-        // emit Initialized(address(mockContest()), TWO_WEEKS);
+        vm.expectEmit(true, false, false, true);
+        emit Initialized(address(mockContest()), TWO_WEEKS);
 
         bytes memory data = abi.encode(TWO_WEEKS, true, 0);
+        timedVotesModule.initialize(address(mockContest()), data);
+    }
+
+    function _init_autostart_later() private {
+        mockContest().cheatStatus(ContestStatus.Voting);
+
+        vm.expectEmit(true, false, false, true);
+        emit Initialized(address(mockContest()), TWO_WEEKS);
+
+        bytes memory data = abi.encode(TWO_WEEKS, true, block.timestamp + TWO_WEEKS);
         timedVotesModule.initialize(address(mockContest()), data);
     }
 }

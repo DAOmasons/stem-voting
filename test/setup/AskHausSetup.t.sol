@@ -31,6 +31,7 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
     address[] _voters;
     uint256 constant SHARE_AMOUNT = 1_000e18;
     uint256 constant LOOT_AMOUNT = 2_000e18;
+    uint256 voteAmount;
 
     uint256 constant START_BLOCK = 6668489;
     uint256 startTimestamp;
@@ -74,11 +75,13 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
         snapshotTimestamp = delegateTimestamp + 5;
         voteTimestamp = snapshotTimestamp + 5;
 
+        vm.warp(voteTimestamp);
+
         bytes[4] memory moduleData;
         string[4] memory moduleNames;
 
         // votes Module data
-        moduleData[0] = abi.encode(TWO_WEEKS);
+        moduleData[0] = abi.encode(TWO_WEEKS, true, 0);
         moduleNames[0] = _timedVotesModuleImpl.MODULE_NAME();
 
         // points module data
@@ -116,11 +119,7 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
         _prepopChoices = Prepop(moduleAddresses[2]);
         _executionModule = EmptyExecution(moduleAddresses[3]);
 
-        console.log("startTime", _timedVotesModule.startTime());
-        console.log("endTime", _timedVotesModule.endTime());
-
-        vm.warp(voteTimestamp);
-        // bytes memory _contestInitData;
+        voteAmount = SHARE_AMOUNT + LOOT_AMOUNT;
     }
 
     function __setupAskHausContest(HolderType _holderType) internal {
@@ -215,9 +214,8 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
     }
 
     function _setupVoters() internal {
-        console.log("startTimestamp: ", startTimestamp);
         delegateTimestamp = startTimestamp + 10;
-        console.log("delegateTimestamp: ", delegateTimestamp);
+        vm.warp(delegateTimestamp);
         _voters = new address[](5);
 
         _voters[0] = voter0();

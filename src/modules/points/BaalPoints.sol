@@ -147,6 +147,6 @@ contract BaalPointsV0 is IPoints, Initializable {
     /// @param _voter who is checking their voting power
     /// @param _amount of token to be allocated
     function hasVotingPoints(address _voter, uint256 _amount, bytes memory) public view returns (bool) {
-        return getPoints(_voter) + allocatedPoints[_voter] >= _amount;
+        return getPoints(_voter) - allocatedPoints[_voter] >= _amount;
     }
 }
