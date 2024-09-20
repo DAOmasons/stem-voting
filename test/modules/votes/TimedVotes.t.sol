@@ -48,6 +48,22 @@ contract TimedVotingTest is Test, Accounts, MockContestSetup {
         assertEq(timedVotesModule.duration(), TWO_WEEKS);
     }
 
+    function test_init_autostart() public {
+        _init_autostart();
+
+        assertEq(address(timedVotesModule.contest()), address(mockContest()));
+        assertEq(timedVotesModule.duration(), TWO_WEEKS);
+        assertEq(timedVotesModule.startTime(), block.timestamp);
+        assertEq(timedVotesModule.endTime(), block.timestamp + TWO_WEEKS);
+    }
+
+    function test_autostart_vote() public {
+        _vote_autostart();
+
+        assertEq(timedVotesModule.votes(choice1(), address(voter1())), _voteAmount);
+        assertEq(timedVotesModule.totalVotesForChoice(choice1()), _voteAmount);
+    }
+
     function test_setVotingTime_now() public {
         _setVotingTime_now();
 
@@ -353,7 +369,27 @@ contract TimedVotingTest is Test, Accounts, MockContestSetup {
         vm.expectEmit(true, false, false, true);
         emit Initialized(address(mockContest()), TWO_WEEKS);
 
-        bytes memory data = abi.encode(TWO_WEEKS);
+        bytes memory data = abi.encode(TWO_WEEKS, false, 0);
+        timedVotesModule.initialize(address(mockContest()), data);
+    }
+
+    function _vote_autostart() private {
+        _init_autostart();
+
+        vm.expectEmit(true, false, false, true);
+        emit VoteCast(voter1(), choice1(), _voteAmount, _reason);
+
+        vm.prank(address(mockContest()));
+        timedVotesModule.vote(voter1(), choice1(), _voteAmount, abi.encode(_reason));
+    }
+
+    function _init_autostart() private {
+        mockContest().cheatStatus(ContestStatus.Voting);
+
+        // vm.expectEmit(true, false, false, true);
+        // emit Initialized(address(mockContest()), TWO_WEEKS);
+
+        bytes memory data = abi.encode(TWO_WEEKS, true, 0);
         timedVotesModule.initialize(address(mockContest()), data);
     }
 }

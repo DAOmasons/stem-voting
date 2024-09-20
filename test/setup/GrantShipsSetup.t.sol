@@ -131,7 +131,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         string[4] memory moduleNames;
 
         // votes module data
-        moduleData[0] = abi.encode(TWO_WEEKS);
+        moduleData[0] = abi.encode(TWO_WEEKS, false, 0);
         moduleNames[0] = "TimedVotes_v0.1.0";
 
         // points module data

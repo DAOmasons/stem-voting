@@ -11,5 +11,5 @@ contract AskHausContestTest is Test, AskHausSetupLive {
         __setupAskHausContest(HolderType.Both);
     }
 
-    function test() public {}
+    function test_init() public {}
 }
