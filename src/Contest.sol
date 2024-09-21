@@ -40,6 +40,18 @@ contract Contest is ReentrancyGuard, Initializable {
     /// ========== Storage =============
     /// ================================
 
+    event BatchVote(
+        address indexed voter, bytes32[] choices, uint256[] amounts, uint256 totalAmount, Metadata metadata
+    );
+
+    event BatchRetractVote(
+        address indexed voter, bytes32[] choices, uint256[] amounts, uint256 totalAmount, Metadata metadata
+    );
+
+    event BatchChangeVote(
+        address indexed voter, bytes32[] choices, uint256[] amounts, uint256 totalAmount, Metadata metadata
+    );
+
     /// @notice Contest version
     string public constant CONTEST_VERSION = "0.2.0";
 
@@ -216,7 +228,8 @@ contract Contest is ReentrancyGuard, Initializable {
         bytes32[] memory _choiceIds,
         uint256[] memory _amounts,
         bytes[] memory _data,
-        uint256 _totalAmount
+        uint256 _totalAmount,
+        Metadata memory _metadata
     ) public virtual nonReentrant onlyVotingPeriod {
         require(
             _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
@@ -238,6 +251,14 @@ contract Contest is ReentrancyGuard, Initializable {
         }
 
         require(totalAmount == _totalAmount, "Invalid total amount");
+
+        if (_metadata.protocol != 0) {
+            // This event is an optional event to emit on batch transtions
+            // it helps by emitting user Metadata and total change in connection
+            // to a single user interaction instead of events triggered for each vote
+            // which can be difficult to index.
+            emit BatchVote(msg.sender, _choiceIds, _amounts, _totalAmount, _metadata);
+        }
     }
 
     /// @notice Batch retract votes on multiple choices
@@ -249,7 +270,8 @@ contract Contest is ReentrancyGuard, Initializable {
         bytes32[] memory _choiceIds,
         uint256[] memory _amounts,
         bytes[] memory _data,
-        uint256 _totalAmount
+        uint256 _totalAmount,
+        Metadata memory _metadata
     ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
         require(
             _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
@@ -271,6 +293,31 @@ contract Contest is ReentrancyGuard, Initializable {
         }
 
         require(totalAmount == _totalAmount, "Invalid total amount");
+
+        if (_metadata.protocol != 0) {
+            // This event is an optional event to emit on batch transtions
+            // it helps by emitting user Metadata and total change in connection
+            // to a single user interaction instead of events triggered for each vote
+            // which can be difficult to index.
+            emit BatchRetractVote(msg.sender, _choiceIds, _amounts, _totalAmount, _metadata);
+        }
+    }
+
+    function batchChangeVote(
+        bytes32[] memory _retractChoiceIds,
+        uint256[] memory _retractAmounts,
+        bytes[] memory _retractData,
+        uint256 _totalRetract,
+        bytes32[] memory _voteChoiceIds,
+        uint256[] memory _voteAmounts,
+        bytes[] memory _voteData,
+        uint256 _totalVote,
+        Metadata[2] memory _metadata
+    ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
+        require(_totalRetract == _totalVote, "Amount retracted and amount voted must be equal");
+
+        batchRetractVote(_retractChoiceIds, _retractAmounts, _retractData, _totalRetract, _metadata[0]);
+        batchVote(_voteChoiceIds, _voteAmounts, _voteData, _totalVote, _metadata[1]);
     }
 
     /// ===============================

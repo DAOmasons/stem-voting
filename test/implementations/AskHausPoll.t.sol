@@ -10,9 +10,12 @@ import {Metadata} from "../../src/core/Metadata.sol";
 contract AskHausPollTest is Test, AskHausSetupLive {
     bytes32[] _allThreeChoices;
     uint256[] _equalSplit;
+    uint256[] _equalPartial;
     uint256[] _favorsChoice1;
     uint256[] _favorsChoice2;
     bytes[] _batchData;
+
+    Metadata emptyMetadata;
 
     function setUp() public {
         vm.createSelectFork({blockNumber: START_BLOCK, urlOrAlias: "sepolia"});
@@ -25,6 +28,10 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         _equalSplit.push(voteAmount / 3);
         _equalSplit.push(voteAmount / 3);
         _equalSplit.push(voteAmount / 3);
+
+        _equalPartial.push(voteAmount / 6);
+        _equalPartial.push(voteAmount / 6);
+        _equalPartial.push(voteAmount / 6);
 
         _favorsChoice1.push(voteAmount / 2);
         _favorsChoice1.push(voteAmount / 4);
@@ -171,7 +178,43 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         assertEq(baalPoints().hasAllocatedPoints(voter1(), 1, ""), false);
     }
 
-    function test_batch_vote_full() public {}
+    function test_batch_vote_equal() public {
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 3);
+    }
+
+    function test_batch_vote_skewed() public {
+        _batchVote(voter1(), _allThreeChoices, _favorsChoice1, voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 2);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 4);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 4);
+    }
+
+    function test_batch_vote_concert() public {
+        _batchVote(voter1(), _allThreeChoices, _favorsChoice1, voteAmount);
+        _batchVote(voter2(), _allThreeChoices, _favorsChoice2, voteAmount);
+        _batchVote(voter3(), _allThreeChoices, _equalSplit, voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 2);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 4);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 4);
+
+        assertEq(baalVotes().votes(choice1(), voter2()), voteAmount / 4);
+        assertEq(baalVotes().votes(choice2(), voter2()), voteAmount / 2);
+        assertEq(baalVotes().votes(choice3(), voter2()), voteAmount / 4);
+
+        assertEq(baalVotes().votes(choice1(), voter3()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter3()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter3()), voteAmount / 3);
+
+        assertEq(baalVotes().getTotalVotesForChoice(choice1()), voteAmount / 2 + voteAmount / 4 + voteAmount / 3);
+        assertEq(baalVotes().getTotalVotesForChoice(choice2()), voteAmount / 4 + voteAmount / 2 + voteAmount / 3);
+        assertEq(baalVotes().getTotalVotesForChoice(choice3()), voteAmount / 4 + voteAmount / 4 + voteAmount / 3);
+    }
 
     //////////////////////////////
     // Reverts
@@ -182,6 +225,7 @@ contract AskHausPollTest is Test, AskHausSetupLive {
     //////////////////////////////
 
     // function testAttack_mintMoreShares() public {}
+    // function testAttact_doubleVote() public {}
 
     //////////////////////////////
     // Helpers
@@ -193,7 +237,7 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         internal
     {
         vm.startPrank(_voter);
-        contest().batchRetractVote(_choices, _amounts, _batchData, _totalAmount);
+        contest().batchRetractVote(_choices, _amounts, _batchData, _totalAmount, emptyMetadata);
         vm.stopPrank();
     }
 
@@ -201,7 +245,7 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         internal
     {
         vm.startPrank(_voter);
-        contest().batchVote(_choices, _amounts, _batchData, _totalAmount);
+        contest().batchVote(_choices, _amounts, _batchData, _totalAmount, emptyMetadata);
         vm.stopPrank();
     }
 
