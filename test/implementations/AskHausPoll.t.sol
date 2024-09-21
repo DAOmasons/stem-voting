@@ -8,9 +8,35 @@ import {ContestStatus} from "../../src/core/ContestStatus.sol";
 import {Metadata} from "../../src/core/Metadata.sol";
 
 contract AskHausPollTest is Test, AskHausSetupLive {
+    bytes32[] _allThreeChoices;
+    uint256[] _equalSplit;
+    uint256[] _favorsChoice1;
+    uint256[] _favorsChoice2;
+    bytes[] _batchData;
+
     function setUp() public {
         vm.createSelectFork({blockNumber: START_BLOCK, urlOrAlias: "sepolia"});
         __setupAskHausPoll(HolderType.Both);
+
+        _allThreeChoices.push(choice1());
+        _allThreeChoices.push(choice2());
+        _allThreeChoices.push(choice3());
+
+        _equalSplit.push(voteAmount / 3);
+        _equalSplit.push(voteAmount / 3);
+        _equalSplit.push(voteAmount / 3);
+
+        _favorsChoice1.push(voteAmount / 2);
+        _favorsChoice1.push(voteAmount / 4);
+        _favorsChoice1.push(voteAmount / 4);
+
+        _favorsChoice2.push(voteAmount / 4);
+        _favorsChoice2.push(voteAmount / 2);
+        _favorsChoice2.push(voteAmount / 4);
+
+        _batchData.push(abi.encode(_mockMetadata));
+        _batchData.push(abi.encode(_mockMetadata));
+        _batchData.push(abi.encode(_mockMetadata));
     }
 
     //////////////////////////////
@@ -72,11 +98,14 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         assertEq(address(execution().contest()), address(contest()));
     }
 
+    //////////////////////////////
+    // Basic Tests
+    //////////////////////////////
+
     function test_vote_single_partial() public {
         _vote(voter1(), choice1(), SHARE_AMOUNT);
 
         assertEq(baalVotes().votes(choice1(), voter1()), SHARE_AMOUNT);
-        assertEq(baalVotes().totalVotesForChoice(choice1()), SHARE_AMOUNT);
         assertEq(baalVotes().getTotalVotesForChoice(choice1()), SHARE_AMOUNT);
 
         assertEq(baalPoints().allocatedPoints(voter1()), SHARE_AMOUNT);
@@ -89,7 +118,6 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         _vote(voter1(), choice1(), voteAmount);
 
         assertEq(baalVotes().votes(choice1(), voter1()), voteAmount);
-        assertEq(baalVotes().totalVotesForChoice(choice1()), voteAmount);
         assertEq(baalVotes().getTotalVotesForChoice(choice1()), voteAmount);
 
         assertEq(baalPoints().allocatedPoints(voter1()), voteAmount);
@@ -104,7 +132,6 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         _vote(voter1(), choice1(), voteAmount / 3);
 
         assertEq(baalVotes().votes(choice1(), voter1()), voteAmount);
-        assertEq(baalVotes().totalVotesForChoice(choice1()), voteAmount);
         assertEq(baalVotes().getTotalVotesForChoice(choice1()), voteAmount);
 
         assertEq(baalPoints().allocatedPoints(voter1()), voteAmount);
@@ -113,21 +140,68 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         assertEq(baalPoints().hasAllocatedPoints(voter1(), voteAmount, ""), true);
     }
 
-    //////////////////////////////
-    // Unit Tests
-    //////////////////////////////
+    function test_retract_single_partial() public {
+        _vote(voter1(), choice1(), voteAmount);
 
-    //////////////////////////////
-    // Compound Tests
-    //////////////////////////////
+        _retract(voter1(), choice1(), voteAmount / 2);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 2);
+        assertEq(baalVotes().getTotalVotesForChoice(choice1()), voteAmount / 2);
+
+        assertEq(baalPoints().allocatedPoints(voter1()), voteAmount / 2);
+
+        assertEq(baalPoints().hasVotingPoints(voter1(), voteAmount / 2, ""), true);
+        assertEq(baalPoints().hasAllocatedPoints(voter1(), voteAmount / 2, ""), true);
+
+        assertEq(baalPoints().hasVotingPoints(voter1(), voteAmount / 2 + 1, ""), false);
+        assertEq(baalPoints().hasAllocatedPoints(voter1(), voteAmount / 2 + 1, ""), false);
+    }
+
+    function test_retract_single_full() public {
+        _vote(voter1(), choice1(), voteAmount);
+
+        _retract(voter1(), choice1(), voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), 0);
+        assertEq(baalVotes().getTotalVotesForChoice(choice1()), 0);
+
+        assertEq(baalPoints().allocatedPoints(voter1()), 0);
+
+        assertEq(baalPoints().hasVotingPoints(voter1(), voteAmount, ""), true);
+        assertEq(baalPoints().hasAllocatedPoints(voter1(), 1, ""), false);
+    }
+
+    function test_batch_vote_full() public {}
 
     //////////////////////////////
     // Reverts
     //////////////////////////////
 
     //////////////////////////////
+    // Adversarial
+    //////////////////////////////
+
+    // function testAttack_mintMoreShares() public {}
+
+    //////////////////////////////
     // Helpers
     //////////////////////////////
+
+    function _batchRetract(address _voter, bytes32[] memory _choices, uint256[] memory _amounts, uint256 _totalAmount)
+        internal
+    {
+        vm.startPrank(_voter);
+        contest().batchRetractVote(_choices, _amounts, _batchData, _totalAmount);
+        vm.stopPrank();
+    }
+
+    function _batchVote(address _voter, bytes32[] memory _choices, uint256[] memory _amounts, uint256 _totalAmount)
+        internal
+    {
+        vm.startPrank(_voter);
+        contest().batchVote(_choices, _amounts, _batchData, _totalAmount);
+        vm.stopPrank();
+    }
 
     function _vote(address _voter, bytes32 _choice, uint256 _amount) public {
         vm.startPrank(_voter);
