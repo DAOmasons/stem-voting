@@ -187,6 +187,8 @@ contract AskHausPollTest is Test, AskHausSetupLive {
     // Helpers
     //////////////////////////////
 
+    function _finalize() internal {}
+
     function _batchRetract(address _voter, bytes32[] memory _choices, uint256[] memory _amounts, uint256 _totalAmount)
         internal
     {
