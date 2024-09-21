@@ -296,6 +296,54 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 6);
     }
 
+    function test_batchChange_switch_skew() public {
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 3);
+
+        bytes32[][2] memory _choiceIds;
+        uint256[][2] memory _amounts;
+        bytes[][2] memory _data;
+        uint256[2] memory _totals;
+
+        bytes32[] memory _retractChoices = new bytes32[](2);
+        bytes32[] memory _addChoices = new bytes32[](1);
+
+        uint256[] memory _retractAmounts = new uint256[](2);
+        uint256[] memory _addAmounts = new uint256[](1);
+
+        bytes[] memory _retractBytes = new bytes[](2);
+        bytes[] memory _addBytes = new bytes[](1);
+
+        _retractChoices[0] = choice1();
+        _retractChoices[1] = choice2();
+        _addChoices[0] = choice3();
+
+        _retractAmounts[0] = voteAmount / 3;
+        _retractAmounts[1] = voteAmount / 3;
+        _addAmounts[0] = voteAmount / 3 * 2;
+
+        _retractBytes[0] = abi.encode(_mockMetadata);
+        _retractBytes[1] = abi.encode(_mockMetadata);
+        _addBytes[0] = abi.encode(_mockMetadata);
+
+        _choiceIds[0] = _retractChoices;
+        _choiceIds[1] = _addChoices;
+
+        _amounts[0] = _retractAmounts;
+        _amounts[1] = _addAmounts;
+
+        _data[0] = _retractBytes;
+        _data[1] = _addBytes;
+
+        _totals[0] = voteAmount / 3 * 2;
+        _totals[1] = voteAmount / 3 * 2;
+
+        _batchChangeVote(voter1(), _choiceIds, _amounts, _data, _totals);
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -306,12 +354,30 @@ contract AskHausPollTest is Test, AskHausSetupLive {
 
     // function testAttack_mintMoreShares() public {}
     // function testAttact_doubleVote() public {}
+    // function testAttacl_batchChange) public {}
 
     //////////////////////////////
     // Helpers
     //////////////////////////////
 
     function _finalize() internal {}
+
+    function _batchChangeVote(
+        address _voter,
+        bytes32[][2] memory _choiceIds,
+        uint256[][2] memory _amounts,
+        bytes[][2] memory _data,
+        uint256[2] memory _totals
+    ) internal {
+        Metadata[2] memory _metadata;
+
+        _metadata[0] = emptyMetadata;
+        _metadata[1] = emptyMetadata;
+
+        vm.startPrank(_voter);
+        contest().batchChangeVote(_choiceIds, _amounts, _data, _totals, _metadata);
+        vm.stopPrank();
+    }
 
     function _batchRetract(address _voter, bytes32[] memory _choices, uint256[] memory _amounts, uint256 _totalAmount)
         internal

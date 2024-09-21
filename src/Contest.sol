@@ -230,7 +230,7 @@ contract Contest is ReentrancyGuard, Initializable {
         bytes[] memory _data,
         uint256 _totalAmount,
         Metadata memory _metadata
-    ) public virtual nonReentrant onlyVotingPeriod {
+    ) public virtual onlyVotingPeriod {
         require(
             _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
             "Array mismatch: Invalid input length"
@@ -272,7 +272,7 @@ contract Contest is ReentrancyGuard, Initializable {
         bytes[] memory _data,
         uint256 _totalAmount,
         Metadata memory _metadata
-    ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
+    ) public virtual onlyVotingPeriod onlyContestRetractable {
         require(
             _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
             "Array mismatch: Invalid input length"
@@ -304,22 +304,18 @@ contract Contest is ReentrancyGuard, Initializable {
     }
 
     function batchChangeVote(
-        bytes32[] memory _retractChoiceIds,
-        uint256[] memory _retractAmounts,
-        bytes[] memory _retractData,
-        uint256 _totalRetract,
-        bytes32[] memory _voteChoiceIds,
-        uint256[] memory _voteAmounts,
-        bytes[] memory _voteData,
-        uint256 _totalVote,
+        bytes32[][2] memory _choiceIds,
+        uint256[][2] memory _amounts,
+        bytes[][2] memory _data,
+        uint256[2] memory _totals,
         Metadata[2] memory _metadata
     ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
+        batchRetractVote(_choiceIds[0], _amounts[0], _data[0], _totals[0], _metadata[0]);
+        batchVote(_choiceIds[1], _amounts[1], _data[1], _totals[1], _metadata[1]);
+
         // totalRetract and totalVote are each tested against of thee sum of their respective amounts
         // in batchRetractVote and batchVote respectively.
-        require(_totalRetract == _totalVote, "Amount retracted and amount voted must be equal");
-
-        batchRetractVote(_retractChoiceIds, _retractAmounts, _retractData, _totalRetract, _metadata[0]);
-        batchVote(_voteChoiceIds, _voteAmounts, _voteData, _totalVote, _metadata[1]);
+        require(_totals[0] == _totals[1], "Amount retracted and amount voted must be equal");
     }
 
     /// ===============================
