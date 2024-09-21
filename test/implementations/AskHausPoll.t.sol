@@ -178,6 +178,38 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         assertEq(baalPoints().hasAllocatedPoints(voter1(), 1, ""), false);
     }
 
+    function test_change_single_partial() public {
+        _vote(voter1(), choice1(), voteAmount / 4);
+        _vote(voter1(), choice2(), voteAmount / 4 * 3);
+
+        _change(voter1(), choice1(), choice2(), voteAmount / 4);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), 0);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount);
+    }
+
+    function test_change_single_new() public {
+        _vote(voter1(), choice1(), voteAmount / 2);
+        _vote(voter1(), choice2(), voteAmount / 2);
+
+        _change(voter1(), choice2(), choice3(), voteAmount / 4);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 2);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 4);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 4);
+    }
+
+    function test_change_spread() public {
+        _vote(voter1(), choice1(), voteAmount);
+
+        _change(voter1(), choice1(), choice2(), voteAmount / 3);
+        _change(voter1(), choice1(), choice3(), voteAmount / 3);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 3);
+    }
+
     function test_batch_vote_equal() public {
         _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
 
@@ -216,6 +248,54 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         assertEq(baalVotes().getTotalVotesForChoice(choice3()), voteAmount / 4 + voteAmount / 4 + voteAmount / 3);
     }
 
+    function test_batch_retract_equal() public {
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 3);
+
+        _batchRetract(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), 0);
+        assertEq(baalVotes().votes(choice2(), voter1()), 0);
+        assertEq(baalVotes().votes(choice3(), voter1()), 0);
+    }
+
+    function test_batch_retract_partial() public {
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 3);
+
+        _batchRetract(voter1(), _allThreeChoices, _equalPartial, voteAmount / 2);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 6);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 6);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 6);
+    }
+
+    function test_batch_retract_skewed() public {
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 3);
+
+        uint256[] memory _skewedPartial = new uint256[](3);
+
+        _skewedPartial[0] = voteAmount / 3;
+        _skewedPartial[1] = voteAmount / 6;
+        _skewedPartial[2] = voteAmount / 6;
+
+        _batchRetract(voter1(), _allThreeChoices, _skewedPartial, voteAmount / 3 * 2);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), 0);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 6);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 6);
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -246,6 +326,12 @@ contract AskHausPollTest is Test, AskHausSetupLive {
     {
         vm.startPrank(_voter);
         contest().batchVote(_choices, _amounts, _batchData, _totalAmount, emptyMetadata);
+        vm.stopPrank();
+    }
+
+    function _change(address _voter, bytes32 _oldChoice, bytes32 _newChoice, uint256 _amount) public {
+        vm.startPrank(_voter);
+        contest().changeVote(_oldChoice, _newChoice, _amount, abi.encode(_mockMetadata));
         vm.stopPrank();
     }
 

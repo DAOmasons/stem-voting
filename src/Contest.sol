@@ -314,6 +314,8 @@ contract Contest is ReentrancyGuard, Initializable {
         uint256 _totalVote,
         Metadata[2] memory _metadata
     ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
+        // totalRetract and totalVote are each tested against of thee sum of their respective amounts
+        // in batchRetractVote and batchVote respectively.
         require(_totalRetract == _totalVote, "Amount retracted and amount voted must be equal");
 
         batchRetractVote(_retractChoiceIds, _retractAmounts, _retractData, _totalRetract, _metadata[0]);
