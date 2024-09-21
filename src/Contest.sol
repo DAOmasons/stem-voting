@@ -230,35 +230,8 @@ contract Contest is ReentrancyGuard, Initializable {
         bytes[] memory _data,
         uint256 _totalAmount,
         Metadata memory _metadata
-    ) public virtual onlyVotingPeriod {
-        require(
-            _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
-            "Array mismatch: Invalid input length"
-        );
-
-        uint256 totalAmount = 0;
-
-        for (uint256 i = 0; i < _choiceIds.length;) {
-            require(pointsModule.hasVotingPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points available");
-            require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
-            totalAmount += _amounts[i];
-
-            _vote(_choiceIds[i], _amounts[i], _data[i]);
-
-            unchecked {
-                i++;
-            }
-        }
-
-        require(totalAmount == _totalAmount, "Invalid total amount");
-
-        if (_metadata.protocol != 0) {
-            // This event is an optional event to emit on batch transtions
-            // it helps by emitting user Metadata and total change in connection
-            // to a single user interaction instead of events triggered for each vote
-            // which can be difficult to index.
-            emit BatchVote(msg.sender, _choiceIds, _amounts, _totalAmount, _metadata);
-        }
+    ) public virtual nonReentrant onlyVotingPeriod {
+        _batchVote(_choiceIds, _amounts, _data, _totalAmount, _metadata);
     }
 
     /// @notice Batch retract votes on multiple choices
@@ -272,35 +245,8 @@ contract Contest is ReentrancyGuard, Initializable {
         bytes[] memory _data,
         uint256 _totalAmount,
         Metadata memory _metadata
-    ) public virtual onlyVotingPeriod onlyContestRetractable {
-        require(
-            _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
-            "Array mismatch: Invalid input length"
-        );
-
-        uint256 totalAmount = 0;
-
-        for (uint256 i = 0; i < _choiceIds.length;) {
-            require(pointsModule.hasAllocatedPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points allocated");
-            require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
-            totalAmount += _amounts[i];
-
-            _retractVote(_choiceIds[i], _amounts[i], _data[i]);
-
-            unchecked {
-                i++;
-            }
-        }
-
-        require(totalAmount == _totalAmount, "Invalid total amount");
-
-        if (_metadata.protocol != 0) {
-            // This event is an optional event to emit on batch transtions
-            // it helps by emitting user Metadata and total change in connection
-            // to a single user interaction instead of events triggered for each vote
-            // which can be difficult to index.
-            emit BatchRetractVote(msg.sender, _choiceIds, _amounts, _totalAmount, _metadata);
-        }
+    ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
+        _batchRetractVote(_choiceIds, _amounts, _data, _totalAmount, _metadata);
     }
 
     function batchChangeVote(
@@ -310,8 +256,8 @@ contract Contest is ReentrancyGuard, Initializable {
         uint256[2] memory _totals,
         Metadata[2] memory _metadata
     ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
-        batchRetractVote(_choiceIds[0], _amounts[0], _data[0], _totals[0], _metadata[0]);
-        batchVote(_choiceIds[1], _amounts[1], _data[1], _totals[1], _metadata[1]);
+        _batchRetractVote(_choiceIds[0], _amounts[0], _data[0], _totals[0], _metadata[0]);
+        _batchVote(_choiceIds[1], _amounts[1], _data[1], _totals[1], _metadata[1]);
 
         // totalRetract and totalVote are each tested against of thee sum of their respective amounts
         // in batchRetractVote and batchVote respectively.
@@ -385,6 +331,79 @@ contract Contest is ReentrancyGuard, Initializable {
         votesModule.retractVote(msg.sender, _choiceId, _amount, _data);
     }
 
+    function _batchVote(
+        bytes32[] memory _choiceIds,
+        uint256[] memory _amounts,
+        bytes[] memory _data,
+        uint256 _totalAmount,
+        Metadata memory _metadata
+    ) internal {
+        require(
+            _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
+            "Array mismatch: Invalid input length"
+        );
+
+        uint256 totalAmount = 0;
+
+        for (uint256 i = 0; i < _choiceIds.length;) {
+            require(pointsModule.hasVotingPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points available");
+            require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
+            totalAmount += _amounts[i];
+
+            _vote(_choiceIds[i], _amounts[i], _data[i]);
+
+            unchecked {
+                i++;
+            }
+        }
+
+        require(totalAmount == _totalAmount, "Invalid total amount");
+
+        if (_metadata.protocol != 0) {
+            // This event is an optional event to emit on batch transtions
+            // it helps by emitting user Metadata and total change in connection
+            // to a single user interaction instead of events triggered for each vote
+            // which can be difficult to index.
+            emit BatchVote(msg.sender, _choiceIds, _amounts, _totalAmount, _metadata);
+        }
+    }
+
+    function _batchRetractVote(
+        bytes32[] memory _choiceIds,
+        uint256[] memory _amounts,
+        bytes[] memory _data,
+        uint256 _totalAmount,
+        Metadata memory _metadata
+    ) internal {
+        require(
+            _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
+            "Array mismatch: Invalid input length"
+        );
+
+        uint256 totalAmount = 0;
+
+        for (uint256 i = 0; i < _choiceIds.length;) {
+            require(pointsModule.hasAllocatedPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points allocated");
+            require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
+            totalAmount += _amounts[i];
+
+            _retractVote(_choiceIds[i], _amounts[i], _data[i]);
+
+            unchecked {
+                i++;
+            }
+        }
+
+        require(totalAmount == _totalAmount, "Invalid total amount");
+
+        if (_metadata.protocol != 0) {
+            // This event is an optional event to emit on batch transtions
+            // it helps by emitting user Metadata and total change in connection
+            // to a single user interaction instead of events triggered for each vote
+            // which can be difficult to index.
+            emit BatchRetractVote(msg.sender, _choiceIds, _amounts, _totalAmount, _metadata);
+        }
+    }
     /// ===============================
     /// ========== Getters ============
     /// ===============================
