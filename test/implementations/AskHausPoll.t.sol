@@ -296,7 +296,7 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 6);
     }
 
-    function test_batchChange_switch_skew() public {
+    function test_batchChange_consolidate() public {
         _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
 
         assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 3);
@@ -342,6 +342,63 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         _totals[1] = voteAmount / 3 * 2;
 
         _batchChangeVote(voter1(), _choiceIds, _amounts, _data, _totals);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), 0);
+        assertEq(baalVotes().votes(choice2(), voter1()), 0);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount);
+    }
+
+    function test_batchChange_spread() public {
+        _vote(voter1(), choice1(), voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount);
+
+        bytes32[][2] memory _choiceIds;
+        uint256[][2] memory _amounts;
+        bytes[][2] memory _data;
+        uint256[2] memory _totals;
+
+        bytes32[] memory _retractChoices = new bytes32[](1);
+        bytes32[] memory _addChoices = new bytes32[](3);
+
+        uint256[] memory _retractAmounts = new uint256[](1);
+        uint256[] memory _addAmounts = new uint256[](3);
+
+        bytes[] memory _retractBytes = new bytes[](1);
+        bytes[] memory _addBytes = new bytes[](3);
+
+        _retractChoices[0] = choice1();
+        _addChoices[0] = choice1();
+        _addChoices[1] = choice2();
+        _addChoices[2] = choice3();
+
+        _retractAmounts[0] = voteAmount;
+        _addAmounts[0] = voteAmount / 3;
+        _addAmounts[1] = voteAmount / 3;
+        _addAmounts[2] = voteAmount / 3;
+
+        _retractBytes[0] = abi.encode(_mockMetadata);
+        _addBytes[0] = abi.encode(_mockMetadata);
+        _addBytes[1] = abi.encode(_mockMetadata);
+        _addBytes[2] = abi.encode(_mockMetadata);
+
+        _choiceIds[0] = _retractChoices;
+        _choiceIds[1] = _addChoices;
+
+        _amounts[0] = _retractAmounts;
+        _amounts[1] = _addAmounts;
+
+        _data[0] = _retractBytes;
+        _data[1] = _addBytes;
+
+        _totals[0] = voteAmount;
+        _totals[1] = voteAmount;
+
+        _batchChangeVote(voter1(), _choiceIds, _amounts, _data, _totals);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 3);
     }
 
     //////////////////////////////

@@ -36,10 +36,6 @@ contract Contest is ReentrancyGuard, Initializable {
     /// @notice Emitted when the Contest Status is updated to a new status
     event ContestStatusChanged(ContestStatus status);
 
-    /// ================================
-    /// ========== Storage =============
-    /// ================================
-
     event BatchVote(
         address indexed voter, bytes32[] choices, uint256[] amounts, uint256 totalAmount, Metadata metadata
     );
@@ -48,9 +44,9 @@ contract Contest is ReentrancyGuard, Initializable {
         address indexed voter, bytes32[] choices, uint256[] amounts, uint256 totalAmount, Metadata metadata
     );
 
-    event BatchChangeVote(
-        address indexed voter, bytes32[] choices, uint256[] amounts, uint256 totalAmount, Metadata metadata
-    );
+    /// ================================
+    /// ========== Storage =============
+    /// ================================
 
     /// @notice Contest version
     string public constant CONTEST_VERSION = "0.2.0";
