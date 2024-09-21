@@ -6,6 +6,7 @@ import {AskHausSetupLive} from "./../setup/AskHausSetup.t.sol";
 import {HolderType} from "../../src/core/BaalUtils.sol";
 import {ContestStatus} from "../../src/core/ContestStatus.sol";
 import {Metadata} from "../../src/core/Metadata.sol";
+import {Contest} from "../../src/Contest.sol";
 
 contract AskHausPollTest is Test, AskHausSetupLive {
     bytes32[] _allThreeChoices;
@@ -401,9 +402,142 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 3);
     }
 
+    function testFinalize() public {
+        _vote(voter1(), choice1(), voteAmount);
+        _vote(voter2(), choice2(), voteAmount);
+        _vote(voter3(), choice3(), voteAmount);
+
+        _retract(voter1(), choice1(), voteAmount);
+
+        _change(voter2(), choice2(), choice3(), voteAmount);
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+        baalVotes().finalizeVoting();
+
+        assertEq(uint8(contest().contestStatus()), uint8(ContestStatus.Finalized));
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
+
+    function testRevert_voteModule_alreadyStarted() public {
+        vm.expectRevert("Voting has already started");
+
+        vm.startPrank(voter1());
+        baalVotes().setVotingTime(0);
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_onlyVotingPeriod() public {
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+        baalVotes().finalizeVoting();
+
+        vm.expectRevert("Contest is not in voting state");
+
+        vm.startPrank(voter1());
+        contest().vote(choice1(), voteAmount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_onlyValidChoice() public {
+        vm.expectRevert("Choice does not exist");
+
+        vm.startPrank(voter1());
+        contest().vote(choice4(), voteAmount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_overspend() public {
+        vm.expectRevert("Insufficient points available");
+
+        vm.startPrank(voter1());
+        contest().vote(choice1(), voteAmount + 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_overspend_many() public {
+        vm.startPrank(voter1());
+        contest().vote(choice1(), voteAmount, abi.encode(_mockMetadata));
+        vm.expectRevert("Insufficient points available");
+        contest().vote(choice1(), 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_noPoints() public {
+        vm.expectRevert("Insufficient points available");
+
+        vm.startPrank(someGuy());
+        contest().vote(choice1(), 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_nonZero() public {
+        vm.expectRevert("Amount must be greater than 0");
+
+        vm.startPrank(voter1());
+        contest().vote(choice1(), 0, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_onlyVotingPeriod() public {
+        _vote(voter1(), choice1(), voteAmount);
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+        baalVotes().finalizeVoting();
+
+        vm.expectRevert("Contest is not in voting state");
+
+        vm.startPrank(voter1());
+        contest().retractVote(choice1(), voteAmount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_onlyValidChoice() public {
+        vm.expectRevert("Choice does not exist");
+
+        vm.startPrank(voter1());
+        contest().retractVote(choice4(), voteAmount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_overspend() public {
+        _vote(voter1(), choice1(), voteAmount);
+
+        vm.expectRevert("Insufficient points allocated");
+
+        vm.startPrank(voter1());
+        contest().retractVote(choice1(), voteAmount + 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_overspend_many() public {
+        _vote(voter1(), choice1(), voteAmount);
+
+        vm.startPrank(voter1());
+        contest().retractVote(choice1(), voteAmount, abi.encode(_mockMetadata));
+        vm.expectRevert("Insufficient points allocated");
+        contest().retractVote(choice1(), 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_noPoints() public {
+        vm.expectRevert("Insufficient points allocated");
+
+        vm.startPrank(someGuy());
+        contest().retractVote(choice1(), 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retractVote_nonZero() public {
+        _vote(voter1(), choice1(), voteAmount);
+
+        vm.expectRevert("Amount must be greater than 0");
+
+        vm.startPrank(voter1());
+        contest().retractVote(choice1(), 0, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
 
     //////////////////////////////
     // Adversarial
@@ -416,8 +550,6 @@ contract AskHausPollTest is Test, AskHausSetupLive {
     //////////////////////////////
     // Helpers
     //////////////////////////////
-
-    function _finalize() internal {}
 
     function _batchChangeVote(
         address _voter,
