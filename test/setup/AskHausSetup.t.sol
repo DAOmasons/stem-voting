@@ -65,8 +65,6 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
     BasicChoice _choice3 = BasicChoice(_mockMetadata, "3", true, address(3));
 
     function __setupAskHausPoll(HolderType _holderType) internal {
-        // ensure fork block number is synchronized with test environment block number
-        // assertEq(block.timestamp, startTimestamp);
         startTimestamp = block.timestamp;
         __setUpBaalWithNewToken();
         _setupVoters();
@@ -170,47 +168,52 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
     }
 
     function __setupAskHausSignalSession(HolderType _holderType) internal {
-        // __setUpBaalWithNewToken();
-        // _setupVoters();
-        // _fastFactorySetup();
+        startTimestamp = block.timestamp;
 
-        // vm.warp(SNAPSHOT_TIMESTAMP);
+        __setUpBaalWithNewToken();
+        _setupVoters();
+        _fastFactorySetup();
 
-        // bytes[4] memory moduleData;
-        // string[4] memory moduleNames;
+        snapshotTimestamp = delegateTimestamp + 5;
+        voteTimestamp = snapshotTimestamp + 5;
+
+        vm.warp(voteTimestamp);
+
+        bytes[4] memory moduleData;
+        string[4] memory moduleNames;
 
         // // votes Module data
-        // moduleData[0] = abi.encode(TWO_WEEKS);
-        // moduleNames[0] = _timedVotesModuleImpl.MODULE_NAME();
+        moduleData[0] = abi.encode(TWO_WEEKS, true, 0);
+        moduleNames[0] = _timedVotesModuleImpl.MODULE_NAME();
 
         // // points module data
-        // moduleData[1] = abi.encode(dao(), SNAPSHOT_TIMESTAMP, _holderType);
-        // moduleNames[1] = _baalPointsImpl.MODULE_NAME();
+        moduleData[1] = abi.encode(dao(), snapshotTimestamp, _holderType);
+        moduleNames[1] = _baalPointsImpl.MODULE_NAME();
 
         // // choices module data
-        // moduleData[2] = abi.encode(address(dao()), 0, 0, HolderType.Both, _holderType, SNAPSHOT_TIMESTAMP, SHARE_AMOUNT);
-        // moduleNames[2] = _baalChoicesImpl.MODULE_NAME();
+        moduleData[2] = abi.encode(address(dao()), 0, 0, _holderType, snapshotTimestamp, SHARE_AMOUNT);
+        moduleNames[2] = _baalChoicesImpl.MODULE_NAME();
 
         // // execution module data
-        // moduleData[3] = abi.encode("");
-        // moduleNames[3] = _executionModuleImpl.MODULE_NAME();
+        moduleData[3] = abi.encode("");
+        moduleNames[3] = _executionModuleImpl.MODULE_NAME();
 
-        // bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
+        bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
-        // (address contestAddress, address[4] memory moduleAddresses) = factory().buildContest(
-        //     _mockMetadata,
-        //     _contestInitData,
-        //     _contestImpl.CONTEST_VERSION(),
-        //     ContestStatus.Continuous,
-        //     true,
-        //     "Filter Tag"
-        // );
+        (address contestAddress, address[4] memory moduleAddresses) = factory().buildContest(
+            _mockMetadata,
+            _contestInitData,
+            _contestImpl.CONTEST_VERSION(),
+            ContestStatus.Continuous,
+            true,
+            "Filter Tag"
+        );
 
-        // _contest = Contest(contestAddress);
-        // _timedVotesModule = TimedVotes(moduleAddresses[0]);
-        // _baalPoints = BaalPointsV0(moduleAddresses[1]);
-        // _baalChoices = BaalGateV0(moduleAddresses[2]);
-        // _executionModule = EmptyExecution(moduleAddresses[3]);
+        _contest = Contest(contestAddress);
+        _timedVotesModule = TimedVotes(moduleAddresses[0]);
+        _baalPoints = BaalPointsV0(moduleAddresses[1]);
+        _baalChoices = BaalGateV0(moduleAddresses[2]);
+        _executionModule = EmptyExecution(moduleAddresses[3]);
     }
 
     function _setupVoters() internal {

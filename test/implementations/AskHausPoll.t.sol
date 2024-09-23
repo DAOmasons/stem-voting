@@ -61,11 +61,10 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         assertEq(address(contest().pointsModule()), address(baalPoints()));
         assertEq(address(contest().executionModule()), address(execution()));
 
-        // votes params
         assertEq(baalVotes().duration(), TWO_WEEKS);
-
         assertEq(address(baalVotes().contest()), address(contest()));
-
+        assertEq(baalVotes().startTime(), block.timestamp);
+        assertEq(baalVotes().endTime(), block.timestamp + TWO_WEEKS);
         // points params
         assertEq(baalPoints().dao(), address(dao()));
         assertEq(uint8(baalPoints().holderType()), uint8(HolderType.Both));
