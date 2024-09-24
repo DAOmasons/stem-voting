@@ -486,9 +486,481 @@ contract AskHausSignalSessionsTest is Test, AskHausSetupLive {
     // Reverts
     //////////////////////////////
 
+    function testRevert_voteModule_alreadyStarted() public {
+        _standardChoices();
+
+        vm.expectRevert("Voting has already started");
+
+        vm.startPrank(voter1());
+        baalVotes().setVotingTime(0);
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_onlyVotingPeriod() public {
+        _standardChoices();
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+        baalVotes().finalizeVoting();
+
+        vm.expectRevert("Contest is not in voting state");
+
+        vm.startPrank(voter1());
+        contest().vote(choice1(), voteAmount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_onlyValidChoice() public {
+        _standardChoices();
+
+        vm.expectRevert("Choice does not exist");
+
+        vm.startPrank(voter1());
+        contest().vote(choice4(), voteAmount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_overspend() public {
+        _standardChoices();
+
+        vm.expectRevert("Insufficient points available");
+
+        vm.startPrank(voter1());
+        contest().vote(choice1(), voteAmount + 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_overspend_many() public {
+        _standardChoices();
+
+        vm.startPrank(voter1());
+        contest().vote(choice1(), voteAmount, abi.encode(_mockMetadata));
+        vm.expectRevert("Insufficient points available");
+        contest().vote(choice1(), 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_noPoints() public {
+        _standardChoices();
+
+        vm.expectRevert("Insufficient points available");
+
+        vm.startPrank(someGuy());
+        contest().vote(choice1(), 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_vote_nonZero() public {
+        _standardChoices();
+
+        vm.expectRevert("Amount must be greater than 0");
+
+        vm.startPrank(voter1());
+        contest().vote(choice1(), 0, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_onlyVotingPeriod() public {
+        _standardChoices();
+        _vote(voter1(), choice1(), voteAmount);
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+        baalVotes().finalizeVoting();
+
+        vm.expectRevert("Contest is not in voting state");
+
+        vm.startPrank(voter1());
+        contest().retractVote(choice1(), voteAmount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_onlyValidChoice() public {
+        _standardChoices();
+
+        vm.expectRevert("Choice does not exist");
+
+        vm.startPrank(voter1());
+        contest().retractVote(choice4(), voteAmount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_overspend() public {
+        _standardChoices();
+
+        _vote(voter1(), choice1(), voteAmount);
+
+        vm.expectRevert("Insufficient points allocated");
+
+        vm.startPrank(voter1());
+        contest().retractVote(choice1(), voteAmount + 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_overspend_many() public {
+        _standardChoices();
+
+        _vote(voter1(), choice1(), voteAmount);
+
+        vm.startPrank(voter1());
+        contest().retractVote(choice1(), voteAmount, abi.encode(_mockMetadata));
+        vm.expectRevert("Insufficient points allocated");
+        contest().retractVote(choice1(), 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retract_noPoints() public {
+        _standardChoices();
+
+        vm.expectRevert("Insufficient points allocated");
+
+        vm.startPrank(someGuy());
+        contest().retractVote(choice1(), 1, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_retractVote_nonZero() public {
+        _standardChoices();
+
+        _vote(voter1(), choice1(), voteAmount);
+
+        vm.expectRevert("Amount must be greater than 0");
+
+        vm.startPrank(voter1());
+        contest().retractVote(choice1(), 0, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testRevert_batchVote_onlyVotingPeriod() public {
+        _standardChoices();
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+        baalVotes().finalizeVoting();
+
+        vm.expectRevert("Contest is not in voting state");
+
+        vm.startPrank(voter1());
+        contest().batchVote(_allThreeChoices, _equalSplit, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+    }
+
+    function testRevert_batchVote_invalidInputLength() public {
+        _standardChoices();
+
+        bytes[] memory _data = new bytes[](2);
+
+        _data[0] = "";
+        _data[1] = "";
+
+        vm.expectRevert("Array mismatch: Invalid input length");
+
+        vm.startPrank(voter1());
+        contest().batchVote(_allThreeChoices, _equalSplit, _data, voteAmount, _mockMetadata);
+        vm.stopPrank();
+
+        bytes32[] memory _choices = new bytes32[](2);
+
+        _choices[0] = choice1();
+        _choices[1] = choice2();
+
+        vm.expectRevert("Array mismatch: Invalid input length");
+
+        vm.startPrank(voter1());
+        contest().batchVote(_choices, _equalSplit, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+
+        uint256[] memory _amounts = new uint256[](2);
+
+        _amounts[0] = 1;
+        _amounts[1] = 1;
+
+        vm.expectRevert("Array mismatch: Invalid input length");
+
+        vm.startPrank(voter1());
+        contest().batchVote(_allThreeChoices, _amounts, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+    }
+
+    function testRevert_batchVote_overspend() public {
+        _standardChoices();
+
+        uint256[] memory _overspendAmounts = new uint256[](3);
+
+        _overspendAmounts[0] = voteAmount / 3 + 1;
+        _overspendAmounts[1] = voteAmount / 3;
+        _overspendAmounts[2] = voteAmount / 3;
+
+        vm.expectRevert("Insufficient points available");
+
+        vm.startPrank(voter1());
+        contest().batchVote(_allThreeChoices, _overspendAmounts, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+
+        _overspendAmounts[0] = voteAmount / 3;
+        _overspendAmounts[1] = voteAmount / 3 + 1;
+        _overspendAmounts[2] = voteAmount / 3;
+
+        vm.expectRevert("Insufficient points available");
+
+        vm.startPrank(voter1());
+        contest().batchVote(_allThreeChoices, _overspendAmounts, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+
+        _overspendAmounts[0] = voteAmount / 3;
+        _overspendAmounts[1] = voteAmount / 3;
+        _overspendAmounts[2] = voteAmount / 3 + 1;
+
+        vm.expectRevert("Insufficient points available");
+
+        vm.startPrank(voter1());
+        contest().batchVote(_allThreeChoices, _overspendAmounts, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+    }
+
+    function testRevert_batchVote_nonExistentChoice() public {
+        _standardChoices();
+
+        bytes32[] memory invalidChoices = new bytes32[](3);
+        invalidChoices[0] = choice1();
+        invalidChoices[1] = choice2();
+        invalidChoices[2] = choice4();
+
+        vm.expectRevert("Choice does not exist");
+        vm.startPrank(voter1());
+        contest().batchVote(invalidChoices, _equalSplit, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+    }
+
+    function testRevert_batchVote_invalidTotal() public {
+        _standardChoices();
+
+        vm.expectRevert("Invalid total amount");
+        vm.startPrank(voter1());
+        contest().batchVote(_allThreeChoices, _equalSplit, _batchData, voteAmount + 1, _mockMetadata);
+        vm.stopPrank();
+    }
+
+    function testRevert_batchRetract_onlyVotingPeriod() public {
+        _standardChoices();
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+        baalVotes().finalizeVoting();
+
+        vm.expectRevert("Contest is not in voting state");
+
+        vm.startPrank(voter1());
+        contest().batchRetractVote(_allThreeChoices, _equalSplit, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+    }
+
+    function testRevert_batchRetract_invalidInputLength() public {
+        _standardChoices();
+
+        bytes[] memory _data = new bytes[](2);
+
+        _data[0] = "";
+        _data[1] = "";
+
+        vm.expectRevert("Array mismatch: Invalid input length");
+
+        vm.startPrank(voter1());
+        contest().batchRetractVote(_allThreeChoices, _equalSplit, _data, voteAmount, _mockMetadata);
+        vm.stopPrank();
+
+        bytes32[] memory _choices = new bytes32[](2);
+
+        _choices[0] = choice1();
+        _choices[1] = choice2();
+
+        vm.expectRevert("Array mismatch: Invalid input length");
+
+        vm.startPrank(voter1());
+        contest().batchRetractVote(_choices, _equalSplit, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+
+        uint256[] memory _amounts = new uint256[](2);
+
+        _amounts[0] = 1;
+        _amounts[1] = 1;
+
+        vm.expectRevert("Array mismatch: Invalid input length");
+
+        vm.startPrank(voter1());
+        contest().batchRetractVote(_allThreeChoices, _amounts, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+    }
+
+    function testRevert_batchRetractVote_overspend() public {
+        _standardChoices();
+
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        uint256[] memory _overspendAmounts = new uint256[](3);
+
+        _overspendAmounts[0] = voteAmount / 3 + 1;
+        _overspendAmounts[1] = voteAmount / 3;
+        _overspendAmounts[2] = voteAmount / 3;
+
+        vm.expectRevert("Retracted amount exceeds vote amount");
+
+        vm.startPrank(voter1());
+        contest().batchRetractVote(_allThreeChoices, _overspendAmounts, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+
+        _overspendAmounts[0] = voteAmount / 3;
+        _overspendAmounts[1] = voteAmount / 3 + 1;
+        _overspendAmounts[2] = voteAmount / 3;
+
+        vm.expectRevert("Retracted amount exceeds vote amount");
+
+        vm.startPrank(voter1());
+        contest().batchRetractVote(_allThreeChoices, _overspendAmounts, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+
+        _overspendAmounts[0] = voteAmount / 3;
+        _overspendAmounts[1] = voteAmount / 3;
+        _overspendAmounts[2] = voteAmount / 3 + 1;
+
+        vm.expectRevert("Insufficient points allocated");
+
+        vm.startPrank(voter1());
+        contest().batchRetractVote(_allThreeChoices, _overspendAmounts, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+    }
+
+    function testRevert_batchRetractVote_nonExistentChoice() public {
+        _standardChoices();
+
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        bytes32[] memory invalidChoices = new bytes32[](3);
+        invalidChoices[0] = choice1();
+        invalidChoices[1] = choice2();
+        invalidChoices[2] = choice4();
+
+        vm.expectRevert("Choice does not exist");
+        vm.startPrank(voter1());
+        contest().batchRetractVote(invalidChoices, _equalSplit, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+    }
+
+    function testRevert_batchRetractVote_invalidTotal() public {
+        _standardChoices();
+
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        vm.expectRevert("Invalid total amount");
+        vm.startPrank(voter1());
+        contest().batchRetractVote(_allThreeChoices, _equalSplit, _batchData, voteAmount + 1, _mockMetadata);
+        vm.stopPrank();
+    }
+
     //////////////////////////////
     // Adversarial
     //////////////////////////////
+    function testAttack_mintMoreShares() public {
+        _standardChoices();
+
+        // user votes and uses all of their points
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        uint256[] memory _mintAmounts = new uint256[](1);
+        address[] memory _mintAddresses = new address[](1);
+
+        _mintAmounts[0] = voteAmount;
+        _mintAddresses[0] = voter1();
+
+        // proposal passes and user gets more shares
+        vm.startPrank(dao().avatar());
+        dao().mintShares(_mintAddresses, _mintAmounts);
+        vm.stopPrank();
+
+        vm.expectRevert("Insufficient points available");
+
+        // user tries to vote again, but get gets caught by the snapshot check
+        vm.startPrank(voter1());
+        contest().vote(choice1(), voteAmount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
+
+    function testAttack_batchChange_misrepresentTotals() public {
+        _standardChoices();
+
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        bytes32[][2] memory _choiceIds;
+        uint256[][2] memory _amounts;
+        bytes[][2] memory _data;
+        uint256[2] memory _totals;
+
+        bytes32[] memory _retractChoices = new bytes32[](3);
+        bytes32[] memory _addChoices = new bytes32[](3);
+
+        uint256[] memory _retractAmounts = new uint256[](3);
+        uint256[] memory _addAmounts = new uint256[](3);
+
+        bytes[] memory _retractBytes = new bytes[](3);
+        bytes[] memory _addBytes = new bytes[](3);
+
+        _retractChoices[0] = choice1();
+        _retractChoices[1] = choice2();
+        _retractChoices[2] = choice3();
+
+        _addChoices[0] = choice1();
+        _addChoices[1] = choice2();
+        _addChoices[2] = choice3();
+
+        // removes less vote power
+        _retractAmounts[0] = voteAmount / 6;
+        _retractAmounts[1] = voteAmount / 6;
+        _retractAmounts[2] = voteAmount / 6;
+
+        // adds more vote power than removed
+        _addAmounts[0] = voteAmount / 3;
+        _addAmounts[1] = voteAmount / 3;
+        _addAmounts[2] = voteAmount / 3;
+
+        _retractBytes[0] = abi.encode(_mockMetadata);
+        _retractBytes[1] = abi.encode(_mockMetadata);
+        _retractBytes[2] = abi.encode(_mockMetadata);
+
+        _addBytes[0] = abi.encode(_mockMetadata);
+        _addBytes[1] = abi.encode(_mockMetadata);
+        _addBytes[2] = abi.encode(_mockMetadata);
+
+        _choiceIds[0] = _retractChoices;
+        _choiceIds[1] = _addChoices;
+
+        _amounts[0] = _retractAmounts;
+        _amounts[1] = _addAmounts;
+
+        _data[0] = _retractBytes;
+        _data[1] = _addBytes;
+
+        _totals[0] = voteAmount;
+        _totals[1] = voteAmount;
+
+        vm.expectRevert("Invalid total amount");
+
+        _batchChange(voter1(), _choiceIds, _amounts, _data, _totals);
+    }
+
+    function testAttack_shiftBatchRetract() public {
+        _standardChoices();
+
+        // this is an attempt to retract more votes from a choice than I have allocated to
+
+        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
+
+        uint256[] memory _sneakyAmounts = new uint256[](3);
+        _sneakyAmounts[0] = voteAmount / 3 - 1;
+        _sneakyAmounts[1] = voteAmount / 3;
+        _sneakyAmounts[2] = voteAmount / 3 + 1;
+
+        vm.expectRevert("Retracted amount exceeds vote amount");
+
+        vm.startPrank(voter1());
+        contest().batchRetractVote(_allThreeChoices, _sneakyAmounts, _batchData, voteAmount, _mockMetadata);
+        vm.stopPrank();
+    }
 
     //////////////////////////////
     // Helpers
