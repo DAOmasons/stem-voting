@@ -573,15 +573,15 @@ contract AskHausSignalSessionsTest is Test, AskHausSetupLive {
         vm.stopPrank();
     }
 
-    function testRevert_retract_onlyValidChoice() public {
-        _standardChoices();
+    // function testRevert_retract_onlyValidChoice() public {
+    //     _standardChoices();
 
-        vm.expectRevert("Choice does not exist");
+    //     vm.expectRevert("Choice does not exist");
 
-        vm.startPrank(voter1());
-        contest().retractVote(choice4(), voteAmount, abi.encode(_mockMetadata));
-        vm.stopPrank();
-    }
+    //     vm.startPrank(voter1());
+    //     contest().retractVote(choice4(), voteAmount, abi.encode(_mockMetadata));
+    //     vm.stopPrank();
+    // }
 
     function testRevert_retract_overspend() public {
         _standardChoices();
@@ -826,22 +826,6 @@ contract AskHausSignalSessionsTest is Test, AskHausSetupLive {
         vm.stopPrank();
     }
 
-    function testRevert_batchRetractVote_nonExistentChoice() public {
-        _standardChoices();
-
-        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
-
-        bytes32[] memory invalidChoices = new bytes32[](3);
-        invalidChoices[0] = choice1();
-        invalidChoices[1] = choice2();
-        invalidChoices[2] = choice4();
-
-        vm.expectRevert("Choice does not exist");
-        vm.startPrank(voter1());
-        contest().batchRetractVote(invalidChoices, _equalSplit, _batchData, voteAmount, _mockMetadata);
-        vm.stopPrank();
-    }
-
     function testRevert_batchRetractVote_invalidTotal() public {
         _standardChoices();
 
@@ -960,6 +944,58 @@ contract AskHausSignalSessionsTest is Test, AskHausSetupLive {
         vm.startPrank(voter1());
         contest().batchRetractVote(_allThreeChoices, _sneakyAmounts, _batchData, voteAmount, _mockMetadata);
         vm.stopPrank();
+    }
+
+    function test_attack_removeChoiceAfterVote_single() public {
+        // choices are set up
+        _standardChoices();
+
+        // user votes
+        _vote(voter2(), choice1(), voteAmount);
+        assertEq(baalVotes().votes(choice1(), voter2()), voteAmount);
+
+        // choice is removed
+        _removeChoice(voter1(), choice1());
+        // user needs to be able to retract their vote
+
+        _retract(voter2(), choice1(), voteAmount);
+        assertEq(baalVotes().votes(choice1(), voter2()), 0);
+        // then the user should be able to vote on something else
+        _vote(voter2(), choice2(), voteAmount);
+        assertEq(baalVotes().votes(choice2(), voter2()), voteAmount);
+    }
+
+    function test_attack_changeChoiceAfterVote_batchRetract() public {
+        // choices are set up
+        _standardChoices();
+
+        // user votes
+        _batchVote(voter2(), _allThreeChoices, _equalSplit, voteAmount);
+
+        // choices are removed
+        _removeChoice(voter1(), choice1());
+        _removeChoice(voter2(), choice2());
+
+        bytes32[] memory _choiceIds = new bytes32[](2);
+        uint256[] memory _amounts = new uint256[](2);
+        bytes[] memory _data = new bytes[](2);
+
+        _choiceIds[0] = choice1();
+        _choiceIds[1] = choice2();
+
+        _amounts[0] = voteAmount / 3;
+        _amounts[1] = voteAmount / 3;
+
+        _data[0] = abi.encode(_mockMetadata);
+        _data[1] = abi.encode(_mockMetadata);
+
+        // user removes their votes
+        // we must ensure that the user can remove their votes and vote on something else
+        vm.startPrank(voter2());
+        contest().batchRetractVote(_choiceIds, _amounts, _data, voteAmount / 3 * 2, _mockMetadata);
+
+        vm.stopPrank();
+        _vote(voter2(), choice3(), voteAmount / 3 * 2);
     }
 
     //////////////////////////////

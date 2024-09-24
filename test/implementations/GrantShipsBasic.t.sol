@@ -414,34 +414,6 @@ contract GrantShipsBasic is GrantShipsSetup {
         contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
     }
 
-    function testRevert_batchRetract_invalidChoice() public {
-        _setUpVoting();
-
-        _batch_vote_single();
-
-        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
-
-        bytes32[] memory choices = new bytes32[](3);
-        uint256[] memory amounts = new uint256[](3);
-        bytes[] memory datas = new bytes[](3);
-
-        choices[0] = choice1();
-        choices[1] = choice2();
-        choices[2] = choice4();
-
-        amounts[0] = ONE_EIGHTH * 3;
-        amounts[1] = ONE_EIGHTH * 1;
-        amounts[2] = ONE_EIGHTH * 4;
-
-        datas[0] = abi.encode(metadata);
-        datas[1] = abi.encode(metadata2);
-        datas[2] = abi.encode(metadata);
-
-        vm.prank(arbVoter(0));
-        vm.expectRevert("Choice does not exist");
-        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
-    }
-
     function testRevert_batchRetract_overspend() public {
         _setUpVoting();
 
@@ -583,16 +555,6 @@ contract GrantShipsBasic is GrantShipsSetup {
     function testRevert_retract_notVotingPeriod() public {
         vm.expectRevert("Contest is not in voting state");
         _retract_single(0, choice1());
-    }
-
-    function testRevert_retract_invalidChoice() public {
-        _setUpVoting();
-
-        vm.expectRevert("Choice does not exist");
-        _retract_single(0, "0x0");
-
-        vm.expectRevert("Choice does not exist");
-        _retract_single(0, choice4());
     }
 
     function testRevert_retratct_overspend() public {

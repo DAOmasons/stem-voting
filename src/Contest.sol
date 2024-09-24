@@ -189,7 +189,6 @@ contract Contest is ReentrancyGuard, Initializable {
         nonReentrant
         onlyVotingPeriod
         onlyContestRetractable
-        onlyValidChoice(_choiceId)
         onlyHasAllocated(msg.sender, _amount, _data)
     {
         _retractVote(_choiceId, _amount, _data);
@@ -380,7 +379,6 @@ contract Contest is ReentrancyGuard, Initializable {
 
         for (uint256 i = 0; i < _choiceIds.length;) {
             require(pointsModule.hasAllocatedPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points allocated");
-            require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
             totalAmount += _amounts[i];
 
             _retractVote(_choiceIds[i], _amounts[i], _data[i]);

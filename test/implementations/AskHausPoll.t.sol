@@ -492,14 +492,6 @@ contract AskHausPollTest is Test, AskHausSetupLive {
         vm.stopPrank();
     }
 
-    function testRevert_retract_onlyValidChoice() public {
-        vm.expectRevert("Choice does not exist");
-
-        vm.startPrank(voter1());
-        contest().retractVote(choice4(), voteAmount, abi.encode(_mockMetadata));
-        vm.stopPrank();
-    }
-
     function testRevert_retract_overspend() public {
         _vote(voter1(), choice1(), voteAmount);
 
@@ -716,20 +708,6 @@ contract AskHausPollTest is Test, AskHausSetupLive {
 
         vm.startPrank(voter1());
         contest().batchRetractVote(_allThreeChoices, _overspendAmounts, _batchData, voteAmount, _mockMetadata);
-        vm.stopPrank();
-    }
-
-    function testRevert_batchRetractVote_nonExistentChoice() public {
-        _batchVote(voter1(), _allThreeChoices, _equalSplit, voteAmount);
-
-        bytes32[] memory invalidChoices = new bytes32[](3);
-        invalidChoices[0] = choice1();
-        invalidChoices[1] = choice2();
-        invalidChoices[2] = choice4();
-
-        vm.expectRevert("Choice does not exist");
-        vm.startPrank(voter1());
-        contest().batchRetractVote(invalidChoices, _equalSplit, _batchData, voteAmount, _mockMetadata);
         vm.stopPrank();
     }
 

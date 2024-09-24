@@ -115,7 +115,10 @@ contract TimedVotes is IVotes, Initializable {
         /// OR we need to be able facilitate an autostart in cases where contest starts at the voting period
         /// However autostart triggers on module init, so simply checking the contest status is insufficient
         /// because the contest inits after the module inits
-        require(contest.isStatus(ContestStatus.Voting) || _didAutostart, "Contest is not in voting state");
+        require(
+            contest.isStatus(ContestStatus.Voting) || contest.isStatus(ContestStatus.Continuous) || _didAutostart,
+            "Contest is not in voting state"
+        );
         require(startTime == 0, "Voting has already started");
 
         if (_startTime == 0) {
