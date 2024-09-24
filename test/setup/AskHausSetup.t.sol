@@ -167,7 +167,7 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
         // _executionModule = EmptyExecution(moduleAddresses[3]);
     }
 
-    function __setupAskHausSignalSession(HolderType _holderType) internal {
+    function __setupAskHausSignalSession(HolderType _choicesHolderType, HolderType _pointsHolderType) internal {
         startTimestamp = block.timestamp;
 
         __setUpBaalWithNewToken();
@@ -187,11 +187,11 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
         moduleNames[0] = _timedVotesModuleImpl.MODULE_NAME();
 
         // // points module data
-        moduleData[1] = abi.encode(dao(), snapshotTimestamp, _holderType);
+        moduleData[1] = abi.encode(dao(), snapshotTimestamp, _pointsHolderType);
         moduleNames[1] = _baalPointsImpl.MODULE_NAME();
 
         // // choices module data
-        moduleData[2] = abi.encode(address(dao()), 0, 0, _holderType, snapshotTimestamp, SHARE_AMOUNT);
+        moduleData[2] = abi.encode(address(dao()), 0, 0, _choicesHolderType, snapshotTimestamp, SHARE_AMOUNT);
         moduleNames[2] = _baalChoicesImpl.MODULE_NAME();
 
         // // execution module data
@@ -214,6 +214,8 @@ contract AskHausSetupLive is BaalSetupLive, Accounts {
         _baalPoints = BaalPointsV0(moduleAddresses[1]);
         _baalChoices = BaalGateV0(moduleAddresses[2]);
         _executionModule = EmptyExecution(moduleAddresses[3]);
+
+        voteAmount = SHARE_AMOUNT + LOOT_AMOUNT;
     }
 
     function _setupVoters() internal {
