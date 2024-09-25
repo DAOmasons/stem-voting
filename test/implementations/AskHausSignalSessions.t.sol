@@ -573,16 +573,6 @@ contract AskHausSignalSessionsTest is Test, AskHausSetupLive {
         vm.stopPrank();
     }
 
-    // function testRevert_retract_onlyValidChoice() public {
-    //     _standardChoices();
-
-    //     vm.expectRevert("Choice does not exist");
-
-    //     vm.startPrank(voter1());
-    //     contest().retractVote(choice4(), voteAmount, abi.encode(_mockMetadata));
-    //     vm.stopPrank();
-    // }
-
     function testRevert_retract_overspend() public {
         _standardChoices();
 
@@ -972,9 +962,17 @@ contract AskHausSignalSessionsTest is Test, AskHausSetupLive {
         // user votes
         _batchVote(voter2(), _allThreeChoices, _equalSplit, voteAmount);
 
+        assertEq(baalVotes().votes(choice1(), voter2()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter2()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter2()), voteAmount / 3);
+
         // choices are removed
         _removeChoice(voter1(), choice1());
         _removeChoice(voter2(), choice2());
+
+        assertEq(baalVotes().votes(choice1(), voter2()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter2()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter2()), voteAmount / 3);
 
         bytes32[] memory _choiceIds = new bytes32[](2);
         uint256[] memory _amounts = new uint256[](2);
@@ -993,9 +991,86 @@ contract AskHausSignalSessionsTest is Test, AskHausSetupLive {
         // we must ensure that the user can remove their votes and vote on something else
         vm.startPrank(voter2());
         contest().batchRetractVote(_choiceIds, _amounts, _data, voteAmount / 3 * 2, _mockMetadata);
-
         vm.stopPrank();
+
+        assertEq(baalVotes().votes(choice1(), voter2()), 0);
+        assertEq(baalVotes().votes(choice2(), voter2()), 0);
+        assertEq(baalVotes().votes(choice3(), voter2()), voteAmount / 3);
+
         _vote(voter2(), choice3(), voteAmount / 3 * 2);
+
+        assertEq(baalVotes().votes(choice1(), voter2()), 0);
+        assertEq(baalVotes().votes(choice2(), voter2()), 0);
+        assertEq(baalVotes().votes(choice3(), voter2()), voteAmount);
+    }
+
+    function test_attack_changeChoiceAfterVote_batchChange() public {
+        // choices are set up
+        _standardChoices();
+
+        // user votes
+        _batchVote(voter2(), _allThreeChoices, _equalSplit, voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter2()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter2()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter2()), voteAmount / 3);
+
+        // choices are removed
+        _removeChoice(voter1(), choice1());
+        _removeChoice(voter2(), choice2());
+
+        assertEq(baalVotes().votes(choice1(), voter2()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter2()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter2()), voteAmount / 3);
+
+        bytes32[][2] memory _choices;
+        uint256[][2] memory _amounts;
+        bytes[][2] memory _data;
+        uint256[2] memory _totals;
+        Metadata[2] memory _metadata;
+
+        bytes32[] memory _retractChoices = new bytes32[](2);
+        uint256[] memory _retractAmounts = new uint256[](2);
+        bytes[] memory _retractData = new bytes[](2);
+
+        _retractChoices[0] = choice1();
+        _retractChoices[1] = choice2();
+
+        _retractAmounts[0] = voteAmount / 3;
+        _retractAmounts[1] = voteAmount / 3;
+
+        _retractData[0] = abi.encode(_mockMetadata);
+        _retractData[1] = abi.encode(_mockMetadata);
+
+        bytes32[] memory _addChoices = new bytes32[](1);
+        uint256[] memory _addAmounts = new uint256[](1);
+        bytes[] memory _addData = new bytes[](1);
+
+        _addChoices[0] = choice3();
+        _addAmounts[0] = voteAmount / 3 * 2;
+        _addData[0] = abi.encode(_mockMetadata);
+
+        _choices[0] = _retractChoices;
+        _choices[1] = _addChoices;
+
+        _amounts[0] = _retractAmounts;
+        _amounts[1] = _addAmounts;
+
+        _data[0] = _retractData;
+        _data[1] = _addData;
+
+        _totals[0] = voteAmount / 3 * 2;
+        _totals[1] = voteAmount / 3 * 2;
+
+        // user removes their votes
+        // we must ensure that the user can remove their votes and vote on something else
+        vm.startPrank(voter2());
+        contest().batchChangeVote(_choices, _amounts, _data, _totals, _metadata);
+        vm.stopPrank();
+
+        assertEq(baalVotes().votes(choice1(), voter2()), 0);
+        assertEq(baalVotes().votes(choice2(), voter2()), 0);
+        assertEq(baalVotes().votes(choice3(), voter2()), voteAmount);
     }
 
     //////////////////////////////
