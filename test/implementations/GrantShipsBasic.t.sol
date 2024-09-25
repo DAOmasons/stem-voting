@@ -580,22 +580,6 @@ contract GrantShipsBasic is GrantShipsSetup {
         _change_vote_single(0, choice1(), choice2());
     }
 
-    function testRevert_changeVote_onlyValidChoice() public {
-        _setUpVoting();
-
-        vm.expectRevert("Choice does not exist");
-        _change_vote_single(0, "0x0", choice2());
-
-        vm.expectRevert("Choice does not exist");
-        _change_vote_single(0, choice4(), choice2());
-
-        vm.expectRevert("Choice does not exist");
-        _change_vote_single(0, choice1(), "0x0");
-
-        vm.expectRevert("Choice does not exist");
-        _change_vote_single(0, choice2(), choice4());
-    }
-
     function testRevert_changeVote_onlyHasAllocated() public {
         _setUpVoting();
 

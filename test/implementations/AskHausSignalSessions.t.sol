@@ -26,6 +26,8 @@ contract AskHausSignalSessionsTest is Test, AskHausSetupLive {
     bytes choiceData2 = "choice2";
     bytes choiceData3 = "choice3";
 
+    uint256 ONE_HOUR = 60 * 60;
+
     function setUp() public {
         vm.createSelectFork({blockNumber: START_BLOCK, urlOrAlias: "sepolia"});
         __setupAskHausSignalSession(HolderType.Share, HolderType.Both);
@@ -480,6 +482,69 @@ contract AskHausSignalSessionsTest is Test, AskHausSetupLive {
         baalVotes().finalizeVoting();
 
         assertEq(uint8(contest().contestStatus()), uint8(ContestStatus.Finalized));
+    }
+
+    //////////////////////////////
+    // Continuous
+    //////////////////////////////
+
+    function testContinuous_singleUserFlow() public {
+        _registerChoice(voter2(), choice1(), choiceData, metadata);
+
+        vm.warp(block.timestamp + ONE_HOUR);
+
+        _vote(voter1(), choice1(), voteAmount / 3);
+
+        vm.warp(block.timestamp + ONE_HOUR * 6);
+
+        _registerChoice(voter2(), choice2(), choiceData, metadata);
+
+        vm.warp(block.timestamp + ONE_HOUR * 6);
+
+        _vote(voter1(), choice2(), voteAmount / 3 * 2);
+
+        _removeChoice(voter2(), choice1());
+        _registerChoice(voter2(), choice3(), choiceData, metadata);
+
+        _change(voter1(), choice1(), choice3(), voteAmount / 3);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), 0);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 3 * 2);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 3);
+    }
+
+    function testContinous_multipleUserFlow() public {
+        _registerChoice(voter2(), choice1(), choiceData, metadata);
+
+        vm.warp(block.timestamp + ONE_HOUR);
+        _vote(voter1(), choice1(), voteAmount / 3);
+
+        vm.warp(block.timestamp + ONE_HOUR * 6);
+        _registerChoice(voter2(), choice2(), choiceData, metadata);
+
+        vm.warp(block.timestamp + ONE_HOUR * 6);
+        _vote(voter1(), choice2(), voteAmount / 3 * 2);
+        _vote(voter2(), choice2(), voteAmount / 2);
+
+        vm.warp(block.timestamp + ONE_HOUR * 6);
+
+        _registerChoice(voter2(), choice3(), choiceData, metadata);
+        _change(voter1(), choice1(), choice3(), voteAmount / 3);
+        _vote(voter2(), choice3(), voteAmount / 2);
+
+        _batchVote(voter3(), _allThreeChoices, _equalSplit, voteAmount);
+
+        assertEq(baalVotes().votes(choice1(), voter1()), 0);
+        assertEq(baalVotes().votes(choice2(), voter1()), voteAmount / 3 * 2);
+        assertEq(baalVotes().votes(choice3(), voter1()), voteAmount / 3);
+
+        assertEq(baalVotes().votes(choice1(), voter2()), 0);
+        assertEq(baalVotes().votes(choice2(), voter2()), voteAmount / 2);
+        assertEq(baalVotes().votes(choice3(), voter2()), voteAmount / 2);
+
+        assertEq(baalVotes().votes(choice1(), voter3()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice2(), voter3()), voteAmount / 3);
+        assertEq(baalVotes().votes(choice3(), voter3()), voteAmount / 3);
     }
 
     //////////////////////////////

@@ -205,7 +205,6 @@ contract Contest is ReentrancyGuard, Initializable {
         nonReentrant
         onlyVotingPeriod
         onlyContestRetractable
-        onlyValidChoice(_oldChoiceId)
         onlyValidChoice(_newChoiceId)
         onlyHasAllocated(msg.sender, _amount, _data)
     {
