@@ -6,12 +6,18 @@ import {ContestStatus} from "../../src/core/ContestStatus.sol";
 contract MockContest {
     ContestStatus public contestStatus;
 
+    bool public isContinuous;
+
     constructor(ContestStatus _status) {
         contestStatus = _status;
     }
 
     function cheatStatus(ContestStatus _status) public {
         contestStatus = _status;
+    }
+
+    function cheatContinuous(bool _isContinuous) public {
+        isContinuous = _isContinuous;
     }
 
     function getStatus() public view returns (ContestStatus) {

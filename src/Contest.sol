@@ -11,6 +11,7 @@ import "./interfaces/IChoices.sol";
 import "./interfaces/IContest.sol";
 
 import {ContestStatus} from "./core/ContestStatus.sol";
+import {Metadata} from "./core/Metadata.sol";
 
 /// @title Stem Contest
 /// @author @jord<https://github.com/jordanlesich>, @dekanbro<https://github.com/dekanbro>
@@ -22,6 +23,7 @@ contract Contest is ReentrancyGuard, Initializable {
 
     /// @notice Emitted when the Contest is initialized
     event ContestInitialized(
+        Metadata metadata,
         address votesModule,
         address pointsModule,
         address choicesModule,
@@ -33,6 +35,14 @@ contract Contest is ReentrancyGuard, Initializable {
 
     /// @notice Emitted when the Contest Status is updated to a new status
     event ContestStatusChanged(ContestStatus status);
+
+    event BatchVote(
+        address indexed voter, bytes32[] choices, uint256[] amounts, uint256 totalAmount, Metadata metadata
+    );
+
+    event BatchRetractVote(
+        address indexed voter, bytes32[] choices, uint256[] amounts, uint256 totalAmount, Metadata metadata
+    );
 
     /// ================================
     /// ========== Storage =============
@@ -112,13 +122,14 @@ contract Contest is ReentrancyGuard, Initializable {
     /// @param  _initData The data to initialize the contest (votes, points, choices, execution, isContinuous, isRetractable)
     function initialize(bytes memory _initData) public initializer {
         (
+            Metadata memory _metadata,
             address _votesContract,
             address _pointsContract,
             address _choicesContract,
             address _executionContract,
-            bool _isContinuous,
+            ContestStatus _contestStatus,
             bool _isRetractable
-        ) = abi.decode(_initData, (address, address, address, address, bool, bool));
+        ) = abi.decode(_initData, (Metadata, address, address, address, address, ContestStatus, bool));
 
         votesModule = IVotes(_votesContract);
         pointsModule = IPoints(_pointsContract);
@@ -126,20 +137,19 @@ contract Contest is ReentrancyGuard, Initializable {
         executionModule = _executionContract;
         isRetractable = _isRetractable;
 
-        if (isContinuous) {
-            contestStatus = ContestStatus.Continuous;
-        } else {
-            contestStatus = ContestStatus.Populating;
+        contestStatus = _contestStatus;
+
+        if (contestStatus == ContestStatus.Continuous) {
+            isContinuous = true;
         }
 
-        isContinuous = _isContinuous;
-
         emit ContestInitialized(
+            _metadata,
             _votesContract,
             _pointsContract,
             _choicesContract,
             _executionContract,
-            _isContinuous,
+            isContinuous,
             _isRetractable,
             contestStatus
         );
@@ -179,7 +189,6 @@ contract Contest is ReentrancyGuard, Initializable {
         nonReentrant
         onlyVotingPeriod
         onlyContestRetractable
-        onlyValidChoice(_choiceId)
         onlyHasAllocated(msg.sender, _amount, _data)
     {
         _retractVote(_choiceId, _amount, _data);
@@ -196,7 +205,6 @@ contract Contest is ReentrancyGuard, Initializable {
         nonReentrant
         onlyVotingPeriod
         onlyContestRetractable
-        onlyValidChoice(_oldChoiceId)
         onlyValidChoice(_newChoiceId)
         onlyHasAllocated(msg.sender, _amount, _data)
     {
@@ -214,28 +222,10 @@ contract Contest is ReentrancyGuard, Initializable {
         bytes32[] memory _choiceIds,
         uint256[] memory _amounts,
         bytes[] memory _data,
-        uint256 _totalAmount
+        uint256 _totalAmount,
+        Metadata memory _metadata
     ) public virtual nonReentrant onlyVotingPeriod {
-        require(
-            _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
-            "Array mismatch: Invalid input length"
-        );
-
-        uint256 totalAmount = 0;
-
-        for (uint256 i = 0; i < _choiceIds.length;) {
-            require(pointsModule.hasVotingPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points available");
-            require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
-            totalAmount += _amounts[i];
-
-            _vote(_choiceIds[i], _amounts[i], _data[i]);
-
-            unchecked {
-                i++;
-            }
-        }
-
-        require(totalAmount == _totalAmount, "Invalid total amount");
+        _batchVote(_choiceIds, _amounts, _data, _totalAmount, _metadata);
     }
 
     /// @notice Batch retract votes on multiple choices
@@ -247,28 +237,25 @@ contract Contest is ReentrancyGuard, Initializable {
         bytes32[] memory _choiceIds,
         uint256[] memory _amounts,
         bytes[] memory _data,
-        uint256 _totalAmount
+        uint256 _totalAmount,
+        Metadata memory _metadata
     ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
-        require(
-            _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
-            "Array mismatch: Invalid input length"
-        );
+        _batchRetractVote(_choiceIds, _amounts, _data, _totalAmount, _metadata);
+    }
 
-        uint256 totalAmount = 0;
+    function batchChangeVote(
+        bytes32[][2] memory _choiceIds,
+        uint256[][2] memory _amounts,
+        bytes[][2] memory _data,
+        uint256[2] memory _totals,
+        Metadata[2] memory _metadata
+    ) public virtual nonReentrant onlyVotingPeriod onlyContestRetractable {
+        _batchRetractVote(_choiceIds[0], _amounts[0], _data[0], _totals[0], _metadata[0]);
+        _batchVote(_choiceIds[1], _amounts[1], _data[1], _totals[1], _metadata[1]);
 
-        for (uint256 i = 0; i < _choiceIds.length;) {
-            require(pointsModule.hasAllocatedPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points allocated");
-            require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
-            totalAmount += _amounts[i];
-
-            _retractVote(_choiceIds[i], _amounts[i], _data[i]);
-
-            unchecked {
-                i++;
-            }
-        }
-
-        require(totalAmount == _totalAmount, "Invalid total amount");
+        // totalRetract and totalVote are each tested against of thee sum of their respective amounts
+        // in batchRetractVote and batchVote respectively.
+        require(_totals[0] == _totals[1], "Amount retracted and amount voted must be equal");
     }
 
     /// ===============================
@@ -338,6 +325,78 @@ contract Contest is ReentrancyGuard, Initializable {
         votesModule.retractVote(msg.sender, _choiceId, _amount, _data);
     }
 
+    function _batchVote(
+        bytes32[] memory _choiceIds,
+        uint256[] memory _amounts,
+        bytes[] memory _data,
+        uint256 _totalAmount,
+        Metadata memory _metadata
+    ) internal {
+        require(
+            _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
+            "Array mismatch: Invalid input length"
+        );
+
+        uint256 totalAmount = 0;
+
+        for (uint256 i = 0; i < _choiceIds.length;) {
+            require(pointsModule.hasVotingPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points available");
+            require(choicesModule.isValidChoice(_choiceIds[i]), "Choice does not exist");
+            totalAmount += _amounts[i];
+
+            _vote(_choiceIds[i], _amounts[i], _data[i]);
+
+            unchecked {
+                i++;
+            }
+        }
+
+        require(totalAmount == _totalAmount, "Invalid total amount");
+
+        if (_metadata.protocol != 0) {
+            // This event is an optional event to emit on batch transtions
+            // it helps by emitting user Metadata and total change in connection
+            // to a single user interaction instead of events triggered for each vote
+            // which can be difficult to index.
+            emit BatchVote(msg.sender, _choiceIds, _amounts, _totalAmount, _metadata);
+        }
+    }
+
+    function _batchRetractVote(
+        bytes32[] memory _choiceIds,
+        uint256[] memory _amounts,
+        bytes[] memory _data,
+        uint256 _totalAmount,
+        Metadata memory _metadata
+    ) internal {
+        require(
+            _choiceIds.length == _amounts.length && _choiceIds.length == _data.length,
+            "Array mismatch: Invalid input length"
+        );
+
+        uint256 totalAmount = 0;
+
+        for (uint256 i = 0; i < _choiceIds.length;) {
+            require(pointsModule.hasAllocatedPoints(msg.sender, _amounts[i], _data[i]), "Insufficient points allocated");
+            totalAmount += _amounts[i];
+
+            _retractVote(_choiceIds[i], _amounts[i], _data[i]);
+
+            unchecked {
+                i++;
+            }
+        }
+
+        require(totalAmount == _totalAmount, "Invalid total amount");
+
+        if (_metadata.protocol != 0) {
+            // This event is an optional event to emit on batch transtions
+            // it helps by emitting user Metadata and total change in connection
+            // to a single user interaction instead of events triggered for each vote
+            // which can be difficult to index.
+            emit BatchRetractVote(msg.sender, _choiceIds, _amounts, _totalAmount, _metadata);
+        }
+    }
     /// ===============================
     /// ========== Getters ============
     /// ===============================

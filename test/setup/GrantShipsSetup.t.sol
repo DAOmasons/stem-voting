@@ -14,6 +14,7 @@ import {ContestStatus} from "../../src/core/ContestStatus.sol";
 import {FastFactory} from "../../src/factories/gsRough/FastFactory.sol";
 import {Metadata} from "../../src/core/Metadata.sol";
 import {EmptyExecution} from "../../src/modules/execution/EmptyExecution.sol";
+import {ContestStatus} from "../../src/core/ContestStatus.sol";
 
 contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
     event ContestInitialized(
@@ -130,7 +131,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         string[4] memory moduleNames;
 
         // votes module data
-        moduleData[0] = abi.encode(TWO_WEEKS);
+        moduleData[0] = abi.encode(TWO_WEEKS, false, 0);
         moduleNames[0] = "TimedVotes_v0.1.0";
 
         // points module data
@@ -148,7 +149,7 @@ contract GrantShipsSetup is HatsSetup, ARBTokenSetupLive {
         bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
         (address contestAddress, address[4] memory moduleAddress) =
-            factory().buildContest(_contestInitData, "v0.1.0", false, true, "gs_test");
+            factory().buildContest(_mockMetadata, _contestInitData, "v0.1.0", ContestStatus.Populating, true, "gs_test");
 
         _contest = Contest(contestAddress);
         _votesModule = TimedVotes(moduleAddress[0]);

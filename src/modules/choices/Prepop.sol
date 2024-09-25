@@ -44,6 +44,7 @@ contract Prepop is IChoices, Initializable {
     /// @param _contest The contest that this module belongs to
     /// @param _initData The data for the choices
     function initialize(address _contest, bytes calldata _initData) external initializer {
+        require(_contest != address(0), "Prepop requires a valid contest");
         (BasicChoice[] memory _choices, bytes32[] memory _choiceIds) = abi.decode(_initData, (BasicChoice[], bytes32[]));
 
         contest = Contest(_contest);
@@ -51,15 +52,15 @@ contract Prepop is IChoices, Initializable {
         require(_choices.length > 1, "Prepop requires at least 2 choices");
         require(_choiceIds.length == _choices.length, "Array lengths do not match");
 
+        emit Initialized(_contest);
+
         for (uint256 i = 0; i < _choices.length; i++) {
             choices[_choiceIds[i]] = _choices[i];
 
             emit Registered(_choiceIds[i], _choices[i], _contest);
         }
 
-        contest.finalizeChoices();
-
-        emit Initialized(_contest);
+        // contest.finalizeChoices();
     }
 
     /// ===============================
@@ -68,12 +69,12 @@ contract Prepop is IChoices, Initializable {
 
     /// @notice Registers a choice with the contract. NOT USED in this contract.
     function registerChoice(bytes32, bytes memory) external pure {
-        revert("Prepop only registers choices on init");
+        revert("Prepop does not implement registerChoice");
     }
 
     /// @notice Removes a choice from the contract. NOT USED in this contract.
     function removeChoice(bytes32, bytes memory) external pure {
-        revert("Prepop does not remove choices");
+        revert("Prepop does not implement removeChoice");
     }
 
     /// ===============================
