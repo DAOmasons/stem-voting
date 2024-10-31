@@ -202,22 +202,28 @@ contract BaalPointsV0Test is Test, BaalSetupLive, Accounts {
     function testRevert_allocate_insufficient_shares() public {
         _initialize_shares();
 
+        pointsModule.allocatePoints(voter1(), voteAmount, "");
+
         vm.expectRevert("Insufficient points available");
-        pointsModule.allocatePoints(voter1(), voteAmount + 1, "");
+        pointsModule.allocatePoints(voter1(), 1, "");
     }
 
     function testRevert_allocate_insufficient_loot() public {
         _initialize_loot();
 
+        pointsModule.allocatePoints(voter1(), voteAmount, "");
+
         vm.expectRevert("Insufficient points available");
-        pointsModule.allocatePoints(voter1(), voteAmount + 1, "");
+        pointsModule.allocatePoints(voter1(), 1, "");
     }
 
     function testRevert_allocate_insufficient_both() public {
         _initialize_both();
 
+        pointsModule.allocatePoints(voter1(), voteAmount * 2, "");
+
         vm.expectRevert("Insufficient points available");
-        pointsModule.allocatePoints(voter1(), voteAmount * 2 + 1, "");
+        pointsModule.allocatePoints(voter1(), 1, "");
     }
 
     function testRevert_release_nonZero() public {

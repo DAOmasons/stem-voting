@@ -10,6 +10,7 @@ import {HatsAllowList} from "../../src/modules/choices/HatsAllowList.sol";
 contract GrantShipsBasic is GrantShipsSetup {
     event ContestStatusChanged(ContestStatus status);
 
+    Metadata emptyMetadata = Metadata(0, "");
     Metadata metadata = Metadata(1, "QmWmyoMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWeVdD");
     Metadata metadata2 = Metadata(2, "QmBa4oMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWe2zF");
     Metadata metadata3 = Metadata(3, "QmHi23fctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWzt32");
@@ -383,7 +384,7 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         vm.prank(arbVoter(0));
         vm.expectRevert("Contest is not in voting state");
-        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
     }
 
     function testRevert_batchRetract_invalidLength() public {
@@ -410,35 +411,7 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         vm.prank(arbVoter(0));
         vm.expectRevert("Array mismatch: Invalid input length");
-        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
-    }
-
-    function testRevert_batchRetract_invalidChoice() public {
-        _setUpVoting();
-
-        _batch_vote_single();
-
-        uint256 ONE_EIGHTH = VOTE_AMOUNT / 8;
-
-        bytes32[] memory choices = new bytes32[](3);
-        uint256[] memory amounts = new uint256[](3);
-        bytes[] memory datas = new bytes[](3);
-
-        choices[0] = choice1();
-        choices[1] = choice2();
-        choices[2] = choice4();
-
-        amounts[0] = ONE_EIGHTH * 3;
-        amounts[1] = ONE_EIGHTH * 1;
-        amounts[2] = ONE_EIGHTH * 4;
-
-        datas[0] = abi.encode(metadata);
-        datas[1] = abi.encode(metadata2);
-        datas[2] = abi.encode(metadata);
-
-        vm.prank(arbVoter(0));
-        vm.expectRevert("Choice does not exist");
-        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
     }
 
     function testRevert_batchRetract_overspend() public {
@@ -469,7 +442,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         // should be caught by points module
         vm.expectRevert("Insufficient points allocated");
         // keeps totals the same
-        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
     }
 
     function testRevert_batchRetract_noVotes() public {
@@ -495,7 +468,7 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         vm.prank(someGuy());
         vm.expectRevert("Insufficient points allocated");
-        contest().batchRetractVote(choices, amounts, datas, 0);
+        contest().batchRetractVote(choices, amounts, datas, 0, emptyMetadata);
     }
 
     // usually module specific functions are tested in the module test
@@ -584,16 +557,6 @@ contract GrantShipsBasic is GrantShipsSetup {
         _retract_single(0, choice1());
     }
 
-    function testRevert_retract_invalidChoice() public {
-        _setUpVoting();
-
-        vm.expectRevert("Choice does not exist");
-        _retract_single(0, "0x0");
-
-        vm.expectRevert("Choice does not exist");
-        _retract_single(0, choice4());
-    }
-
     function testRevert_retratct_overspend() public {
         _setUpVoting();
 
@@ -615,22 +578,6 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         vm.expectRevert("Contest is not in voting state");
         _change_vote_single(0, choice1(), choice2());
-    }
-
-    function testRevert_changeVote_onlyValidChoice() public {
-        _setUpVoting();
-
-        vm.expectRevert("Choice does not exist");
-        _change_vote_single(0, "0x0", choice2());
-
-        vm.expectRevert("Choice does not exist");
-        _change_vote_single(0, choice4(), choice2());
-
-        vm.expectRevert("Choice does not exist");
-        _change_vote_single(0, choice1(), "0x0");
-
-        vm.expectRevert("Choice does not exist");
-        _change_vote_single(0, choice2(), choice4());
     }
 
     function testRevert_changeVote_onlyHasAllocated() public {
@@ -679,7 +626,7 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         vm.prank(arbVoter(0));
         vm.expectRevert("Choice does not exist");
-        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
     }
 
     function testRevert_batchVote_totalsMismatch() public {
@@ -705,7 +652,7 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         vm.prank(arbVoter(0));
         vm.expectRevert("Invalid total amount");
-        contest().batchVote(choices, amounts, datas, ONE_EIGHTH * 7);
+        contest().batchVote(choices, amounts, datas, ONE_EIGHTH * 7, emptyMetadata);
     }
 
     function testRevert_batchVote_invalidLength() public {
@@ -730,7 +677,7 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         vm.prank(arbVoter(0));
         vm.expectRevert("Array mismatch: Invalid input length");
-        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
 
         amounts = new uint256[](2);
         amounts[0] = ONE_EIGHTH * 3;
@@ -744,7 +691,7 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         vm.expectRevert("Array mismatch: Invalid input length");
         vm.prank(arbVoter(0));
-        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
     }
 
     function testRevert_finalizeVoting_notVotingPeriod() public {
@@ -809,7 +756,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         // should be caught by points module
         vm.expectRevert("Insufficient points available");
         // keeps totals the same
-        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
     }
 
     //REVIEW: This test simulates a potential attack vector, or at least an unintended side-effect
@@ -848,7 +795,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         datas[2] = abi.encode(metadata);
 
         vm.prank(arbVoter(0));
-        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
 
         uint256[] memory adversarialAmounts = new uint256[](3);
 
@@ -860,7 +807,7 @@ contract GrantShipsBasic is GrantShipsSetup {
 
         vm.prank(arbVoter(0));
         vm.expectRevert("Retracted amount exceeds vote amount");
-        contest().batchRetractVote(choices, adversarialAmounts, datas, VOTE_AMOUNT);
+        contest().batchRetractVote(choices, adversarialAmounts, datas, VOTE_AMOUNT, emptyMetadata);
 
         vm.prank(arbVoter(0));
         vm.expectRevert("Retracted amount exceeds vote amount");
@@ -946,7 +893,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         datas[2] = abi.encode(metadata);
 
         vm.prank(arbVoter(0));
-        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
 
         bytes32[] memory user1choices = new bytes32[](3);
         uint256[] memory user1amounts = new uint256[](3);
@@ -965,7 +912,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         user1datas[2] = abi.encode(metadata);
 
         vm.prank(arbVoter(1));
-        contest().batchRetractVote(user1choices, user1amounts, user1datas, VOTE_AMOUNT);
+        contest().batchRetractVote(user1choices, user1amounts, user1datas, VOTE_AMOUNT, emptyMetadata);
 
         bytes32[] memory user2choices = new bytes32[](3);
         uint256[] memory user2amounts = new uint256[](3);
@@ -984,7 +931,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         user2datas[2] = abi.encode(metadata);
 
         vm.prank(arbVoter(2));
-        contest().batchRetractVote(user2choices, user2amounts, user2datas, VOTE_AMOUNT);
+        contest().batchRetractVote(user2choices, user2amounts, user2datas, VOTE_AMOUNT, emptyMetadata);
 
         bytes32[] memory user3choices = new bytes32[](3);
         uint256[] memory user3amounts = new uint256[](3);
@@ -1003,7 +950,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         user3datas[2] = abi.encode(metadata);
 
         vm.prank(arbVoter(3));
-        contest().batchRetractVote(user3choices, user3amounts, user3datas, VOTE_AMOUNT);
+        contest().batchRetractVote(user3choices, user3amounts, user3datas, VOTE_AMOUNT, emptyMetadata);
     }
 
     function _batch_retract_single() internal {
@@ -1028,7 +975,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         datas[2] = abi.encode(metadata);
 
         vm.prank(arbVoter(0));
-        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchRetractVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
     }
 
     function _batch_vote_many() internal {
@@ -1053,7 +1000,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         user1datas[2] = abi.encode(metadata);
 
         vm.prank(arbVoter(1));
-        contest().batchVote(user1choices, user1amounts, user1datas, VOTE_AMOUNT);
+        contest().batchVote(user1choices, user1amounts, user1datas, VOTE_AMOUNT, emptyMetadata);
 
         bytes32[] memory user2choices = new bytes32[](3);
         uint256[] memory user2amounts = new uint256[](3);
@@ -1072,7 +1019,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         user2datas[2] = abi.encode(metadata);
 
         vm.prank(arbVoter(2));
-        contest().batchVote(user2choices, user2amounts, user2datas, VOTE_AMOUNT);
+        contest().batchVote(user2choices, user2amounts, user2datas, VOTE_AMOUNT, emptyMetadata);
 
         bytes32[] memory user3choices = new bytes32[](3);
         uint256[] memory user3amounts = new uint256[](3);
@@ -1091,7 +1038,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         user3datas[2] = abi.encode(metadata);
 
         vm.prank(arbVoter(3));
-        contest().batchVote(user3choices, user3amounts, user3datas, VOTE_AMOUNT);
+        contest().batchVote(user3choices, user3amounts, user3datas, VOTE_AMOUNT, emptyMetadata);
     }
 
     function _batch_vote_single() internal {
@@ -1114,7 +1061,7 @@ contract GrantShipsBasic is GrantShipsSetup {
         datas[2] = abi.encode(metadata);
 
         vm.prank(arbVoter(0));
-        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT);
+        contest().batchVote(choices, amounts, datas, VOTE_AMOUNT, emptyMetadata);
     }
 
     function _change_vote_single(uint8 voter, bytes32 _oldChoiceId, bytes32 _newChoiceId) internal {

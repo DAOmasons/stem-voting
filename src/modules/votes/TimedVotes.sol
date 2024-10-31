@@ -39,9 +39,6 @@ contract TimedVotes is IVotes, Initializable {
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Execution;
 
-    /// @notice Whether the module has been initialized
-    bool private initialized;
-
     /// @notice Reference to the contest contract
     Contest public contest;
 
@@ -53,6 +50,8 @@ contract TimedVotes is IVotes, Initializable {
 
     /// @notice The duration of the voting period
     uint256 public duration;
+
+    bool _didAutostart;
 
     /// @notice Mapping of choiceId to voter to vote amount
     /// @dev choiceId => voter => amount
@@ -91,10 +90,15 @@ contract TimedVotes is IVotes, Initializable {
     /// @param _initParams The initialization data
     /// @dev Bytes data includes the duration of the voting period
     function initialize(address _contest, bytes memory _initParams) public initializer {
-        (uint256 _duration) = abi.decode(_initParams, (uint256));
+        (uint256 _duration, bool _autostart, uint256 _startTime) = abi.decode(_initParams, (uint256, bool, uint256));
 
         contest = Contest(_contest);
         duration = _duration;
+
+        if (_autostart) {
+            _didAutostart = true;
+            setVotingTime(_startTime);
+        }
 
         emit Initialized(_contest, _duration);
     }
@@ -106,7 +110,15 @@ contract TimedVotes is IVotes, Initializable {
     /// @notice Sets the start time of the voting period
     /// @param _startTime The start time of the voting period
     function setVotingTime(uint256 _startTime) public {
-        require(contest.isStatus(ContestStatus.Voting), "Contest is not in voting state");
+        /// @Note:
+        /// we need to make sure that this can be called after choices round had completed
+        /// OR we need to be able facilitate an autostart in cases where contest starts at the voting period
+        /// However autostart triggers on module init, so simply checking the contest status is insufficient
+        /// because the contest inits after the module inits
+        require(
+            contest.isStatus(ContestStatus.Voting) || contest.isStatus(ContestStatus.Continuous) || _didAutostart,
+            "Contest is not in voting state"
+        );
         require(startTime == 0, "Voting has already started");
 
         if (_startTime == 0) {
@@ -124,7 +136,10 @@ contract TimedVotes is IVotes, Initializable {
 
     /// @notice Finalizes the voting period
     function finalizeVoting() public {
-        require(contest.isStatus(ContestStatus.Voting), "Contest is not in voting state");
+        require(
+            contest.isStatus(ContestStatus.Voting) || contest.isStatus(ContestStatus.Continuous),
+            "Contest is not in voting state"
+        );
         require(endTime != 0 && block.timestamp > endTime, "Voting period has not ended");
 
         contest.finalizeVoting();

@@ -13,6 +13,7 @@ import {Contest} from "../src/Contest.sol";
 import {EmptyExecution} from "../src/modules/execution/EmptyExecution.sol";
 import {IModule} from "../src/interfaces/IModule.sol";
 import {HatsPoster} from "../src/factories/gsRough/HatsPoster.sol";
+import {ContestStatus} from "../src/core/ContestStatus.sol";
 
 contract RunFactory is Script {
     string GS_VOTING_VERSION = "v0.2.0";
@@ -253,8 +254,6 @@ contract RunFactory is Script {
         // ERC20VotesPoints pointsTemplate = ERC20VotesPoints(getTemplateAddress("points"));
         SBTBalancePoints pointsTemplate = SBTBalancePoints(getTemplateAddress("sbtPoints"));
 
-        console2.log("Points template address: %s", address(pointsTemplate));
-
         TimedVotes votesTemplate = TimedVotes(getTemplateAddress("votes"));
         HatsAllowList choicesTemplate = HatsAllowList(getTemplateAddress("choices"));
         EmptyExecution executionTemplate = EmptyExecution(getTemplateAddress("execution"));
@@ -283,9 +282,10 @@ contract RunFactory is Script {
         bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
         (address contestAddress, address[4] memory moduleAddress) = fastFactory.buildContest(
+            _contestMetadata,
             _contestInitData,
             contestTemplate.CONTEST_VERSION(),
-            false,
+            ContestStatus.Populating,
             false,
             string.concat(TAG_PREFIX, vm.toString(deploymentNonce()))
         );

@@ -9,6 +9,7 @@ import {Metadata} from "../src/core/Metadata.sol";
 contract CurrentDeployment {
     address VOTE_MODULE_ADDRESS = 0x08Efc63577f631A3Be5cf2a79f0E1965B1Fc39B2;
     address CONTEST_ADDRESS = 0x828d27E685DF55EeD09c7e68802F8cB0Fbb9435a;
+    Metadata emptyMetadata = Metadata(0, "");
     Metadata SHIP1_REASON = Metadata(0, "This is Ship 1");
     Metadata SHIP2_REASON = Metadata(0, "This is Ship 2");
     Metadata SHIP3_REASON = Metadata(0, "This is Ship 3");
@@ -53,7 +54,7 @@ contract ManageVotes is Script, CurrentDeployment {
         reasons.push(abi.encode(SHIP2_REASON));
         reasons.push(abi.encode(SHIP3_REASON));
 
-        contest.batchVote(shipIds, amounts, reasons, amounts[0] + amounts[1] + amounts[2]);
+        contest.batchVote(shipIds, amounts, reasons, amounts[0] + amounts[1] + amounts[2], emptyMetadata);
     }
 
     function _retractShipVotes() internal {
@@ -69,7 +70,7 @@ contract ManageVotes is Script, CurrentDeployment {
         reasons.push(abi.encode(SHIP2_REASON));
         reasons.push(abi.encode(SHIP3_REASON));
 
-        contest.batchRetractVote(shipIds, amounts, reasons, 3000);
+        contest.batchRetractVote(shipIds, amounts, reasons, 3000, emptyMetadata);
     }
 
     function _finalizeVoting() internal {
