@@ -9,45 +9,22 @@ import {ContestStatus} from "../../core/ContestStatus.sol";
 import {BasicChoice} from "../../core/Choice.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 import {Metadata} from "../../core/Metadata.sol";
-
-abstract contract ChoiceCollector {
-    mapping(bytes32 => BasicChoice) public choices;
-
-    bytes32[] public choiceIds;
-
-    function _registerChoice(bytes32 _choiceId, BasicChoice memory _choice) internal {
-        choices[_choiceId] = _choice;
-        choiceIds.push(_choiceId);
-    }
-
-    function _removeChoice(bytes32 _choiceId) internal {
-        require(choices[_choiceId].exists, "Choice does not exist");
-
-        bool found = false;
-        uint256 index;
-
-        // Find the index of the element to remove
-        for (uint256 i = 0; i < choiceIds.length; i++) {
-            if (choiceIds[i] == _choiceId) {
-                index = i;
-                found = true;
-                break;
-            }
-        }
-
-        require(found, "Choice not found");
-
-        // Swap with the last element and pop
-        if (index != choiceIds.length - 1) {
-            choiceIds[index] = choiceIds[choiceIds.length - 1];
-        }
-
-        choiceIds.pop();
-        delete choices[_choiceId];
-    }
-}
+import {ChoiceCollector} from "./utils/ChoiceCollector.sol";
 
 contract InboxChoices is ChoiceCollector, IChoices, Initializable {
+    /// ===============================
+    /// ========== Events =============
+    /// ===============================
+
+    /// @notice Emitted when the contract is initialized
+    event Initialized(address contest, address hatsAddress, uint256 adminHatId);
+
+    /// @notice Emitted when a choice is registered
+    event Registered(bytes32 choiceId, BasicChoice choiceData, address contest);
+
+    /// @notice Emitted when a choice is removed
+    event Removed(bytes32 choiceId, address contest);
+
     /// @notice The name and version of the module
     string public constant MODULE_NAME = "InboxChoices_v0.1.1";
 
@@ -83,19 +60,25 @@ contract InboxChoices is ChoiceCollector, IChoices, Initializable {
         hats = IHats(_hatsAddress);
         contest = Contest(_contest);
         adminHatId = _adminHatId;
+
+        emit Initialized(_contest, _hatsAddress, _adminHatId);
     }
 
     function registerChoice(bytes32 _choiceId, bytes memory _data) external {
-        (Metadata memory _metadata) = abi.decode(_data, (Metadata));
+        (Metadata memory _metadata, bytes memory _bytes) = abi.decode(_data, (Metadata, bytes));
 
-        _registerChoice(_choiceId, BasicChoice(_metadata, "", true, msg.sender));
+        _registerChoice(_choiceId, BasicChoice(_metadata, _bytes, true, msg.sender));
+
+        emit Registered(_choiceId, choices[_choiceId], address(contest));
     }
 
     function removeChoice(bytes32 _choiceId, bytes calldata) external onlyAdmin {
         _removeChoice(_choiceId);
+
+        emit Removed(_choiceId, address(contest));
     }
 
-    function finalizeChoices() external onlyContestPopulating {
+    function finalizeChoices() external onlyContestPopulating onlyAdmin {
         contest.finalizeChoices();
     }
 
