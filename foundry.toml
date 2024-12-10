@@ -11,6 +11,7 @@ test = "test"
 [rpc_endpoints]
 arbitrumOne = "${ARBITRUM_RPC_URL}"
 arbitrumSepolia = "${ARBITRUM_SEPOLIA_RPC_URL}"
+base = "${BASE_RPC_URL}"
 sepolia = "${SEPOLIA_RPC_URL}"
 
 [etherscan]

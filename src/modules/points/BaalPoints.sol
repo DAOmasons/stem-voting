@@ -25,7 +25,7 @@ contract BaalPointsV0 is IPoints, Initializable {
     /// ===============================
 
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "BaalPoints_v0.0.1";
+    string public constant MODULE_NAME = "BaalPoints_v0.2.0";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Points;
