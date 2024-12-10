@@ -5,25 +5,7 @@ import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/In
 import {IPoints} from "../../interfaces/IPoints.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 import {IHats} from "hats-protocol/Interfaces/IHats.sol";
-
-abstract contract ConditionalAllocator {
-    mapping(address => uint256) public points;
-
-    bool public shouldAccumulate;
-
-    function _allocatePoints(address _voter, uint256 _amount) internal {
-        if (shouldAccumulate) {
-            points[_voter] += _amount;
-        }
-    }
-
-    function _releasePoints(address _voter, uint256 _amount) internal {
-        if (shouldAccumulate) {
-            require(points[_voter] >= _amount, "Not enough points");
-            points[_voter] -= _amount;
-        }
-    }
-}
+import {ConditionalAllocator} from "./utils/ConditionalAllocator.sol";
 
 contract HatsPoints is ConditionalAllocator, IPoints, Initializable {
     /// @notice The name and version of the module
@@ -90,7 +72,7 @@ contract HatsPoints is ConditionalAllocator, IPoints, Initializable {
         _allocatePoints(_voter, _amount);
     }
 
-    function releasePoints(address _voter, uint256 _amount, bytes memory _data) external onlyContest {
+    function releasePoints(address _voter, uint256 _amount, bytes memory) external onlyContest {
         _releasePoints(_voter, _amount);
     }
 
