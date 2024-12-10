@@ -6,7 +6,26 @@ import {IPoints} from "../../interfaces/IPoints.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 import {IHats} from "hats-protocol/Interfaces/IHats.sol";
 
-contract HatsPoints is IPoints, Initializable {
+abstract contract ConditionalAllocator {
+    mapping(address => uint256) public points;
+
+    bool public shouldAccumulate;
+
+    function _allocatePoints(address _voter, uint256 _amount) internal {
+        if (shouldAccumulate) {
+            points[_voter] += _amount;
+        }
+    }
+
+    function _releasePoints(address _voter, uint256 _amount) internal {
+        if (shouldAccumulate) {
+            require(points[_voter] >= _amount, "Not enough points");
+            points[_voter] -= _amount;
+        }
+    }
+}
+
+contract HatsPoints is ConditionalAllocator, IPoints, Initializable {
     /// @notice The name and version of the module
     string public constant MODULE_NAME = "HatsPoints_v0.2.0";
 
@@ -40,13 +59,19 @@ contract HatsPoints is IPoints, Initializable {
     }
 
     function initialize(address _contest, bytes calldata initData) external initializer {
-        (uint256[] memory _hatIds, uint256[] memory _hatPoints, uint256 _adminHatId, address _hats) =
-            abi.decode(initData, (uint256[], uint256[], uint256, address));
+        (
+            uint256[] memory _hatIds,
+            uint256[] memory _hatPoints,
+            uint256 _adminHatId,
+            address _hats,
+            bool _shouldAccumulate
+        ) = abi.decode(initData, (uint256[], uint256[], uint256, address, bool));
 
         require(_hats != address(0), "Zero address");
 
         hats = IHats(_hats);
         adminHatId = _adminHatId;
+        shouldAccumulate = _shouldAccumulate;
 
         for (uint256 i = 0; i < _hatIds.length; i++) {
             hatPoints[_hatIds[i]] = _hatPoints[i];
@@ -61,11 +86,33 @@ contract HatsPoints is IPoints, Initializable {
         revert("This contract does not require users to claim points.");
     }
 
-    function allocatePoints(address voter, uint256 amount, bytes memory data) external {}
+    function allocatePoints(address _voter, uint256 _amount, bytes memory) external onlyContest {
+        _allocatePoints(_voter, _amount);
+    }
 
-    function releasePoints(address voter, uint256 amount, bytes memory data) external {}
+    function releasePoints(address _voter, uint256 _amount, bytes memory _data) external onlyContest {
+        _releasePoints(_voter, _amount);
+    }
 
-    function hasVotingPoints(address voter, uint256 amount, bytes memory data) external view returns (bool) {}
+    function hasVotingPoints(address _voter, uint256 _amount, bytes memory _data) external view returns (bool) {
+        (uint256 _hatId) = abi.decode(_data, (uint256));
 
-    function hasAllocatedPoints(address voter, uint256 amount, bytes memory data) external view returns (bool) {}
+        require(isValidWearer(_voter, _hatId), "Caller is not wearer or in good standing");
+
+        require(hatPoints[_hatId] > 0, "Invalid hat id");
+
+        return hatPoints[_hatId] >= _amount + points[_voter];
+    }
+
+    function isValidWearer(address _voter, uint256 _hatId) public view returns (bool) {
+        return hats.isWearerOfHat(_voter, _hatId) && hats.isInGoodStanding(_voter, _hatId);
+    }
+
+    function hasAllocatedPoints(address _voter, uint256 _amount, bytes memory _data) external view returns (bool) {
+        (uint256 _hatId) = abi.decode(_data, (uint256));
+
+        require(isValidWearer(_voter, _hatId), "Caller is not wearer or in good standing");
+
+        return hatPoints[_hatId] >= _amount;
+    }
 }
