@@ -37,7 +37,7 @@ contract TimedVotes is IVotes, Initializable {
     string public constant MODULE_NAME = "TimedVotes_v0.2.0";
 
     /// @notice The type of module
-    ModuleType public constant MODULE_TYPE = ModuleType.Execution;
+    ModuleType public constant MODULE_TYPE = ModuleType.Votes;
 
     /// @notice Reference to the contest contract
     Contest public contest;
