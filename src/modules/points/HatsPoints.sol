@@ -6,8 +6,9 @@ import {IPoints} from "../../interfaces/IPoints.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 import {IHats} from "hats-protocol/Interfaces/IHats.sol";
 import {ConditionalAllocator} from "./utils/ConditionalAllocator.sol";
+import {IHatsPoints} from "../../interfaces/IHatsPoints.sol";
 
-contract HatsPoints is ConditionalAllocator, IPoints, Initializable {
+contract HatsPoints is ConditionalAllocator, IPoints, IHatsPoints, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
@@ -141,5 +142,9 @@ contract HatsPoints is ConditionalAllocator, IPoints, Initializable {
 
     function isValidWearer(address _voter, uint256 _hatId) public view returns (bool) {
         return hats.isWearerOfHat(_voter, _hatId) && hats.isInGoodStanding(_voter, _hatId);
+    }
+
+    function getPointsByHat(uint256 _hatId) external view returns (uint256) {
+        return hatPoints[_hatId];
     }
 }

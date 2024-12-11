@@ -5,67 +5,16 @@ import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/In
 import {IVotes} from "../../interfaces/IVotes.sol";
 import {Contest} from "../../Contest.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
+import {VoteTimer, TimerType} from "./utils/VoteTimer.sol";
+import {Metadata} from "../../core/Metadata.sol";
+import {IHatsPoints} from "../../interfaces/IHatsPoints.sol";
+import {IHats} from "lib/hats-protocol/src/Interfaces/IHats.sol";
 
-enum TimerType {
-    None, // not timed
-    Auto, // timer starts automatically on init
-    Lazy, // timer starts from an external contract call, usually finalize choices in choice module
-    Preset // preset time start at advance point in time (used for continuous and when choices are also timed)
-
-}
-
-abstract contract ConditionalTimer {
-    /// @notice The start time of the voting period
-    uint256 public startTime;
-
-    /// @notice The end time of the voting period
-    uint256 public endTime;
-
-    /// @notice The duration of the voting period
-    uint256 public duration;
-
-    /// @notice The type of timer
-    TimerType public timerType;
-
-    modifier votingPeriod() {
-        if (timerType == TimerType.None) {
-            _;
-        } else {
-            require(block.timestamp >= startTime && block.timestamp <= endTime, "Not voting period");
-            _;
-        }
-    }
-
-    function _timerInit(TimerType _timerType, uint256 _startTime, uint256 _duration) internal {
-        timerType = _timerType;
-        duration = _duration;
-
-        if (_timerType == TimerType.Auto) {
-            require(_startTime == 0, "Auto timer cannot init start time");
-
-            startTime = block.timestamp;
-            endTime = startTime + _duration;
-        }
-        if (_timerType == TimerType.Preset) {
-            startTime = _startTime;
-            endTime = _startTime + _duration;
-        }
-    }
-
-    function _startTimer() internal {
-        require(timerType == TimerType.Lazy, "Invalid timer type");
-
-        startTime = block.timestamp;
-        endTime = startTime + duration;
-    }
-}
-
-contract RubricVotes is ConditionalTimer, IVotes, Initializable {
+contract RubricVotes is VoteTimer, IVotes, Initializable {
     /// @notice Reference to the contest contract
     Contest public contest;
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "TimedVotes_v0.2.0";
-
+    string public constant MODULE_NAME = "RubricVotes_v0.2.0";
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Votes;
 
@@ -77,6 +26,12 @@ contract RubricVotes is ConditionalTimer, IVotes, Initializable {
     /// @dev choiceId => totalVotes
     mapping(bytes32 => uint256) public totalVotesForChoice;
 
+    address pointsModule;
+
+    uint256 adminHatId;
+
+    IHats private _hats;
+
     /// ===============================
     /// ========== Modifiers ==========
     /// ===============================
@@ -85,6 +40,13 @@ contract RubricVotes is ConditionalTimer, IVotes, Initializable {
     /// @dev The caller must be the contest contract
     modifier onlyContest() {
         require(msg.sender == address(contest), "Only contest");
+        _;
+    }
+
+    modifier onlyAdmin() {
+        require(
+            _hats.isWearerOfHat(msg.sender, adminHatId) && _hats.isInGoodStanding(msg.sender, adminHatId), "Only wearer"
+        );
         _;
     }
 
@@ -99,23 +61,72 @@ contract RubricVotes is ConditionalTimer, IVotes, Initializable {
     /// @param _initParams The initialization data
     /// @dev Bytes data includes the duration of the voting period
     function initialize(address _contest, bytes memory _initParams) public initializer {
-        (uint256 _duration, uint256 _startTime, TimerType _timerType) =
-            abi.decode(_initParams, (uint256, uint256, TimerType));
+        (uint256 _duration, uint256 _startTime, TimerType _timerType, uint256 _adminHatId) =
+            abi.decode(_initParams, (uint256, uint256, TimerType, uint256));
 
         contest = Contest(_contest);
+
+        adminHatId = _adminHatId;
 
         _timerInit(_timerType, _startTime, _duration);
     }
 
-    function vote(address voter, bytes32 choiceId, uint256 amount, bytes memory data) external onlyContest {}
+    function vote(address voter, bytes32 choiceId, uint256 amount, bytes memory data)
+        external
+        onlyContest
+        onlyVotingPeriod
+    {
+        (uint256[] memory hatIds, Metadata memory _reason) = abi.decode(data, (uint256[], Metadata));
 
-    function retractVote(address voter, bytes32 choiceId, uint256 amount, bytes memory data) external onlyContest {}
+        uint256 amountAlreadyVoted = votes[choiceId][voter];
 
-    function setTimer() external {
+        uint256 totalHatsAllowance;
+
+        if (pointsModule == address(0)) {
+            address _pointsModule = address(contest.pointsModule());
+
+            if (_pointsModule == address(0)) {
+                revert("Points module not initialized");
+            }
+
+            pointsModule = _pointsModule;
+        }
+
+        for (uint256 i = 0; i < hatIds.length; i++) {
+            try IHatsPoints(pointsModule).getPointsByHat(hatIds[i]) returns (uint256 points) {
+                totalHatsAllowance += points;
+            } catch {
+                revert("Points module not support IHatsPoints");
+            }
+        }
+
+        require(amount <= totalHatsAllowance - amountAlreadyVoted, "Insufficient voting power");
+
+        votes[choiceId][voter] += amount;
+        totalVotesForChoice[choiceId] += amount;
+    }
+
+    function retractVote(address voter, bytes32 choiceId, uint256 amount, bytes memory data)
+        external
+        onlyContest
+        onlyVotingPeriod
+    {
+        uint256 votedAmount = votes[choiceId][voter];
+        require(votedAmount >= amount, "Retracted amount exceeds vote amount");
+
+        votes[choiceId][voter] -= amount;
+        totalVotesForChoice[choiceId] -= amount;
+    }
+
+    function startTimer() external onlyAdmin {
         _startTimer();
     }
 
-    function finalizeVotes() external {}
+    function finalizeVotes() external onlyVoteCompleted onlyAdmin {
+        contest.finalizeVoting();
+    }
 
-    function getTotalVotesForChoice(bytes32 choiceId) external view returns (uint256) {}
+    function getTotalVotesForChoice(bytes32 choiceId) external view returns (uint256) {
+        return totalVotesForChoice[choiceId];
+    }
 }
