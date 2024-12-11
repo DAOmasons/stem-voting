@@ -22,7 +22,7 @@ contract Prepop is IChoices, Initializable {
     /// ===============================
 
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "PrePop_v0.0.1";
+    string public constant MODULE_NAME = "PrePop_v0.2.0";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Choices;

@@ -9,7 +9,7 @@ import {IExecution} from "../../interfaces/IExecution.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 
 contract EmptyExecution is IExecution, Initializable {
-    string public constant MODULE_NAME = "EmptyExecution_v0.1.1";
+    string public constant MODULE_NAME = "EmptyExecution_v0.2.0";
 
     ModuleType public constant MODULE_TYPE = ModuleType.Execution;
 
