@@ -1,34 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {IVotes} from "../../interfaces/IVotes.sol";
-import {Contest} from "../../Contest.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
-import {VoteTimer, TimerType} from "./utils/VoteTimer.sol";
+import {Contest} from "../../Contest.sol";
 import {Metadata} from "../../core/Metadata.sol";
-import {IHatsPoints} from "../../interfaces/IHatsPoints.sol";
+import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import {VoteTimer, TimerType} from "./utils/VoteTimer.sol";
 import {IHats} from "lib/hats-protocol/src/Interfaces/IHats.sol";
 import {ContestStatus} from "../../core/ContestStatus.sol";
 
-contract RubricVotes is VoteTimer, IVotes, Initializable {
+contract TimedVotesV1 is VoteTimer, IVotes, Initializable {
     /// @notice Emitted when the contract is initialized
     event Initialized(address _contest, uint256 _startTime, TimerType _timerType, uint256 _adminHatId);
 
+    /// @notice Emitted when the contract is initialized
+    event Initialized(address contest, uint256 duration);
     /// @notice Emitted when a vote is cast
-    event VoteCast(address voter, bytes32 choiceId, uint256 amount, Metadata _reason);
+    event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
 
     /// @notice Emitted when a vote is retracted
-    event VoteRetracted(address voter, bytes32 choiceId, uint256 amount, Metadata _reason);
+    event VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
+
+    /// @notice The name and version of the module
+    string public constant MODULE_NAME = "TimedVotes_v1.0.0";
+
+    /// @notice The type of module
+    ModuleType public constant MODULE_TYPE = ModuleType.Votes;
 
     /// @notice Reference to the contest contract
     Contest public contest;
 
-    /// @notice The name and version of the module
-    string public constant MODULE_NAME = "RubricVotes_v0.2.0";
+    /// @notice admin hat id
+    uint256 public adminHatId;
 
-    /// @notice The type of module
-    ModuleType public constant MODULE_TYPE = ModuleType.Votes;
+    /// @notice Reference to the Hats Protocol contract
+    IHats hats;
 
     /// @notice Mapping of choiceId to voter to vote amount
     /// @dev choiceId => voter => amount
@@ -37,19 +44,6 @@ contract RubricVotes is VoteTimer, IVotes, Initializable {
     /// @notice Mapping of choiceId to total votes for that choice
     /// @dev choiceId => totalVotes
     mapping(bytes32 => uint256) public totalVotesForChoice;
-
-    /// @notice points module address
-    address pointsModule;
-
-    /// @notice admin hat id
-    uint256 public adminHatId;
-
-    /// @notice Reference to the Hats Protocol contract
-    IHats hats;
-
-    /// ===============================
-    /// ========== Modifiers ==========
-    /// ===============================
 
     /// @notice Only the contest contract can call this function
     /// @dev The caller must be the contest contract
@@ -64,12 +58,6 @@ contract RubricVotes is VoteTimer, IVotes, Initializable {
         );
         _;
     }
-
-    /// ===============================
-    /// ========== Init ===============
-    /// ===============================
-
-    constructor() {}
 
     /// @notice Initializes the timed voting module
     /// @param _contest The address of the contest contract
@@ -99,34 +87,10 @@ contract RubricVotes is VoteTimer, IVotes, Initializable {
         onlyContest
         onlyVotingPeriod
     {
-        (uint256[] memory hatIds, Metadata memory _reason) = abi.decode(_data, (uint256[], Metadata));
-
-        uint256 amountAlreadyVoted = votes[_choiceId][_voter];
-
-        uint256 totalHatsAllowance;
-
-        if (pointsModule == address(0)) {
-            address _pointsModule = address(contest.pointsModule());
-
-            if (_pointsModule == address(0)) {
-                revert("Points module not initialized");
-            }
-
-            pointsModule = _pointsModule;
-        }
-
-        for (uint256 i = 0; i < hatIds.length; i++) {
-            try IHatsPoints(pointsModule).getPointsByHat(hatIds[i]) returns (uint256 points) {
-                totalHatsAllowance += points;
-            } catch {
-                revert("Points module not support IHatsPoints");
-            }
-        }
-
-        require(_amount <= totalHatsAllowance - amountAlreadyVoted, "Insufficient voting power");
-
         votes[_choiceId][_voter] += _amount;
         totalVotesForChoice[_choiceId] += _amount;
+
+        (Metadata memory _reason) = abi.decode(_data, (Metadata));
 
         emit VoteCast(_voter, _choiceId, _amount, _reason);
     }
@@ -140,12 +104,13 @@ contract RubricVotes is VoteTimer, IVotes, Initializable {
         onlyContest
         onlyVotingPeriod
     {
-        (, Metadata memory _reason) = abi.decode(_data, (uint256[], Metadata));
         uint256 votedAmount = votes[_choiceId][_voter];
         require(votedAmount >= _amount, "Retracted amount exceeds vote amount");
 
         votes[_choiceId][_voter] -= _amount;
         totalVotesForChoice[_choiceId] -= _amount;
+
+        (Metadata memory _reason) = abi.decode(_data, (Metadata));
 
         emit VoteRetracted(_voter, _choiceId, _amount, _reason);
     }
