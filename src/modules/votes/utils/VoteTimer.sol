@@ -10,6 +10,8 @@ enum TimerType {
 }
 
 abstract contract VoteTimer {
+    event TimerSet(uint256 startTime, uint256 endTime);
+
     /// @notice The start time of the voting period
     uint256 public startTime;
 
@@ -52,11 +54,13 @@ abstract contract VoteTimer {
             startTime = block.timestamp;
             endTime = startTime + _duration;
             timerSet = true;
+            emit TimerSet(startTime, endTime);
         }
         if (_timerType == TimerType.Preset) {
             startTime = _startTime;
             endTime = _startTime + _duration;
             timerSet = true;
+            emit TimerSet(startTime, endTime);
         }
     }
 
@@ -66,6 +70,7 @@ abstract contract VoteTimer {
         startTime = block.timestamp;
         endTime = startTime + duration;
         timerSet = true;
+        emit TimerSet(startTime, endTime);
     }
 
     function hasVoteCompleted() internal view returns (bool) {

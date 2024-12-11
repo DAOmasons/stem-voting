@@ -11,10 +11,21 @@ import {IHatsPoints} from "../../interfaces/IHatsPoints.sol";
 import {IHats} from "lib/hats-protocol/src/Interfaces/IHats.sol";
 
 contract RubricVotes is VoteTimer, IVotes, Initializable {
+    /// @notice Emitted when the contract is initialized
+    event Initialized(address _contest, uint256 _startTime, TimerType _timerType, uint256 _adminHatId);
+
+    /// @notice Emitted when a vote is cast
+    event VoteCast(address voter, bytes32 choiceId, uint256 amount, Metadata _reason);
+
+    /// @notice Emitted when a vote is retracted
+    event VoteRetracted(address voter, bytes32 choiceId, uint256 amount, Metadata _reason);
+
     /// @notice Reference to the contest contract
     Contest public contest;
+
     /// @notice The name and version of the module
     string public constant MODULE_NAME = "RubricVotes_v0.2.0";
+
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Votes;
 
@@ -26,11 +37,14 @@ contract RubricVotes is VoteTimer, IVotes, Initializable {
     /// @dev choiceId => totalVotes
     mapping(bytes32 => uint256) public totalVotesForChoice;
 
+    /// @notice points module address
     address pointsModule;
 
+    /// @notice admin hat id
     uint256 adminHatId;
 
-    IHats private _hats;
+    /// @notice Reference to the Hats Protocol contract
+    IHats hats;
 
     /// ===============================
     /// ========== Modifiers ==========
@@ -45,7 +59,7 @@ contract RubricVotes is VoteTimer, IVotes, Initializable {
 
     modifier onlyAdmin() {
         require(
-            _hats.isWearerOfHat(msg.sender, adminHatId) && _hats.isInGoodStanding(msg.sender, adminHatId), "Only wearer"
+            hats.isWearerOfHat(msg.sender, adminHatId) && hats.isInGoodStanding(msg.sender, adminHatId), "Only wearer"
         );
         _;
     }
@@ -61,24 +75,32 @@ contract RubricVotes is VoteTimer, IVotes, Initializable {
     /// @param _initParams The initialization data
     /// @dev Bytes data includes the duration of the voting period
     function initialize(address _contest, bytes memory _initParams) public initializer {
-        (uint256 _duration, uint256 _startTime, TimerType _timerType, uint256 _adminHatId) =
-            abi.decode(_initParams, (uint256, uint256, TimerType, uint256));
+        (uint256 _duration, uint256 _startTime, TimerType _timerType, uint256 _adminHatId, address _hats) =
+            abi.decode(_initParams, (uint256, uint256, TimerType, uint256, address));
+
+        hats = IHats(_hats);
 
         contest = Contest(_contest);
 
         adminHatId = _adminHatId;
 
         _timerInit(_timerType, _startTime, _duration);
+
+        emit Initialized(_contest, _startTime, _timerType, _adminHatId);
     }
 
-    function vote(address voter, bytes32 choiceId, uint256 amount, bytes memory data)
+    /// @notice Casts a vote for a choice based on the total voting power of all hats referenced in the Hats Points contract
+    /// @param _voter The address of the voter
+    /// @param _choiceId The unique identifier for the choice
+    /// @param _amount The amount of votes to cast
+    function vote(address _voter, bytes32 _choiceId, uint256 _amount, bytes memory _data)
         external
         onlyContest
         onlyVotingPeriod
     {
-        (uint256[] memory hatIds, Metadata memory _reason) = abi.decode(data, (uint256[], Metadata));
+        (uint256[] memory hatIds, Metadata memory _reason) = abi.decode(_data, (uint256[], Metadata));
 
-        uint256 amountAlreadyVoted = votes[choiceId][voter];
+        uint256 amountAlreadyVoted = votes[_choiceId][_voter];
 
         uint256 totalHatsAllowance;
 
@@ -100,33 +122,47 @@ contract RubricVotes is VoteTimer, IVotes, Initializable {
             }
         }
 
-        require(amount <= totalHatsAllowance - amountAlreadyVoted, "Insufficient voting power");
+        require(_amount <= totalHatsAllowance - amountAlreadyVoted, "Insufficient voting power");
 
-        votes[choiceId][voter] += amount;
-        totalVotesForChoice[choiceId] += amount;
+        votes[_choiceId][_voter] += _amount;
+        totalVotesForChoice[_choiceId] += _amount;
+
+        emit VoteCast(_voter, _choiceId, _amount, _reason);
     }
 
-    function retractVote(address voter, bytes32 choiceId, uint256 amount, bytes memory data)
+    /// @notice Retracts a vote for a choice
+    /// @param _voter The address of the voter
+    /// @param _choiceId The unique identifier for the choice
+    /// @param _amount The amount of votes to retract
+    function retractVote(address _voter, bytes32 _choiceId, uint256 _amount, bytes memory _data)
         external
         onlyContest
         onlyVotingPeriod
     {
-        uint256 votedAmount = votes[choiceId][voter];
-        require(votedAmount >= amount, "Retracted amount exceeds vote amount");
+        (, Metadata memory _reason) = abi.decode(_data, (uint256[], Metadata));
+        uint256 votedAmount = votes[_choiceId][_voter];
+        require(votedAmount >= _amount, "Retracted amount exceeds vote amount");
 
-        votes[choiceId][voter] -= amount;
-        totalVotesForChoice[choiceId] -= amount;
+        votes[_choiceId][_voter] -= _amount;
+        totalVotesForChoice[_choiceId] -= _amount;
+
+        emit VoteRetracted(_voter, _choiceId, _amount, _reason);
     }
 
+    /// @notice Starts the voting period for lazy initialized voting periods
     function startTimer() external onlyAdmin {
         _startTimer();
     }
 
+    /// @notice Finalizes the voting period
     function finalizeVotes() external onlyVoteCompleted onlyAdmin {
         contest.finalizeVoting();
     }
 
-    function getTotalVotesForChoice(bytes32 choiceId) external view returns (uint256) {
-        return totalVotesForChoice[choiceId];
+    /// @notice Gets the total votes for a choice
+    /// @param _choiceId The unique identifier for the choice
+    /// @return The total votes for the choice
+    function getTotalVotesForChoice(bytes32 _choiceId) external view returns (uint256) {
+        return totalVotesForChoice[_choiceId];
     }
 }
