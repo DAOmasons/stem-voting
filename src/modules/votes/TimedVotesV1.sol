@@ -16,6 +16,7 @@ contract TimedVotesV1 is VoteTimer, IVotes, Initializable {
 
     /// @notice Emitted when the contract is initialized
     event Initialized(address contest, uint256 duration);
+
     /// @notice Emitted when a vote is cast
     event VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, Metadata _reason);
 
