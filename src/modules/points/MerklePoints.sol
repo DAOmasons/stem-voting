@@ -44,7 +44,9 @@ contract MerklePoints is IPoints, Initializable {
         emit Initialized(_contest, _merkleRoot);
     }
 
-    function claimPoints(address, bytes memory) external {}
+    function claimPoints(address, bytes memory) external pure {
+        revert("Claim points disabled");
+    }
 
     /// @notice Allocates points to a user to track the amount voted
     /// @param _voter The address of the user
@@ -55,8 +57,6 @@ contract MerklePoints is IPoints, Initializable {
         require(hasVotingPoints(_voter, _amount, _data), "Insufficient points available");
 
         allocatedPoints[_voter] += _amount;
-
-        emit PointsAllocated(_voter, _amount);
     }
 
     /// @notice Releases points from a user
@@ -69,8 +69,6 @@ contract MerklePoints is IPoints, Initializable {
         // require(allocatedPoints[_voter] >= _amount, "Insufficient points allocated");
 
         allocatedPoints[_voter] -= _amount;
-
-        emit PointsReleased(_voter, _amount);
     }
 
     ///@notice Verifies if a user has the claimed points using OpenZeppelin's MerkleProof
