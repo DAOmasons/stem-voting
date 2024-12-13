@@ -16,3 +16,6 @@
 [submodule "lib/Baal"]
 	path = lib/Baal
 	url = https://github.com/HausDAO/Baal
+[submodule "lib/gtc-gov"]
+	path = lib/gtc-gov
+	url = https://github.com/gitcoinco/governance
