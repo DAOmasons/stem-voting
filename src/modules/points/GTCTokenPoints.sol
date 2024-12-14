@@ -29,6 +29,12 @@ contract GTCTokenPoints is IPoints, Initializable {
     /// @notice The block checkpoint to use for voting balances
     uint256 public votingCheckpoint;
 
+    /// @notice The threshold required to vote
+    uint256 public threshold;
+
+    /// @notice The amount of points to vote
+    uint256 public maxVoteAmount;
+
     /// @notice Mapping of user to allocated points
     /// @dev voterAddress => allocated points
     mapping(address => uint256) public allocatedPoints;
@@ -45,15 +51,18 @@ contract GTCTokenPoints is IPoints, Initializable {
     }
 
     /// ===============================
-    /// =========== init ==============
+    /// =========== Init ==============
     /// ===============================
 
     constructor() {}
 
     function initialize(address _contest, bytes memory _data) public initializer {
-        (address _tokenAddress, uint256 _votingCheckpoint) = abi.decode(_data, (address, uint256));
+        (address _tokenAddress, uint256 _votingCheckpoint, uint256 _threshold, uint256 _maxVoteAmount) =
+            abi.decode(_data, (address, uint256, uint256, uint256));
 
         contest = _contest;
+        threshold = _threshold;
+        maxVoteAmount = _maxVoteAmount;
 
         emit Initialized(_contest, _tokenAddress, _votingCheckpoint);
     }

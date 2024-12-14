@@ -87,7 +87,7 @@ contract InboxChoices is ChoiceCollector, IChoices, Initializable {
     /// @param _choiceId The unique identifier for the choice
     /// @param _data The data for the choice
     /// @dev Bytes data includes the metadata and choice data
-    function registerChoice(bytes32 _choiceId, bytes memory _data) external {
+    function registerChoice(bytes32 _choiceId, bytes memory _data) external onlyContestPopulating {
         (Metadata memory _metadata, bytes memory _bytes) = abi.decode(_data, (Metadata, bytes));
 
         _registerChoice(_choiceId, BasicChoice(_metadata, _bytes, true, msg.sender));
@@ -97,7 +97,7 @@ contract InboxChoices is ChoiceCollector, IChoices, Initializable {
 
     /// @notice Removes a choice from the contract
     /// @param _choiceId The unique identifier for the choice
-    function removeChoice(bytes32 _choiceId, bytes calldata) external onlyAdmin {
+    function removeChoice(bytes32 _choiceId, bytes calldata) external onlyAdmin onlyContestPopulating {
         _removeChoice(_choiceId);
 
         emit Removed(_choiceId, address(contest));

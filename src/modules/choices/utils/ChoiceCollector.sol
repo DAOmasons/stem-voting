@@ -10,12 +10,16 @@ abstract contract ChoiceCollector {
     ///@notice Array of choiceIds
     bytes32[] public choiceIds;
 
+    ///@notice The number of choices
+    uint256 public choiceCount;
+
     /// @notice Registers a choice with to the mapping and list
     /// @param _choiceId The unique identifier for the choice
     /// @param _choice The choice
     function _registerChoice(bytes32 _choiceId, BasicChoice memory _choice) internal {
         choices[_choiceId] = _choice;
         choiceIds.push(_choiceId);
+        choiceCount++;
     }
 
     /// @notice Removes a choice from the mapping and list
@@ -23,26 +27,8 @@ abstract contract ChoiceCollector {
     function _removeChoice(bytes32 _choiceId) internal {
         require(choices[_choiceId].exists, "Choice does not exist");
 
-        bool found = false;
-        uint256 index;
+        BasicChoice storage choice = choices[_choiceId];
 
-        // Find the index of the element to remove
-        for (uint256 i = 0; i < choiceIds.length; i++) {
-            if (choiceIds[i] == _choiceId) {
-                index = i;
-                found = true;
-                break;
-            }
-        }
-
-        require(found, "Choice not found");
-
-        // Swap with the last element and pop
-        if (index != choiceIds.length - 1) {
-            choiceIds[index] = choiceIds[choiceIds.length - 1];
-        }
-
-        choiceIds.pop();
-        delete choices[_choiceId];
+        choice.exists = false;
     }
 }
