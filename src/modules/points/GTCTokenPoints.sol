@@ -107,7 +107,20 @@ contract GTCTokenPoints is IPoints, Initializable {
     /// @param _user The address of the user
     /// @param _amount The amount of points to check
     function hasVotingPoints(address _user, uint256 _amount, bytes memory) public view returns (bool) {
-        return voteToken.getPriorVotes(_user, votingCheckpoint) - allocatedPoints[_user] >= _amount;
+        uint256 delegateBalance = voteToken.getPriorVotes(_user, votingCheckpoint);
+        uint256 amountAlreadyVoted = allocatedPoints[_user];
+
+        // Check threshold requirement
+        if (delegateBalance < threshold) {
+            return false;
+        }
+
+        // Check if new total would exceed max vote amount
+        if (amountAlreadyVoted + _amount > maxVoteAmount) {
+            return false;
+        }
+
+        return true;
     }
 
     /// @notice Checks if a user has allocated the specified amount
