@@ -31,4 +31,8 @@ abstract contract ChoiceCollector {
 
         choice.exists = false;
     }
+
+    function getChoice(bytes32 _choiceId) public view returns (BasicChoice memory) {
+        return choices[_choiceId];
+    }
 }
