@@ -19,8 +19,10 @@ contract TopChoiceHatter is TopChoicePicker, IExecution, Initializable {
     /// @notice Emitted when the contract is initialized
     event Initialized(address contest, uint256 winnerAmt, uint256 winnerHatId, uint256 adminHatId);
 
+    /// @notice Emitted when the contract is executed
     event Executed();
 
+    /// @notice Emitted when the hat is minted
     event Hatted(address wearer, uint256 hatId);
 
     /// ===============================
@@ -44,6 +46,10 @@ contract TopChoiceHatter is TopChoicePicker, IExecution, Initializable {
 
     /// @notice Whether the module has been executed
     bool public executed;
+
+    /// ===============================
+    /// ========== Init ===============
+    /// ===============================
 
     function initialize(address _contest, bytes memory _data) public initializer {
         (uint256 _winnerHatId, uint256 _adminHatId, uint256 _winnerAmt, address _hats) =
