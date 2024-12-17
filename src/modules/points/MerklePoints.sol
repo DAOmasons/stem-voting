@@ -76,8 +76,9 @@ contract MerklePoints is IPoints, Initializable {
     ///@param _points The number of points claimed
     ///@param _proof The Merkle proof as an array of bytes32
     function verifyPoints(address _user, uint256 _points, bytes32[] memory _proof) public view returns (bool) {
-        bytes32 leaf = keccak256(abi.encodePacked(_user, _points));
-        return MerkleProof.verify(_proof, leaf, merkleRoot);
+        // Change to match StandardMerkleTree's leaf encoding
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(_user, _points))));
+        return MerkleProof.verify(_proof, merkleRoot, leaf);
     }
 
     /// @notice Checks if a user has the specified voting points
