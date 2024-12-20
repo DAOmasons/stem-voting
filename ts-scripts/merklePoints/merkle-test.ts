@@ -9,15 +9,33 @@ import {
 } from 'viem';
 import { foundry } from 'viem/chains';
 import { ABI } from './merklePointsAbi.js';
-import { treeData } from './generate-merkle-tree.js';
+import fs from 'fs/promises';
+import path from 'path';
 
-const contractAddress = '0x959922be3caee4b8cd9a407cc3ac1c251c2007b1'; // your contract address
+const contractAddress = '0x5fbdb2315678afecb367f032d93f642f64180aa3'; // your contract address
 
 type MerkleTreeData = {
   format: 'standard-v1';
   leafEncoding: string[];
   tree: string[];
   values: { value: string[]; treeIndex: number }[];
+};
+
+const getTreeData = async () => {
+  try {
+    const data = await fs.readFile(
+      path.join(process.cwd(), 'merkle-data', 'merkle-info.json')
+    );
+
+    const parsedData = JSON.parse(data.toString());
+
+    const treeData = parsedData.tree as MerkleTreeData;
+    const root = parsedData.merkleRoot as Hex;
+
+    return { treeData, root };
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 const client = createPublicClient({
@@ -27,6 +45,13 @@ const client = createPublicClient({
 
 const _testAllVoters = async () => {
   let successCount = 0;
+
+  const { treeData, root } = (await getTreeData()) || {};
+
+  if (!treeData || !root) {
+    console.error('No tree data found');
+    return;
+  }
 
   for (let i = 0; i < treeData.values.length; i++) {
     const voterIndex = i;
