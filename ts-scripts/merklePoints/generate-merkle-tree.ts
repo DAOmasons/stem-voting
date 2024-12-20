@@ -3,10 +3,9 @@ import { getAddress, isAddress } from 'viem';
 import fs from 'fs/promises';
 import path from 'path';
 
-const MERKLE_ROOT =
-  '0xab743e2023cb59fbee44e8db2d954875524c9538e274ebb5b381aa02c39f481f';
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
-function generateVoters(count: number) {
+export function generateVoters(count: number) {
   const voters = [];
   for (let i = 0; i < count; i++) {
     const randomBytes = new Uint8Array(20);
@@ -47,12 +46,26 @@ function generateVoters(count: number) {
 }
 
 async function main() {
-  // Generate voters
-  const voters = generateVoters(6500);
+  // // Generate voters
+  // const voters = generateVoters(6500);
+
+  const readVoters = await fs.readFile(
+    path.join(__dirname, './json/GTCTokenHolders-Dec_16_2024.json'),
+    'utf-8'
+  );
+
+  const voters = JSON.parse(readVoters).map((voter: any) => [
+    voter.address,
+    voter.amount,
+  ]);
+
+  console.log('voters', voters.slice(0, 5));
 
   // Create merkle tree
   const tree = StandardMerkleTree.of(voters, ['address', 'uint256']);
   const root = tree.root;
+
+  console.log('tree', tree);
 
   // Prepare output data
   const outputData = {

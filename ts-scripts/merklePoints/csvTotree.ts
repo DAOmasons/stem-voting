@@ -7,6 +7,8 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const VOTING_THRESHOLD = 50;
 
+const FLATTENED_VOTE_POWER = parseEther('1').toString(); // 1;
+
 async function convertCSVFileToJSON(filename: string) {
   try {
     // Read the file
@@ -21,14 +23,7 @@ async function convertCSVFileToJSON(filename: string) {
         complete: (results) => {
           resolve(results.data);
         },
-        // transform: (value) => {
-        //   // If the value looks like a number with commas
-        //   if (/^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(value)) {
-        //     // Remove commas and convert to number
-        //     return Number(value.replace(/,/g, ''));
-        //   }
-        //   return value;
-        // },
+
         error: (error: any) => {
           reject(error);
         },
@@ -42,13 +37,21 @@ async function convertCSVFileToJSON(filename: string) {
 const filterByVotingThreshold = (
   data: {
     address: Address;
-    amount: bigint;
+    amount: string;
   }[]
 ) => {
   return data.filter(
-    (item) => item.amount >= parseEther(VOTING_THRESHOLD.toString())
+    (item) => BigInt(item.amount) >= parseEther(VOTING_THRESHOLD.toString())
   );
 };
+
+const flattenVotePower = (
+  data: {
+    address: Address;
+    amount: string;
+  }[]
+) =>
+  data.map((item) => ({ address: item.address, amount: FLATTENED_VOTE_POWER }));
 
 const validateAndConvert = async (data: any) => {
   try {
@@ -76,7 +79,7 @@ const validateAndConvert = async (data: any) => {
 
       return {
         address: item.HolderAddress as Address,
-        amount: parseEther(item.Balance.replace(/,/g, '')),
+        amount: parseEther(item.Balance.replace(/,/g, '')).toString(),
       };
     });
   } catch (error: any) {
@@ -93,22 +96,23 @@ async function main() {
 
     const cleanData = await validateAndConvert(jsonData);
     const filteredData = filterByVotingThreshold(cleanData);
+    const flattenedData = flattenVotePower(filteredData);
 
     console.log('****FINAL OUTPUT******');
-    console.log(filteredData);
+    console.log(flattenedData);
 
     console.log('****First 3 entries******');
-    console.log(filteredData.slice(0, 3));
+    console.log(flattenedData.slice(0, 3));
 
     console.log('****Last 3 entries******');
-    console.log(filteredData.slice(-3));
+    console.log(flattenedData.slice(-3));
 
     console.log('****Last Below Threshold******');
-    console.log(cleanData[filteredData.length]);
+    console.log(cleanData[flattenedData.length]);
     // // Optionally write to a JSON file
     await fs.writeFile(
       path.join(__dirname, 'json/GTCTokenHolders-Dec_16_2024.json'),
-      JSON.stringify(filteredData, null, 2)
+      JSON.stringify(flattenedData, null, 2)
     );
   } catch (error) {
     console.error('Error:', error);

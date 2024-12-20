@@ -7,7 +7,7 @@ import {console} from "forge-std/console.sol";
 
 contract DeployMerklePoints is Script {
     // Replace this with the root from your TypeScript script
-    bytes32 constant MERKLE_ROOT = 0xab743e2023cb59fbee44e8db2d954875524c9538e274ebb5b381aa02c39f481f; // your root here
+    bytes32 constant MERKLE_ROOT = 0xdc56428925fb0d14495de2f5d126f91282b8e6e69811397cf5b9f7e07f759902; // your root here
 
     function run() external {
         vm.startBroadcast();

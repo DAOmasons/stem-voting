@@ -11,8 +11,9 @@ import { foundry } from 'viem/chains';
 import { ABI } from './merklePointsAbi.js';
 import fs from 'fs/promises';
 import path from 'path';
+// import { generateVoters } from './generate-merkle-tree.js';
 
-const contractAddress = '0x5fbdb2315678afecb367f032d93f642f64180aa3'; // your contract address
+const contractAddress = '0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0'; // your contract address
 
 type MerkleTreeData = {
   format: 'standard-v1';
@@ -53,8 +54,10 @@ const _testAllVoters = async () => {
     return;
   }
 
+  console.log(`TESTING TREE: ${treeData.values.length} voters`);
+
   for (let i = 0; i < treeData.values.length; i++) {
-    const voterIndex = i;
+    const voterIndex = 7000;
     // Reconstruct the tree from saved data
     const tree = StandardMerkleTree.load(treeData as MerkleTreeData);
 
@@ -68,6 +71,7 @@ const _testAllVoters = async () => {
       [{ type: 'address' }, { type: 'uint256' }],
       [firstVoterAddress as Address, BigInt(firstVoterPoints)]
     );
+
     const contractLeaf = keccak256(encodedData);
 
     const offChainVerification = tree.verify(
@@ -86,16 +90,6 @@ const _testAllVoters = async () => {
       offChainVerification ? '✅ Success' : '❌ Failed'
     );
 
-    const contractRoot = await client.readContract({
-      address: contractAddress,
-      abi: ABI,
-      functionName: 'merkleRoot',
-    });
-
-    console.log('\nContract root:', contractRoot);
-    console.log('Tree root:     ', tree.root);
-    console.log('Roots match:', contractRoot === tree.root);
-
     // Verify on contract
     const isValid = await client.readContract({
       address: contractAddress,
@@ -107,42 +101,66 @@ const _testAllVoters = async () => {
         proof as Hex[],
       ],
     });
+    console.log('Testing verification for whitelisted voters. EXPECTING true');
+    console.log('isValid', isValid);
 
     console.log('\nVerification result:', isValid ? '✅ Success' : '❌ Failed');
-
     successCount += isValid ? 1 : 0;
   }
 
-  console.log('\n\nSuccess count:', successCount);
+  return successCount;
 };
 
+const generateRandomProof = () => {
+  return Array(6)
+    .fill(0)
+    .map(
+      () =>
+        `0x${Array(64)
+          .fill(0)
+          .map(() => Math.floor(Math.random() * 16).toString(16))
+          .join('')}` as Hex
+    );
+};
+
+// const _testNonWhitelistVoters = async () => {
+//   const wrongVoters = generateVoters(100);
+
+//   let failCount = 0;
+
+//   for (let i = 0; i < wrongVoters.length; i++) {
+//     const randomProof = generateRandomProof();
+
+//     const [firstVoterAddress, firstVoterPoints] = wrongVoters[i];
+
+//     // Verify on contract
+//     const isValid = await client.readContract({
+//       address: contractAddress,
+//       abi: ABI,
+//       functionName: 'verifyPoints',
+//       args: [
+//         firstVoterAddress as Address,
+//         BigInt(firstVoterPoints),
+//         randomProof as Hex[],
+//       ],
+//     });
+//     console.log(
+//       'Testing verification for non-whitelisted voters. EXPECTING false'
+//     );
+//     console.log('isValid', isValid);
+
+//     console.log('\nVerification result:', isValid ? '❌ Failed' : '✅ Success');
+
+//     failCount += !isValid ? 1 : 0;
+//   }
+//   return failCount;
+// };
+
 async function main() {
-  _testAllVoters();
+  const successCount = await _testAllVoters();
+  // const failCount = await _testNonWhitelistVoters();
+  // console.log('\n\nSuccess count:', successCount);
+  // console.log('\n\nFail count:', failCount);
 }
-
-// async function main() {
-//   const tree = StandardMerkleTree.load(treeData as MerkleTreeData);
-
-//   // Use entries() instead of accessing values directly
-//   const [[, [firstVoterAddress, firstVoterPoints]]] = tree.entries();
-//   const proof = tree.getProof(0);
-
-//   // Log raw data
-//   console.log('Raw data:');
-//   console.log('Address:', firstVoterAddress);
-//   console.log('Points:', firstVoterPoints);
-
-//   // Try our leaf generation
-//   const encodedData = encodeAbiParameters(
-//     [{ type: 'address' }, { type: 'uint256' }],
-//     [firstVoterAddress as Address, BigInt(firstVoterPoints)]
-//   );
-//   const contractLeaf = keccak256(encodedData);
-//   console.log('\nOur leaf hash:', contractLeaf);
-
-//   // Let's also see if the proof works with this leaf
-//   const ozVerify = tree.verify([firstVoterAddress, firstVoterPoints], proof);
-//   console.log('\nOZ verification:', ozVerify);
-// }
 
 main().catch(console.error);
