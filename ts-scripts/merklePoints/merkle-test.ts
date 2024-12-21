@@ -57,7 +57,7 @@ const _testAllVoters = async () => {
   console.log(`TESTING TREE: ${treeData.values.length} voters`);
 
   for (let i = 0; i < treeData.values.length; i++) {
-    const voterIndex = 7000;
+    const voterIndex = i;
     // Reconstruct the tree from saved data
     const tree = StandardMerkleTree.load(treeData as MerkleTreeData);
 
@@ -159,7 +159,7 @@ const generateRandomProof = () => {
 async function main() {
   const successCount = await _testAllVoters();
   // const failCount = await _testNonWhitelistVoters();
-  // console.log('\n\nSuccess count:', successCount);
+  console.log('\n\nSuccess count:', successCount);
   // console.log('\n\nFail count:', failCount);
 }
 
