@@ -5,6 +5,7 @@ import {IPoints} from "../../interfaces/IPoints.sol";
 import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
+import {Metadata} from "../../core/Metadata.sol";
 
 contract MerklePoints is IPoints, Initializable {
     /// @notice Emitted once the points module is initialized
@@ -86,7 +87,8 @@ contract MerklePoints is IPoints, Initializable {
     /// @param _amount The amount of points to check
     /// @param _data contains proof and user total vote amount
     function hasVotingPoints(address _voter, uint256 _amount, bytes memory _data) public view returns (bool) {
-        (bytes32[] memory _proof, uint256 _totalUserVotes) = abi.decode(_data, (bytes32[], uint256));
+        (, bytes memory _pointsParams) = abi.decode(_data, (bytes, bytes));
+        (bytes32[] memory _proof, uint256 _totalUserVotes) = abi.decode(_pointsParams, (bytes32[], uint256));
 
         require(verifyPoints(_voter, _totalUserVotes, _proof), "User input data does not match merkle proof");
 

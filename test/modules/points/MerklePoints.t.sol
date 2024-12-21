@@ -51,12 +51,10 @@ contract MerklePointsTest is Test, MerkleSetup {
         _initialize();
         bool isValid = _verify();
 
-        console.log("isValid", isValid);
-
         assertTrue(isValid);
     }
 
-    function _verify() public returns (bool _isValid) {
+    function _verify() public view returns (bool _isValid) {
         _isValid = merklePoints.verifyPoints(voters[0], 1000000000000000000, proofs[1]);
     }
 
