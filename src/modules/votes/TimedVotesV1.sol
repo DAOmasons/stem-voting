@@ -136,10 +136,6 @@ contract TimedVotesV1 is VoteTimer, IVotes, Initializable {
 
     /// @notice Finalizes the voting period
     function finalizeVotes() external onlyVoteCompleted onlyAdmin {
-        require(
-            contest.isStatus(ContestStatus.Voting) || contest.isStatus(ContestStatus.Continuous),
-            "Contest is not in voting state"
-        );
         contest.finalizeVoting();
     }
 

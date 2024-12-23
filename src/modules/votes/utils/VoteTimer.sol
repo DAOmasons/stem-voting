@@ -48,7 +48,7 @@ abstract contract VoteTimer {
         duration = _duration;
 
         if (_timerType == TimerType.Auto) {
-            require(_startTime == 0, "Auto timer cannot init start time");
+            require(_startTime == 0, "Invalid start time");
 
             startTime = block.timestamp;
             endTime = startTime + _duration;

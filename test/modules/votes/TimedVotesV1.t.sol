@@ -80,6 +80,37 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         assertEq(votesModule.totalVotesForChoice(choice1()), 0);
     }
 
+    function testFinalize_auto() public {
+        _init_auto();
+        _vote(voter1(), _voteAmount);
+
+        assertEq(votesModule.votes(choice1(), address(voter1())), _voteAmount);
+        assertEq(votesModule.totalVotesForChoice(choice1()), _voteAmount);
+
+        vm.warp(INIT_TIME + TWO_WEEKS + 1);
+        _finalizeVoting();
+    }
+
+    function testInit_preset() public {
+        _init_preset();
+
+        assertEq(address(votesModule.contest()), address(mockContest()));
+        assertEq(uint8(votesModule.timerType()), uint8(TimerType.Preset));
+        assertEq(votesModule.duration(), TWO_WEEKS);
+        assertEq(votesModule.adminHatId(), adminHatId);
+        assertEq(votesModule.startTime(), INIT_TIME + TWO_WEEKS);
+        assertEq(votesModule.endTime(), INIT_TIME + TWO_WEEKS + TWO_WEEKS);
+    }
+
+    function testVote_preset() public {
+        _init_preset();
+        vm.warp(INIT_TIME + TWO_WEEKS + 1);
+        _vote(voter1(), _voteAmount);
+
+        assertEq(votesModule.votes(choice1(), address(voter1())), _voteAmount);
+        assertEq(votesModule.totalVotesForChoice(choice1()), _voteAmount);
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -90,6 +121,17 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         bytes memory data = abi.encode(TWO_WEEKS, 0, TimerType.Auto, adminHatId, address(hats));
 
         vm.expectRevert(InvalidInitialization.selector);
+        votesModule.initialize(address(mockContest()), data);
+    }
+
+    function testRevert_initAuto_invalidStartTime() public {
+        bytes memory data = abi.encode(TWO_WEEKS, 1, TimerType.Auto, adminHatId, address(hats));
+
+        vm.expectRevert("Invalid start time");
+        votesModule.initialize(address(mockContest()), data);
+
+        data = abi.encode(TWO_WEEKS, INIT_TIME + TWO_WEEKS, TimerType.Auto, adminHatId, address(hats));
+        vm.expectRevert("Invalid start time");
         votesModule.initialize(address(mockContest()), data);
     }
 
@@ -114,6 +156,43 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         votesModule.retractVote(address(voter1()), choice1(), _voteAmount, wrappedReason);
     }
 
+    function testRevert_finalizeBefore_auto() public {
+        _init_auto();
+
+        _vote(voter1(), _voteAmount);
+
+        vm.expectRevert("Voting period not completed");
+        _finalizeVoting();
+    }
+
+    function testRevert_finalize_notAdmin() public {
+        _init_auto();
+
+        vm.warp(INIT_TIME + TWO_WEEKS + 1);
+
+        vm.expectRevert("Only wearer");
+        vm.prank(address(someGuy()));
+        votesModule.finalizeVotes();
+    }
+
+    function testRevert_beforeVotingPeriod_preset_vote() public {
+        _init_preset();
+
+        vm.expectRevert("Not voting period");
+        vm.prank(address(mockContest()));
+        votesModule.vote(address(voter1()), choice1(), _voteAmount, wrappedReason);
+    }
+
+    function testRevert_beforeVotingPeriod_preset_after() public {
+        _init_preset();
+
+        vm.warp(INIT_TIME + TWO_WEEKS + TWO_WEEKS + 1);
+
+        vm.expectRevert("Not voting period");
+        vm.prank(address(mockContest()));
+        votesModule.vote(address(voter1()), choice1(), _voteAmount, wrappedReason);
+    }
+
     // function testInit_lazy() public {}
 
     // function testInit_preset() public {}
@@ -127,6 +206,16 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         emit TimerSet(INIT_TIME, INIT_TIME + TWO_WEEKS);
         vm.expectEmit(true, false, false, true);
         emit Initialized(address(mockContest()), TWO_WEEKS, TimerType.Auto, adminHatId);
+        votesModule.initialize(address(mockContest()), data);
+    }
+
+    function _init_preset() private {
+        bytes memory data = abi.encode(TWO_WEEKS, INIT_TIME + TWO_WEEKS, TimerType.Preset, adminHatId, address(hats));
+
+        vm.expectEmit(true, false, false, true);
+        emit TimerSet(INIT_TIME + TWO_WEEKS, INIT_TIME + TWO_WEEKS + TWO_WEEKS);
+        vm.expectEmit(true, false, false, true);
+        emit Initialized(address(mockContest()), TWO_WEEKS, TimerType.Preset, adminHatId);
         votesModule.initialize(address(mockContest()), data);
     }
 
@@ -146,6 +235,11 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         votesModule.retractVote(address(_voter), choice1(), _amount, wrappedReason);
     }
 
+    function _finalizeVoting() private {
+        vm.prank(address(admin1()));
+        votesModule.finalizeVotes();
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
@@ -153,10 +247,6 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
     function _init_lazy() private {
         bytes memory data = abi.encode(TWO_WEEKS, 0, TimerType.Auto, adminHatId, address(hats));
     }
-
-    function _init_preset() private {}
-
-    function vote_auto() private {}
 
     function _setupHats() private {
         hats = new Hats("", "");

@@ -49,7 +49,7 @@ contract Contest is ReentrancyGuard, Initializable {
     /// ================================
 
     /// @notice Contest version
-    string public constant CONTEST_VERSION = "0.2.0";
+    string public constant CONTEST_VERSION = "0.2.1";
 
     /// @notice Reference to the Voting contract module.
     IVotes public votesModule;
@@ -276,6 +276,8 @@ contract Contest is ReentrancyGuard, Initializable {
     /// @dev Only callable by the Votes module
     function finalizeVoting() external onlyVotingPeriod {
         require(msg.sender == address(votesModule), "Only votes module");
+
+        require(isStatus(ContestStatus.Voting) || isStatus(ContestStatus.Continuous), "Contest is not in voting state");
         contestStatus = ContestStatus.Finalized;
 
         emit ContestStatusChanged(ContestStatus.Finalized);
