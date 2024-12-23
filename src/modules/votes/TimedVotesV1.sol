@@ -98,6 +98,8 @@ contract TimedVotesV1 is VoteTimer, IVotes, Initializable {
         votes[_choiceId][_voter] += _amount;
         totalVotesForChoice[_choiceId] += _amount;
 
+        // This module does not check for duplicate votes, as that is handled by the Points contract and the Contest
+
         (bytes memory _votesData,) = abi.decode(_data, (bytes, bytes));
 
         (Metadata memory _reason) = abi.decode(_votesData, (Metadata));
