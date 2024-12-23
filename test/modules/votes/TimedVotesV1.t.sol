@@ -111,6 +111,32 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         assertEq(votesModule.totalVotesForChoice(choice1()), _voteAmount);
     }
 
+    function testRetractVote_preset() public {
+        _init_preset();
+        vm.warp(INIT_TIME + TWO_WEEKS + 1);
+        _vote(voter1(), _voteAmount);
+
+        assertEq(votesModule.votes(choice1(), address(voter1())), _voteAmount);
+        assertEq(votesModule.totalVotesForChoice(choice1()), _voteAmount);
+
+        _retract(voter1(), _voteAmount);
+
+        assertEq(votesModule.votes(choice1(), address(voter1())), 0);
+        assertEq(votesModule.totalVotesForChoice(choice1()), 0);
+    }
+
+    function testFinalize_preset() public {
+        _init_preset();
+        vm.warp(INIT_TIME + TWO_WEEKS + 1);
+        _vote(voter1(), _voteAmount);
+
+        assertEq(votesModule.votes(choice1(), address(voter1())), _voteAmount);
+        assertEq(votesModule.totalVotesForChoice(choice1()), _voteAmount);
+
+        vm.warp(INIT_TIME + TWO_WEEKS + TWO_WEEKS + 1);
+        _finalizeVoting();
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -183,7 +209,7 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         votesModule.vote(address(voter1()), choice1(), _voteAmount, wrappedReason);
     }
 
-    function testRevert_beforeVotingPeriod_preset_after() public {
+    function testRevert_retractVotingPeriod_preset_vote() public {
         _init_preset();
 
         vm.warp(INIT_TIME + TWO_WEEKS + TWO_WEEKS + 1);
@@ -191,6 +217,56 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         vm.expectRevert("Not voting period");
         vm.prank(address(mockContest()));
         votesModule.vote(address(voter1()), choice1(), _voteAmount, wrappedReason);
+    }
+
+    function testRevert_beforeVotingPeriod_preset_retract() public {
+        _init_preset();
+
+        vm.expectRevert("Not voting period");
+        vm.prank(address(mockContest()));
+        votesModule.retractVote(address(voter1()), choice1(), _voteAmount, wrappedReason);
+    }
+
+    function testRevert_retractVotingPeriod_preset_retract() public {
+        _init_preset();
+
+        vm.warp(INIT_TIME + TWO_WEEKS + TWO_WEEKS + 1);
+
+        vm.expectRevert("Not voting period");
+        vm.prank(address(mockContest()));
+        votesModule.retractVote(address(voter1()), choice1(), _voteAmount, wrappedReason);
+    }
+
+    function testRevert_finalizeBefore_preset() public {
+        _init_preset();
+
+        vm.warp(INIT_TIME + TWO_WEEKS);
+
+        vm.expectRevert("Voting period not completed");
+        _finalizeVoting();
+
+        vm.warp(INIT_TIME + TWO_WEEKS + TWO_WEEKS - 1);
+
+        vm.expectRevert("Voting period not completed");
+        _finalizeVoting();
+    }
+
+    function testRevert_startTimer_auto() public {
+        _init_auto();
+
+        _vote(voter1(), _voteAmount);
+
+        vm.expectRevert("Invalid timer type");
+        vm.prank(admin1());
+        votesModule.startTimer();
+    }
+
+    function testRevert_startTimer_preset() public {
+        _init_preset();
+
+        vm.expectRevert("Invalid timer type");
+        vm.prank(admin1());
+        votesModule.startTimer();
     }
 
     // function testInit_lazy() public {}
@@ -233,6 +309,13 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         vm.expectEmit(true, false, false, true);
         emit VoteRetracted(_voter, choice1(), _amount, _reason);
         votesModule.retractVote(address(_voter), choice1(), _amount, wrappedReason);
+    }
+
+    function _startTimer() private {
+        vm.prank(admin1());
+        vm.expectEmit(true, false, false, true);
+        emit TimerSet(block.timestamp, block.timestamp + TWO_WEEKS);
+        votesModule.startTimer();
     }
 
     function _finalizeVoting() private {

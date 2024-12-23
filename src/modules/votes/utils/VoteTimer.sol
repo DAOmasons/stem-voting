@@ -67,6 +67,7 @@ abstract contract VoteTimer {
     /// @dev Only usable for lazy timers
     function _startTimer() internal {
         require(timerType == TimerType.Lazy, "Invalid timer type");
+        require(!timerSet, "Timer already set");
 
         startTime = block.timestamp;
         endTime = startTime + duration;
