@@ -157,9 +157,7 @@ contract TimedVotes is IVotes, Initializable {
         votes[_choiceId][_voter] += _amount;
         totalVotesForChoice[_choiceId] += _amount;
 
-        (bytes memory _votesParams,) = abi.decode(_data, (bytes, bytes));
-
-        (Metadata memory _reason) = abi.decode(_votesParams, (Metadata));
+        (Metadata memory _reason) = abi.decode(_data, (Metadata));
 
         emit VoteCast(_voter, _choiceId, _amount, _reason);
     }
@@ -179,9 +177,7 @@ contract TimedVotes is IVotes, Initializable {
         votes[_choiceId][_voter] -= _amount;
         totalVotesForChoice[_choiceId] -= _amount;
 
-        (bytes memory _votesParams,) = abi.decode(_data, (bytes, bytes));
-
-        (Metadata memory _reason) = abi.decode(_votesParams, (Metadata));
+        (Metadata memory _reason) = abi.decode(_data, (Metadata));
 
         emit VoteRetracted(_voter, _choiceId, _amount, _reason);
     }

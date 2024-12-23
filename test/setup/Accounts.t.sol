@@ -8,6 +8,10 @@ contract Accounts is StdCheats {
     // Vote Admins
     // //////////////////////
 
+    function dummyDao() public returns (address) {
+        return makeAddr("dummy_dao");
+    }
+
     function admin1() public returns (address) {
         return makeAddr("admin_1");
     }

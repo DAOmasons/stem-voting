@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 enum TimerType {
-    None, // not timed
     Auto, // timer starts automatically on init
     Lazy, // timer starts from an external contract call, usually finalize choices in choice module
     Preset // preset time start at advance point in time (used for continuous and when choices are also timed)
@@ -30,22 +29,14 @@ abstract contract VoteTimer {
 
     /// @notice The caller must be in the voting period. If no timer is used this passes.
     modifier onlyVotingPeriod() {
-        if (timerType == TimerType.None) {
-            _;
-        } else {
-            require(block.timestamp >= startTime && block.timestamp <= endTime, "Not voting period");
-            _;
-        }
+        require(block.timestamp >= startTime && block.timestamp <= endTime, "Not voting period");
+        _;
     }
 
     /// @notice Only passes if the module is timed, voting is set, and voting is complete
     modifier onlyVoteCompleted() {
-        if (timerType == TimerType.None) {
-            _;
-        } else {
-            require(hasVoteCompleted(), "Voting period not completed");
-            _;
-        }
+        require(hasVoteCompleted(), "Voting period not completed");
+        _;
     }
 
     /// @notice Initializes the voting period timer

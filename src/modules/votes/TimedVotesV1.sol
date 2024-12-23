@@ -12,7 +12,7 @@ import {ContestStatus} from "../../core/ContestStatus.sol";
 
 contract TimedVotesV1 is VoteTimer, IVotes, Initializable {
     /// @notice Emitted when the contract is initialized
-    event Initialized(address _contest, uint256 _startTime, TimerType _timerType, uint256 _adminHatId);
+    event Initialized(address _contest, uint256 _duration, TimerType _timerType, uint256 _adminHatId);
 
     /// @notice Emitted when the contract is initialized
     event Initialized(address contest, uint256 duration);
@@ -68,6 +68,13 @@ contract TimedVotesV1 is VoteTimer, IVotes, Initializable {
         (uint256 _duration, uint256 _startTime, TimerType _timerType, uint256 _adminHatId, address _hats) =
             abi.decode(_initParams, (uint256, uint256, TimerType, uint256, address));
 
+        // We have the option to bypass admin permissions and make module management permissionless
+        // but this will not work for lazy timers, as that will allow anyone to set voting times
+        // therefore we require the admin hat for lazy timers
+        if (_adminHatId == 0) {
+            require(_timerType != TimerType.Lazy, "Lazy timer requires admin hat");
+        }
+
         hats = IHats(_hats);
 
         contest = Contest(_contest);
@@ -76,7 +83,7 @@ contract TimedVotesV1 is VoteTimer, IVotes, Initializable {
 
         _timerInit(_timerType, _startTime, _duration);
 
-        emit Initialized(_contest, _startTime, _timerType, _adminHatId);
+        emit Initialized(_contest, _duration, _timerType, _adminHatId);
     }
 
     /// @notice Casts a vote for a choice based on the total voting power of all hats referenced in the Hats Points contract
@@ -91,7 +98,9 @@ contract TimedVotesV1 is VoteTimer, IVotes, Initializable {
         votes[_choiceId][_voter] += _amount;
         totalVotesForChoice[_choiceId] += _amount;
 
-        (Metadata memory _reason) = abi.decode(_data, (Metadata));
+        (bytes memory _votesData,) = abi.decode(_data, (bytes, bytes));
+
+        (Metadata memory _reason) = abi.decode(_votesData, (Metadata));
 
         emit VoteCast(_voter, _choiceId, _amount, _reason);
     }
@@ -111,7 +120,9 @@ contract TimedVotesV1 is VoteTimer, IVotes, Initializable {
         votes[_choiceId][_voter] -= _amount;
         totalVotesForChoice[_choiceId] -= _amount;
 
-        (Metadata memory _reason) = abi.decode(_data, (Metadata));
+        (bytes memory _votesData,) = abi.decode(_data, (bytes, bytes));
+
+        (Metadata memory _reason) = abi.decode(_votesData, (Metadata));
 
         emit VoteRetracted(_voter, _choiceId, _amount, _reason);
     }
