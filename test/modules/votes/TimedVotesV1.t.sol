@@ -334,13 +334,79 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         votesModule.startTimer();
     }
 
-    function testRevert_startTimer_notAdmin() public {}
+    function testRevert_init_lazy_noAdmin() public {
+        bytes memory data = abi.encode(TWO_WEEKS, 0, TimerType.Lazy, 0, address(hats));
 
-    function testRevert_startTime_twice() public {}
+        vm.expectRevert("Lazy timer requires admin hat");
+        votesModule.initialize(address(mockContest()), data);
+    }
 
-    // function testInit_lazy() public {}
+    function testRevert_beforeTimerSet_lazy_vote() public {
+        _init_lazy();
 
-    // function testInit_preset() public {}
+        vm.expectRevert("Not voting period");
+
+        vm.prank(address(mockContest()));
+        votesModule.vote(address(voter1()), choice1(), _voteAmount, wrappedReason);
+    }
+
+    function testRevert_beforeTimerSet_lazy_retract() public {
+        _init_lazy();
+
+        vm.expectRevert("Not voting period");
+
+        vm.prank(address(mockContest()));
+        votesModule.retractVote(address(voter1()), choice1(), _voteAmount, wrappedReason);
+    }
+
+    function testRevert_startTimer_notAdmin() public {
+        _init_lazy();
+
+        vm.expectRevert("Only wearer");
+        vm.prank(address(someGuy()));
+        votesModule.startTimer();
+    }
+
+    function testRevert_startTime_twice() public {
+        _init_lazy();
+
+        _startTimer();
+
+        vm.expectRevert("Timer already set");
+
+        vm.prank(admin1());
+        votesModule.startTimer();
+    }
+
+    function testRevert_finalizeBefore_lazy() public {
+        _init_lazy();
+
+        vm.warp(INIT_TIME);
+
+        _startTimer();
+
+        vm.expectRevert("Voting period not completed");
+        _finalizeVoting();
+
+        vm.warp(INIT_TIME + TWO_WEEKS - 1);
+
+        vm.expectRevert("Voting period not completed");
+        _finalizeVoting();
+
+        vm.warp(INIT_TIME + TWO_WEEKS);
+        _finalizeVoting();
+    }
+
+    function testRevert_finalize_beforeStartTime() public {
+        _init_lazy();
+
+        vm.expectRevert("Voting period not completed");
+        _finalizeVoting();
+    }
+
+    //////////////////////////////
+    // Helpers
+    //////////////////////////////
 
     function _init_auto() private {
         bytes memory data = abi.encode(TWO_WEEKS, 0, TimerType.Auto, adminHatId, address(hats));
@@ -389,10 +455,6 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         vm.prank(address(admin1()));
         votesModule.finalizeVotes();
     }
-
-    //////////////////////////////
-    // Helpers
-    //////////////////////////////
 
     function _init_lazy() private {
         bytes memory data = abi.encode(TWO_WEEKS, 0, TimerType.Lazy, adminHatId, address(hats));

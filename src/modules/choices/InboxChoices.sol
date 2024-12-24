@@ -26,7 +26,7 @@ contract InboxChoices is ChoiceCollector, IChoices, Initializable {
     event Removed(bytes32 choiceId, address contest);
 
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "InboxChoices_v0.1.1";
+    string public constant MODULE_NAME = "InboxChoices_v0.1.0";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Choices;
