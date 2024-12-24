@@ -137,6 +137,71 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         _finalizeVoting();
     }
 
+    function testInit_lazy() public {
+        _init_lazy();
+
+        assertEq(address(votesModule.contest()), address(mockContest()));
+        assertEq(uint8(votesModule.timerType()), uint8(TimerType.Lazy));
+        assertEq(votesModule.duration(), TWO_WEEKS);
+        assertEq(votesModule.adminHatId(), adminHatId);
+        assertEq(votesModule.startTime(), 0);
+        assertEq(votesModule.endTime(), 0);
+    }
+
+    function testSetupTimer_lazy() public {
+        _init_lazy();
+
+        vm.warp(INIT_TIME);
+        _startTimer();
+
+        assertEq(votesModule.startTime(), INIT_TIME);
+        assertEq(votesModule.endTime(), INIT_TIME + TWO_WEEKS);
+    }
+
+    function testVote_lazy() public {
+        _init_lazy();
+
+        vm.warp(INIT_TIME);
+
+        _startTimer();
+        _vote(voter1(), _voteAmount);
+
+        assertEq(votesModule.votes(choice1(), address(voter1())), _voteAmount);
+        assertEq(votesModule.totalVotesForChoice(choice1()), _voteAmount);
+    }
+
+    function testVote_lazy_retract() public {
+        _init_lazy();
+
+        vm.warp(INIT_TIME);
+
+        _startTimer();
+        _vote(voter1(), _voteAmount);
+
+        assertEq(votesModule.votes(choice1(), address(voter1())), _voteAmount);
+        assertEq(votesModule.totalVotesForChoice(choice1()), _voteAmount);
+
+        _retract(voter1(), _voteAmount);
+
+        assertEq(votesModule.votes(choice1(), address(voter1())), 0);
+        assertEq(votesModule.totalVotesForChoice(choice1()), 0);
+    }
+
+    function testFinalize_lazy() public {
+        _init_lazy();
+
+        vm.warp(INIT_TIME);
+
+        _startTimer();
+        _vote(voter1(), _voteAmount);
+
+        assertEq(votesModule.votes(choice1(), address(voter1())), _voteAmount);
+        assertEq(votesModule.totalVotesForChoice(choice1()), _voteAmount);
+
+        vm.warp(INIT_TIME + TWO_WEEKS + 1);
+        _finalizeVoting();
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -269,11 +334,13 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
         votesModule.startTimer();
     }
 
+    function testRevert_startTimer_notAdmin() public {}
+
+    function testRevert_startTime_twice() public {}
+
     // function testInit_lazy() public {}
 
     // function testInit_preset() public {}
-
-    // function testInit_none() public {}
 
     function _init_auto() private {
         bytes memory data = abi.encode(TWO_WEEKS, 0, TimerType.Auto, adminHatId, address(hats));
@@ -328,7 +395,9 @@ contract TimedVotingV1Test is Test, Accounts, MockContestSetup {
     //////////////////////////////
 
     function _init_lazy() private {
-        bytes memory data = abi.encode(TWO_WEEKS, 0, TimerType.Auto, adminHatId, address(hats));
+        bytes memory data = abi.encode(TWO_WEEKS, 0, TimerType.Lazy, adminHatId, address(hats));
+
+        votesModule.initialize(address(mockContest()), data);
     }
 
     function _setupHats() private {

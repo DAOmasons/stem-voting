@@ -24,9 +24,6 @@ abstract contract VoteTimer {
     /// @notice The type of timer
     TimerType public timerType;
 
-    /// @notice Whether the timer has been set
-    bool public timerSet;
-
     /// @notice The caller must be in the voting period. If no timer is used this passes.
     modifier onlyVotingPeriod() {
         require(block.timestamp >= startTime && block.timestamp <= endTime, "Not voting period");
@@ -52,13 +49,11 @@ abstract contract VoteTimer {
 
             startTime = block.timestamp;
             endTime = startTime + _duration;
-            timerSet = true;
             emit TimerSet(startTime, endTime);
         }
         if (_timerType == TimerType.Preset) {
             startTime = _startTime;
             endTime = _startTime + _duration;
-            timerSet = true;
             emit TimerSet(startTime, endTime);
         }
     }
@@ -67,16 +62,16 @@ abstract contract VoteTimer {
     /// @dev Only usable for lazy timers
     function _startTimer() internal {
         require(timerType == TimerType.Lazy, "Invalid timer type");
-        require(!timerSet, "Timer already set");
+        require(startTime == 0 && endTime == 0, "Timer already set");
 
         startTime = block.timestamp;
         endTime = startTime + duration;
-        timerSet = true;
+
         emit TimerSet(startTime, endTime);
     }
 
     /// @notice Returns whether the timer has been set and voting period has completed
     function hasVoteCompleted() internal view returns (bool) {
-        return block.timestamp >= endTime && timerSet;
+        return block.timestamp >= endTime && endTime != 0;
     }
 }
