@@ -26,7 +26,7 @@ contract OpenChoices is ChoiceCollector, IChoices, Initializable {
     event Removed(bytes32 choiceId, address contest);
 
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "InboxChoices_v0.1.0";
+    string public constant MODULE_NAME = "OpenChoices_v0.1.0";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Choices;
@@ -42,6 +42,8 @@ contract OpenChoices is ChoiceCollector, IChoices, Initializable {
 
     /// @notice Whether or not choices must be unique
     bool public canNominate;
+
+    bool public lockSubmissions;
 
     /// ===============================
     /// ========== Modifiers ==========
@@ -93,10 +95,25 @@ contract OpenChoices is ChoiceCollector, IChoices, Initializable {
     /// @dev Bytes data includes the metadata and choice data
     function registerChoice(bytes32 _choiceId, bytes memory _data) external virtual onlyContestPopulating {
         registerChoiceGuard(_choiceId, _data);
+
+        // Ensure the choice registration is not locked
+        require(!lockSubmissions, "Locked");
+
         (bytes memory _choiceData, Metadata memory _metadata, address _registrar) =
             abi.decode(_data, (bytes, Metadata, address));
 
+        // Ensure the proposed registrar is not zero
+        require(_registrar != address(0), "Registrar must not be zero");
+
+        // Check to see if there is an existing choice registered
+        if (choices[_choiceId].registrar != address(0)) {
+            // if so, ensure that the editor can only be edited by the registrar
+            require(msg.sender == choices[_choiceId].registrar, "Only registrar can edit");
+        }
+
+        // Check to see if addresses can be nominated by another user
         if (!canNominate) {
+            // if not, ensure that the editor can only be edited by the registrar
             require(_registrar == msg.sender, "Cannot nominate others");
         }
 
@@ -119,6 +136,11 @@ contract OpenChoices is ChoiceCollector, IChoices, Initializable {
     /// @notice Finalizes the choices for the contest
     function finalizeChoices() external onlyContestPopulating onlyAdmin {
         contest.finalizeChoices();
+    }
+
+    /// @notice Locks submissions; used in the case of a spam or repeat submission
+    function lock() external onlyAdmin {
+        lockSubmissions = lockSubmissions ? false : true;
     }
 
     /// ===============================
