@@ -17,6 +17,7 @@ import {Hats} from "lib/hats-protocol/src/Hats.sol";
 
 contract GGSetup is MerkleSetup, Test {
     address[] _voters;
+    bytes32[][] _voterProofs;
     uint256 constant VOTE_AMOUNT = 1e18;
     uint256 constant TWO_WEEKS = 1209600;
     bytes32 public merkleRoot = 0xdc56428925fb0d14495de2f5d126f91282b8e6e69811397cf5b9f7e07f759902;
@@ -92,7 +93,12 @@ contract GGSetup is MerkleSetup, Test {
         bytes memory _contestInitData = abi.encode(moduleNames, moduleData);
 
         (address _contestAddress, address[4] memory moduleAddress) = factory().buildContest(
-            _mockMetadata, _contestInitData, _contestImpl.CONTEST_VERSION(), ContestStatus.Populating, true, "gs_test"
+            _mockMetadata,
+            _contestInitData,
+            _contestImpl.CONTEST_VERSION(),
+            ContestStatus.Populating,
+            true,
+            "gg-election"
         );
 
         _contest = Contest(_contestAddress);
@@ -108,6 +114,12 @@ contract GGSetup is MerkleSetup, Test {
         _voters.push(allowedUser3);
         _voters.push(allowedUser4);
         _voters.push(allowedUser5);
+
+        _voterProofs.push(proof1);
+        _voterProofs.push(proof2);
+        _voterProofs.push(proof3);
+        _voterProofs.push(proof4);
+        _voterProofs.push(proof5);
     }
 
     function _setupHats() private {
@@ -159,5 +171,9 @@ contract GGSetup is MerkleSetup, Test {
 
     function voter(uint256 _index) public view returns (address) {
         return _voters[_index];
+    }
+
+    function voterProof(uint256 _index) public view returns (bytes32[] memory) {
+        return _voterProofs[_index];
     }
 }

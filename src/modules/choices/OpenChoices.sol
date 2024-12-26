@@ -43,6 +43,7 @@ contract OpenChoices is ChoiceCollector, IChoices, Initializable {
     /// @notice Whether or not choices must be unique
     bool public canNominate;
 
+    /// @notice Whether or not submissions are locked
     bool public lockSubmissions;
 
     /// ===============================
