@@ -14,7 +14,7 @@ contract GGElections is GGSetup {
     uint256[] _equalPartial;
     uint256[] _favorsChoice1;
     uint256[] _favorsChoice2;
-    bytes[] _batchData;
+    // bytes[] _batchData;
 
     Metadata emptyMetadata;
 
@@ -23,6 +23,8 @@ contract GGElections is GGSetup {
     Metadata metadata3 = Metadata(3, "QmHi23fctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWzt32");
     Metadata metadata4 = Metadata(4, "QmWmyoMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWeVdD");
     Metadata metadata5 = Metadata(5, "QmBa4oMoctfbAaiEsLPSqEtP6xTBm9vLkRZPJ5pSRWe2zF");
+
+    Metadata[] metadatas;
 
     bytes choiceData = "choice1";
     bytes choiceData2 = "choice2";
@@ -61,11 +63,17 @@ contract GGElections is GGSetup {
         _favorsChoice1.push(VOTE_AMOUNT / 8);
         _favorsChoice1.push(VOTE_AMOUNT / 8);
 
-        _batchData.push(abi.encode(_mockMetadata));
-        _batchData.push(abi.encode(_mockMetadata));
-        _batchData.push(abi.encode(_mockMetadata));
-        _batchData.push(abi.encode(_mockMetadata));
-        _batchData.push(abi.encode(_mockMetadata));
+        // _batchData.push(abi.encode(_abi.encode(_mockMetadata));
+        // _batchData.push(abi.encode(_mockMetadata));
+        // _batchData.push(abi.encode(_mockMetadata));
+        // _batchData.push(abi.encode(_mockMetadata));
+        // _batchData.push(abi.encode(_mockMetadata));
+
+        metadatas.push(metadata);
+        metadatas.push(metadata2);
+        metadatas.push(metadata3);
+        metadatas.push(metadata4);
+        metadatas.push(metadata5);
     }
 
     //////////////////////////////
@@ -110,6 +118,22 @@ contract GGElections is GGSetup {
         assertEq(hatterExecution().adminHatId(), adminHatId);
         assertEq(hatterExecution().winnerHatId(), judgeHatId);
         assertEq(hatterExecution().winnerAmt(), 3);
+    }
+
+    //////////////////////////////
+    // Basic Tests
+    //////////////////////////////
+
+    function test_registerChoice() public {
+        _registerChoice(voter1(), choice1(), choiceData, metadata);
+
+        BasicChoice memory choice = openChoices().getChoice(choice1());
+
+        assertEq(choice.metadata.protocol, metadata.protocol);
+        assertEq(choice.metadata.pointer, metadata.pointer);
+        assertEq(choice.data, choiceData);
+        assertEq(choice.registrar, voter1());
+        assertEq(choice.exists, true);
     }
 
     //////////////////////////////
@@ -165,5 +189,68 @@ contract GGElections is GGSetup {
 
         contest().changeVote(_oldChoice, _newChoice, _amount, abi.encode(_votesBytes, _pointBytes));
         vm.stopPrank();
+    }
+
+    function _batchVote(uint256 _voter, bytes32[] memory _choices, uint256[] memory _amounts, uint256 _totalAmount)
+        internal
+    {
+        vm.startPrank(voter(_voter));
+
+        bytes[] memory _batchData = new bytes[](_choices.length);
+
+        for (uint256 i = 0; i < _choices.length; i++) {
+            bytes memory _pointsBytes = abi.encode(voterProof(_voter), VOTE_AMOUNT);
+            bytes memory _votesBytes = abi.encode(emptyMetadata);
+
+            _batchData[i] = abi.encode(_votesBytes, _pointsBytes);
+        }
+
+        contest().batchVote(_choices, _amounts, _batchData, _totalAmount, metadatas[_voter]);
+    }
+
+    function _batchRetract(uint256 _voter, bytes32[] memory _choices, uint256[] memory _amounts, uint256 _totalAmount)
+        internal
+    {
+        vm.startPrank(voter(_voter));
+
+        bytes[] memory _batchData = new bytes[](_choices.length);
+
+        for (uint256 i = 0; i < _choices.length; i++) {
+            bytes memory _votesBytes = abi.encode(emptyMetadata);
+
+            _batchData[i] = abi.encode(_votesBytes, "");
+        }
+
+        contest().batchRetractVote(_choices, _amounts, _batchData, _totalAmount, metadatas[_voter]);
+    }
+
+    function _batchChange(
+        uint256 _voter,
+        bytes32[][2] memory _choiceIds,
+        uint256[][2] memory _amounts,
+        uint256[2] memory _totals
+    ) internal {
+        vm.startPrank(voter(_voter));
+
+        Metadata[2] memory _metadata;
+        _metadata[0] = emptyMetadata;
+        _metadata[1] = emptyMetadata;
+
+        bytes[] memory _batchRetractData;
+        bytes[] memory _batchVoteData;
+
+        for (uint256 i = 0; i < _choiceIds.length; i++) {
+            bytes memory _pointsBytes = abi.encode(voterProof(_voter), VOTE_AMOUNT);
+            bytes memory _votesBytes = abi.encode(emptyMetadata);
+
+            _batchRetractData[i] = abi.encode(_votesBytes, "");
+            _batchVoteData[i] = abi.encode(_votesBytes, _pointsBytes);
+        }
+
+        bytes[][2] memory _data;
+        _data[0] = _batchRetractData;
+        _data[1] = _batchVoteData;
+
+        contest().batchChangeVote(_choiceIds, _amounts, _data, _totals, _metadata);
     }
 }
