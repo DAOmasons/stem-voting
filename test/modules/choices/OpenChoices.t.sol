@@ -22,7 +22,7 @@ contract OpenChoicesTest is Accounts, Test, MockContestSetup {
 
     uint256 topHatId;
     uint256 adminHatId;
-    address[] public admins;
+    address[] admins;
 
     Metadata dummyMetadata1 = Metadata(1, "metadata1");
 
