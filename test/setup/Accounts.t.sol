@@ -136,4 +136,20 @@ contract Accounts is StdCheats {
     function stemAdmin2() public returns (address) {
         return makeAddr("stem_admin2");
     }
+
+    function nominee1() public returns (address) {
+        return makeAddr("nominee1");
+    }
+
+    function nominee2() public returns (address) {
+        return makeAddr("nominee2");
+    }
+
+    function nominee3() public returns (address) {
+        return makeAddr("nominee3");
+    }
+
+    function nominee4() public returns (address) {
+        return makeAddr("nominee4");
+    }
 }

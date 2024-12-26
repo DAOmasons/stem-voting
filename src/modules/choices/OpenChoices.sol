@@ -11,13 +11,13 @@ import {ModuleType} from "../../core/ModuleType.sol";
 import {Metadata} from "../../core/Metadata.sol";
 import {ChoiceCollector} from "./utils/ChoiceCollector.sol";
 
-contract InboxChoices is ChoiceCollector, IChoices, Initializable {
+contract OpenChoices is ChoiceCollector, IChoices, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
 
     /// @notice Emitted when the contract is initialized
-    event Initialized(address contest, address hatsAddress, uint256 adminHatId);
+    event Initialized(address contest, address hatsAddress, uint256 adminHatId, bool canNominate);
 
     /// @notice Emitted when a choice is registered
     event Registered(bytes32 choiceId, BasicChoice choiceData, address contest);
@@ -40,12 +40,15 @@ contract InboxChoices is ChoiceCollector, IChoices, Initializable {
     /// @notice Reference to the Hats Protocol contract
     IHats public hats;
 
+    /// @notice Whether or not choices must be unique
+    bool public canNominate;
+
     /// ===============================
     /// ========== Modifiers ==========
     /// ===============================
 
     /// @notice Ensures the caller is the wearer of the admin hat and in good standing
-    modifier onlyAdmin() {
+    modifier onlyAdmin() virtual {
         require(
             hats.isWearerOfHat(msg.sender, adminHatId) && hats.isInGoodStanding(msg.sender, adminHatId),
             "Caller is not wearer or in good standing"
@@ -54,7 +57,7 @@ contract InboxChoices is ChoiceCollector, IChoices, Initializable {
     }
 
     /// @notice Ensures the contest is in the populating state
-    modifier onlyContestPopulating() {
+    modifier onlyContestPopulating() virtual {
         require(contest.isStatus(ContestStatus.Populating), "Contest is not in populating state");
         _;
     }
@@ -69,14 +72,15 @@ contract InboxChoices is ChoiceCollector, IChoices, Initializable {
     /// @param _contest The contest that this module belongs to
     /// @param _initData The data for the module
     /// @dev Bytes data includes the hats address, admin hat id
-    function initialize(address _contest, bytes calldata _initData) public initializer {
-        (address _hatsAddress, uint256 _adminHatId) = abi.decode(_initData, (address, uint256));
+    function initialize(address _contest, bytes calldata _initData) public virtual initializer {
+        (address _hatsAddress, uint256 _adminHatId, bool _canNominate) = abi.decode(_initData, (address, uint256, bool));
 
         hats = IHats(_hatsAddress);
         contest = Contest(_contest);
         adminHatId = _adminHatId;
+        canNominate = _canNominate;
 
-        emit Initialized(_contest, _hatsAddress, _adminHatId);
+        emit Initialized(_contest, _hatsAddress, _adminHatId, _canNominate);
     }
 
     /// ===============================
@@ -85,19 +89,28 @@ contract InboxChoices is ChoiceCollector, IChoices, Initializable {
 
     /// @notice Registers a choice with the contract
     /// @param _choiceId The unique identifier for the choice
-    /// @param _data The data for the choice
+    /// @param _data The data struct for the Basic Choice struct
     /// @dev Bytes data includes the metadata and choice data
-    function registerChoice(bytes32 _choiceId, bytes memory _data) external onlyContestPopulating {
-        (Metadata memory _metadata, bytes memory _bytes) = abi.decode(_data, (Metadata, bytes));
+    function registerChoice(bytes32 _choiceId, bytes memory _data) external virtual onlyContestPopulating {
+        registerChoiceGuard(_choiceId, _data);
+        (bytes memory _choiceData, Metadata memory _metadata, address _registrar) =
+            abi.decode(_data, (bytes, Metadata, address));
 
-        _registerChoice(_choiceId, BasicChoice(_metadata, _bytes, true, msg.sender));
+        if (!canNominate) {
+            require(_registrar == msg.sender, "Cannot nominate others");
+        }
 
-        emit Registered(_choiceId, choices[_choiceId], address(contest));
+        BasicChoice memory _choice = BasicChoice(_metadata, _choiceData, true, _registrar);
+
+        _registerChoice(_choiceId, _choice);
+
+        emit Registered(_choiceId, _choice, address(contest));
     }
 
     /// @notice Removes a choice from the contract
     /// @param _choiceId The unique identifier for the choice
-    function removeChoice(bytes32 _choiceId, bytes calldata) external onlyAdmin onlyContestPopulating {
+    function removeChoice(bytes32 _choiceId, bytes calldata _data) external onlyAdmin {
+        removeChoiceGuard(_choiceId, _data);
         _removeChoice(_choiceId);
 
         emit Removed(_choiceId, address(contest));
@@ -117,4 +130,11 @@ contract InboxChoices is ChoiceCollector, IChoices, Initializable {
     function isValidChoice(bytes32 _choiceId) public view returns (bool) {
         return choices[_choiceId].exists;
     }
+
+    /// ===============================
+    /// ========== Guards =============
+    /// ===============================
+
+    function registerChoiceGuard(bytes32, bytes memory) internal virtual {}
+    function removeChoiceGuard(bytes32, bytes memory) internal virtual {}
 }

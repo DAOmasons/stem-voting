@@ -27,9 +27,7 @@ abstract contract ChoiceCollector {
     function _removeChoice(bytes32 _choiceId) internal {
         require(choices[_choiceId].exists, "Choice does not exist");
 
-        BasicChoice storage choice = choices[_choiceId];
-
-        choice.exists = false;
+        choices[_choiceId].exists = false;
     }
 
     function getChoice(bytes32 _choiceId) public view returns (BasicChoice memory) {
