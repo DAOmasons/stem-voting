@@ -646,6 +646,71 @@ contract GGElections is GGSetup {
         assertTrue(hats.isWearerOfHat(choice5.registrar, judgeHatId));
     }
 
+    function testExecute_filter() public {
+        _voteReady();
+
+        _batchVote(0, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(1, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(2, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(3, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(4, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+
+        _removeChoice(choice1());
+        // _removeChoice(choice3());
+        _removeChoice(choice5());
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        _finalize();
+
+        vm.prank(admin1());
+        hatterExecution().execute("");
+
+        BasicChoice memory choice1 = openChoices().getChoice(choice1());
+        BasicChoice memory choice2 = openChoices().getChoice(choice2());
+        BasicChoice memory choice3 = openChoices().getChoice(choice3());
+        BasicChoice memory choice4 = openChoices().getChoice(choice4());
+        BasicChoice memory choice5 = openChoices().getChoice(choice5());
+
+        assertFalse(hats.isWearerOfHat(choice1.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice2.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice3.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice4.registrar, judgeHatId));
+        assertFalse(hats.isWearerOfHat(choice5.registrar, judgeHatId));
+    }
+
+    function testExecute_filter2() public {
+        _voteReady();
+
+        _batchVote(0, _allFiveChoices, _favorsChoice1, VOTE_AMOUNT);
+        _batchVote(1, _allFiveChoices, _favorsChoice2, VOTE_AMOUNT);
+        _batchVote(2, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(3, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(4, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+
+        _removeChoice(choice1());
+        _removeChoice(choice2());
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        _finalize();
+
+        vm.prank(admin1());
+        hatterExecution().execute("");
+
+        BasicChoice memory choice1 = openChoices().getChoice(choice1());
+        BasicChoice memory choice2 = openChoices().getChoice(choice2());
+        BasicChoice memory choice3 = openChoices().getChoice(choice3());
+        BasicChoice memory choice4 = openChoices().getChoice(choice4());
+        BasicChoice memory choice5 = openChoices().getChoice(choice5());
+
+        assertFalse(hats.isWearerOfHat(choice1.registrar, judgeHatId));
+        assertFalse(hats.isWearerOfHat(choice2.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice3.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice4.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice5.registrar, judgeHatId));
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
