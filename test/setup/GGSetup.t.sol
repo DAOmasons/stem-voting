@@ -40,6 +40,7 @@ contract GGSetup is MerkleSetup, Test {
         _setupVoters();
         _setupHats();
         _launchElection();
+        _hatExecution();
     }
 
     function _launchElection() internal {
@@ -120,6 +121,11 @@ contract GGSetup is MerkleSetup, Test {
         _voterProofs.push(proof3);
         _voterProofs.push(proof4);
         _voterProofs.push(proof5);
+    }
+
+    function _hatExecution() private {
+        vm.prank(dummyDao());
+        hats.mintHat(adminHatId, address(hatterExecution()));
     }
 
     function _setupHats() private {

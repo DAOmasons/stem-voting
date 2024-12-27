@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+// import {console} from "forge-std/Test.sol";
+
 import {Initializable} from "lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 import {IExecution} from "../../interfaces/IExecution.sol";

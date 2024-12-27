@@ -14,6 +14,8 @@ contract GGElections is GGSetup {
     uint256[] _equalPartial;
     uint256[] _favorsChoice1;
     uint256[] _favorsChoice2;
+    uint256[] _favorsChoice3;
+
     bytes[] _voteData;
 
     Metadata emptyMetadata;
@@ -64,6 +66,12 @@ contract GGElections is GGSetup {
         _favorsChoice2.push(VOTE_AMOUNT / 8);
         _favorsChoice2.push(VOTE_AMOUNT / 8);
         _favorsChoice2.push(VOTE_AMOUNT / 8);
+
+        _favorsChoice3.push(VOTE_AMOUNT / 8);
+        _favorsChoice3.push(VOTE_AMOUNT / 8);
+        _favorsChoice3.push(VOTE_AMOUNT / 2);
+        _favorsChoice3.push(VOTE_AMOUNT / 8);
+        _favorsChoice3.push(VOTE_AMOUNT / 8);
 
         bytes memory votesData = abi.encode(emptyMetadata);
 
@@ -395,6 +403,249 @@ contract GGElections is GGSetup {
         assertEq(timedVotes().votes(choice4(), voter(0)), VOTE_AMOUNT / 10);
         assertEq(timedVotes().votes(choice5(), voter(0)), VOTE_AMOUNT / 10);
     }
+
+    function test_batchChange_consolidate() public {
+        _voteReady();
+
+        _batchVote(0, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+
+        assertEq(timedVotes().votes(choice1(), voter(0)), VOTE_AMOUNT / 5);
+        assertEq(timedVotes().votes(choice2(), voter(0)), VOTE_AMOUNT / 5);
+        assertEq(timedVotes().votes(choice3(), voter(0)), VOTE_AMOUNT / 5);
+        assertEq(timedVotes().votes(choice4(), voter(0)), VOTE_AMOUNT / 5);
+        assertEq(timedVotes().votes(choice5(), voter(0)), VOTE_AMOUNT / 5);
+
+        bytes32[][2] memory _choiceIds;
+        uint256[][2] memory _amounts;
+        bytes[][2] memory _data;
+        uint256[2] memory _totals;
+
+        bytes32[] memory _retractChoices = new bytes32[](4);
+        bytes32[] memory _addChoices = new bytes32[](1);
+
+        _choiceIds[0] = _retractChoices;
+        _choiceIds[1] = _addChoices;
+
+        uint256[] memory _retractAmounts = new uint256[](4);
+        uint256[] memory _addAmounts = new uint256[](1);
+
+        _amounts[0] = _retractAmounts;
+        _amounts[1] = _addAmounts;
+
+        bytes[] memory _retractBytes = new bytes[](4);
+        bytes[] memory _addBytes = new bytes[](1);
+
+        _data[0] = _retractBytes;
+        _data[1] = _addBytes;
+
+        _retractChoices[0] = choice1();
+        _retractChoices[1] = choice2();
+        _retractChoices[2] = choice3();
+        _retractChoices[3] = choice4();
+        _addChoices[0] = choice5();
+
+        _retractAmounts[0] = VOTE_AMOUNT / 5;
+        _retractAmounts[1] = VOTE_AMOUNT / 5;
+        _retractAmounts[2] = VOTE_AMOUNT / 5;
+        _retractAmounts[3] = VOTE_AMOUNT / 5;
+        _addAmounts[0] = VOTE_AMOUNT / 5 * 4;
+
+        _retractBytes[0] = voteData(0);
+        _retractBytes[1] = voteData(0);
+        _retractBytes[2] = voteData(0);
+        _retractBytes[3] = voteData(0);
+        _addBytes[0] = voteData(0);
+
+        _totals[0] = VOTE_AMOUNT / 5 * 4;
+        _totals[1] = VOTE_AMOUNT / 5 * 4;
+
+        _batchChange(0, _choiceIds, _amounts, _data, _totals);
+
+        assertEq(timedVotes().votes(choice1(), voter(0)), 0);
+        assertEq(timedVotes().votes(choice2(), voter(0)), 0);
+        assertEq(timedVotes().votes(choice3(), voter(0)), 0);
+        assertEq(timedVotes().votes(choice4(), voter(0)), 0);
+        assertEq(timedVotes().votes(choice5(), voter(0)), VOTE_AMOUNT);
+    }
+
+    function test_batchChange_spread() public {
+        _voteReady();
+
+        _vote(0, choice1(), VOTE_AMOUNT);
+
+        assertEq(timedVotes().votes(choice1(), voter(0)), VOTE_AMOUNT);
+
+        bytes32[][2] memory _choiceIds;
+        uint256[][2] memory _amounts;
+        bytes[][2] memory _data;
+        uint256[2] memory _totals;
+
+        bytes32[] memory _retractChoices = new bytes32[](1);
+        bytes32[] memory _addChoices = new bytes32[](4);
+
+        uint256[] memory _retractAmounts = new uint256[](1);
+        uint256[] memory _addAmounts = new uint256[](4);
+
+        bytes[] memory _retractBytes = new bytes[](1);
+        bytes[] memory _addBytes = new bytes[](4);
+
+        _retractChoices[0] = choice1();
+        _addChoices[0] = choice2();
+        _addChoices[1] = choice3();
+        _addChoices[2] = choice4();
+        _addChoices[3] = choice5();
+
+        _retractAmounts[0] = VOTE_AMOUNT / 5 * 4;
+        _addAmounts[0] = VOTE_AMOUNT / 5;
+        _addAmounts[1] = VOTE_AMOUNT / 5;
+        _addAmounts[2] = VOTE_AMOUNT / 5;
+        _addAmounts[3] = VOTE_AMOUNT / 5;
+
+        _retractBytes[0] = voteData(0);
+        _addBytes[0] = voteData(0);
+        _addBytes[1] = voteData(0);
+        _addBytes[2] = voteData(0);
+        _addBytes[3] = voteData(0);
+
+        _choiceIds[0] = _retractChoices;
+        _choiceIds[1] = _addChoices;
+
+        _amounts[0] = _retractAmounts;
+        _amounts[1] = _addAmounts;
+
+        _data[0] = _retractBytes;
+        _data[1] = _addBytes;
+
+        _totals[0] = VOTE_AMOUNT / 5 * 4;
+        _totals[1] = VOTE_AMOUNT / 5 * 4;
+
+        _batchChange(0, _choiceIds, _amounts, _data, _totals);
+
+        assertEq(timedVotes().votes(choice1(), voter(0)), VOTE_AMOUNT / 5);
+        assertEq(timedVotes().votes(choice2(), voter(0)), VOTE_AMOUNT / 5);
+        assertEq(timedVotes().votes(choice3(), voter(0)), VOTE_AMOUNT / 5);
+        assertEq(timedVotes().votes(choice4(), voter(0)), VOTE_AMOUNT / 5);
+        assertEq(timedVotes().votes(choice5(), voter(0)), VOTE_AMOUNT / 5);
+    }
+
+    function testFinalizeVotes() public {
+        _voteReady();
+
+        _vote(0, choice1(), VOTE_AMOUNT);
+        _vote(1, choice2(), VOTE_AMOUNT);
+        _vote(2, choice3(), VOTE_AMOUNT);
+
+        _retract(0, choice1(), VOTE_AMOUNT);
+
+        _change(1, choice2(), choice3(), VOTE_AMOUNT);
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        _finalize();
+
+        assertEq(uint8(contest().contestStatus()), uint8(ContestStatus.Finalized));
+    }
+
+    function testExecute_top3() public {
+        _voteReady();
+
+        _batchVote(0, _allFiveChoices, _favorsChoice1, VOTE_AMOUNT);
+        _batchVote(1, _allFiveChoices, _favorsChoice2, VOTE_AMOUNT);
+        _batchVote(2, _allFiveChoices, _favorsChoice3, VOTE_AMOUNT);
+        _batchVote(3, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(4, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        _finalize();
+
+        vm.prank(admin1());
+        hatterExecution().execute("");
+
+        BasicChoice memory choice1 = openChoices().getChoice(choice1());
+        BasicChoice memory choice2 = openChoices().getChoice(choice2());
+        BasicChoice memory choice3 = openChoices().getChoice(choice3());
+        BasicChoice memory choice4 = openChoices().getChoice(choice4());
+        BasicChoice memory choice5 = openChoices().getChoice(choice5());
+
+        assertTrue(hats.isWearerOfHat(choice1.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice2.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice3.registrar, judgeHatId));
+        assertFalse(hats.isWearerOfHat(choice4.registrar, judgeHatId));
+        assertFalse(hats.isWearerOfHat(choice5.registrar, judgeHatId));
+    }
+
+    function testExecute_top3_FIFO() public {
+        _voteReady();
+
+        _batchVote(0, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(1, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(2, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(3, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+        _batchVote(4, _allFiveChoices, _equalSplit, VOTE_AMOUNT);
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        _finalize();
+
+        vm.prank(admin1());
+        hatterExecution().execute("");
+
+        BasicChoice memory choice1 = openChoices().getChoice(choice1());
+        BasicChoice memory choice2 = openChoices().getChoice(choice2());
+        BasicChoice memory choice3 = openChoices().getChoice(choice3());
+        BasicChoice memory choice4 = openChoices().getChoice(choice4());
+        BasicChoice memory choice5 = openChoices().getChoice(choice5());
+
+        assertTrue(hats.isWearerOfHat(choice1.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice2.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice3.registrar, judgeHatId));
+        assertFalse(hats.isWearerOfHat(choice4.registrar, judgeHatId));
+        assertFalse(hats.isWearerOfHat(choice5.registrar, judgeHatId));
+    }
+
+    function testExecute_top3_alt() public {
+        _voteReady();
+
+        uint256[] memory favorsChoice4 = new uint256[](5);
+        favorsChoice4[0] = VOTE_AMOUNT / 8;
+        favorsChoice4[1] = VOTE_AMOUNT / 8;
+        favorsChoice4[2] = VOTE_AMOUNT / 8;
+        favorsChoice4[3] = VOTE_AMOUNT / 2;
+        favorsChoice4[4] = VOTE_AMOUNT / 8;
+
+        uint256[] memory favorsChoice5 = new uint256[](5);
+
+        favorsChoice5[0] = VOTE_AMOUNT / 8;
+        favorsChoice5[1] = VOTE_AMOUNT / 8;
+        favorsChoice5[2] = VOTE_AMOUNT / 8;
+        favorsChoice5[3] = VOTE_AMOUNT / 8;
+        favorsChoice5[4] = VOTE_AMOUNT / 2;
+
+        _batchVote(0, _allFiveChoices, favorsChoice4, VOTE_AMOUNT);
+        _batchVote(1, _allFiveChoices, favorsChoice5, VOTE_AMOUNT);
+        _batchVote(2, _allFiveChoices, _favorsChoice2, VOTE_AMOUNT);
+
+        vm.warp(block.timestamp + TWO_WEEKS + 1);
+
+        _finalize();
+
+        vm.prank(admin1());
+        hatterExecution().execute("");
+
+        BasicChoice memory choice1 = openChoices().getChoice(choice1());
+        BasicChoice memory choice2 = openChoices().getChoice(choice2());
+        BasicChoice memory choice3 = openChoices().getChoice(choice3());
+        BasicChoice memory choice4 = openChoices().getChoice(choice4());
+        BasicChoice memory choice5 = openChoices().getChoice(choice5());
+
+        assertFalse(hats.isWearerOfHat(choice1.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice2.registrar, judgeHatId));
+        assertFalse(hats.isWearerOfHat(choice3.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice4.registrar, judgeHatId));
+        assertTrue(hats.isWearerOfHat(choice5.registrar, judgeHatId));
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
@@ -484,6 +735,7 @@ contract GGElections is GGSetup {
         uint256 _voter,
         bytes32[][2] memory _choiceIds,
         uint256[][2] memory _amounts,
+        bytes[][2] memory _batchData,
         uint256[2] memory _totals
     ) internal {
         vm.startPrank(voter(_voter));
@@ -492,11 +744,13 @@ contract GGElections is GGSetup {
         _metadata[0] = emptyMetadata;
         _metadata[1] = emptyMetadata;
 
-        bytes[][2] memory _data;
-        _data[0] = _voteData;
-        _data[1] = _voteData;
+        contest().batchChangeVote(_choiceIds, _amounts, _batchData, _totals, _metadata);
+    }
 
-        contest().batchChangeVote(_choiceIds, _amounts, _data, _totals, _metadata);
+    function _finalize() internal {
+        vm.startPrank(admin1());
+        timedVotes().finalizeVotes();
+        vm.stopPrank();
     }
 
     function voteData(uint256 _voter) public view returns (bytes memory) {
