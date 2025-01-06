@@ -13,7 +13,7 @@ import {ContestStatus} from "../../core/ContestStatus.sol";
 
 contract RubricVotes is IVotes, Initializable {
     /// @notice Emitted when the contract is initialized
-    event Initialized(address _contest, uint256 _adminHatId);
+    event Initialized(address _contest, uint256 _adminHatId, uint256 _judgeHatId);
 
     /// @notice Emitted when a vote is cast
     event VoteCast(address voter, bytes32 choiceId, uint256 amount);
@@ -80,14 +80,22 @@ contract RubricVotes is IVotes, Initializable {
     /// @param _initParams The initialization data
     /// @dev Bytes data includes the duration of the voting period
     function initialize(address _contest, bytes memory _initParams) public initializer {
-        (uint256 _adminHatId, uint256 _judgeHatId, address _hats) = abi.decode(_initParams, (uint256, uint256, address));
+        (uint256 _adminHatId, uint256 _judgeHatId, uint256 _maxVotesForChoice, address _hats) =
+            abi.decode(_initParams, (uint256, uint256, uint256, address));
+
+        require(
+            _adminHatId != 0 && _judgeHatId != 0 && _maxVotesForChoice != 0 && _hats != address(0)
+                && _contest != address(0),
+            "Invalid init params"
+        );
 
         hats = IHats(_hats);
         contest = Contest(_contest);
         adminHatId = _adminHatId;
         judgeHatId = _judgeHatId;
+        maxVotesForChoice = _maxVotesForChoice;
 
-        emit Initialized(_contest, _adminHatId);
+        emit Initialized(_contest, _adminHatId, _judgeHatId);
     }
 
     /// @notice Casts a vote for a choice based on the total voting power of all hats referenced in the Hats Points contract
