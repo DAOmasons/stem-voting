@@ -15,7 +15,7 @@ import {TopChoiceHatter} from "../../src/modules/execution/TopChoiceHatter.sol";
 import {TimerType} from "../../src/modules/votes/utils/VoteTimer.sol";
 import {Hats} from "lib/hats-protocol/src/Hats.sol";
 
-contract GGSetup is MerkleSetup, Test {
+contract ElectionSetup is MerkleSetup, Test {
     address[] _voters;
     bytes32[][] _voterProofs;
     uint256 constant VOTE_AMOUNT = 1e18;

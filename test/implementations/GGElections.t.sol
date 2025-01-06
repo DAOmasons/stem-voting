@@ -2,13 +2,13 @@
 pragma solidity ^0.8.24;
 
 import {console} from "forge-std/Test.sol";
-import {GGSetup} from "../setup/GGSetup.t.sol";
+import {ElectionSetup} from "../setup/ElectionSetup.t.sol";
 import {Metadata} from "../../src/core/Metadata.sol";
 import {ContestStatus} from "../../src/core/ContestStatus.sol";
 import {BasicChoice} from "../../src/core/Choice.sol";
 import {TimerType} from "../../src/modules/votes/utils/VoteTimer.sol";
 
-contract GGElections is GGSetup {
+contract GGElections is ElectionSetup {
     bytes32[] _allFiveChoices;
     uint256[] _equalSplit;
     uint256[] _equalPartial;
