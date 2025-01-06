@@ -109,6 +109,108 @@ contract ReviewVotesTest is RubricVotesSetup {
         assertEq(votesModule().totalVotesForChoice(choice1()), MVPC);
     }
 
+    function test_vote_twice() public {
+        _standardChoices();
+
+        _vote(judge1(), choice1(), MVPC / 2);
+        _vote(judge1(), choice1(), MVPC / 2);
+
+        assertEq(votesModule().votes(choice1(), address(judge1())), MVPC);
+        assertEq(votesModule().totalVotesForChoice(choice1()), MVPC);
+    }
+
+    function test_vote_voteForEach() public {
+        _standardChoices();
+
+        _vote(judge1(), choice1(), MVPC * 45 / 100);
+        _vote(judge1(), choice2(), MVPC * 87 / 100);
+        _vote(judge1(), choice3(), MVPC * 78 / 100);
+
+        assertEq(votesModule().votes(choice1(), address(judge1())), MVPC * 45 / 100);
+        assertEq(votesModule().votes(choice2(), address(judge1())), MVPC * 87 / 100);
+        assertEq(votesModule().votes(choice3(), address(judge1())), MVPC * 78 / 100);
+
+        assertEq(votesModule().totalVotesForChoice(choice1()), MVPC * 45 / 100);
+        assertEq(votesModule().totalVotesForChoice(choice2()), MVPC * 87 / 100);
+        assertEq(votesModule().totalVotesForChoice(choice3()), MVPC * 78 / 100);
+    }
+
+    function test_vote_voteForEach_allJudges() public {
+        _standardChoices();
+
+        _vote(judge1(), choice1(), MVPC * 45 / 100);
+        _vote(judge1(), choice2(), MVPC * 87 / 100);
+        _vote(judge1(), choice3(), MVPC * 78 / 100);
+
+        _vote(judge2(), choice1(), MVPC * 45 / 100);
+        _vote(judge2(), choice2(), MVPC * 87 / 100);
+        _vote(judge2(), choice3(), MVPC * 78 / 100);
+
+        _vote(judge3(), choice1(), MVPC * 45 / 100);
+        _vote(judge3(), choice2(), MVPC * 87 / 100);
+        _vote(judge3(), choice3(), MVPC * 78 / 100);
+
+        uint256 totalVotesForChoice1 = MVPC * 45 / 100 + MVPC * 45 / 100 + MVPC * 45 / 100;
+        uint256 totalVotesForChoice2 = MVPC * 87 / 100 + MVPC * 87 / 100 + MVPC * 87 / 100;
+        uint256 totalVotesForChoice3 = MVPC * 78 / 100 + MVPC * 78 / 100 + MVPC * 78 / 100;
+
+        assertEq(votesModule().totalVotesForChoice(choice1()), totalVotesForChoice1);
+        assertEq(votesModule().totalVotesForChoice(choice2()), totalVotesForChoice2);
+        assertEq(votesModule().totalVotesForChoice(choice3()), totalVotesForChoice3);
+    }
+
+    function test_retractVote() public {
+        _standardChoices();
+
+        _vote(judge1(), choice1(), MVPC);
+        _retract(judge1(), choice1(), MVPC);
+
+        assertEq(votesModule().votes(choice1(), address(judge1())), 0);
+        assertEq(votesModule().totalVotesForChoice(choice1()), 0);
+    }
+
+    function test_retractVote_twice() public {
+        _standardChoices();
+
+        _vote(judge1(), choice1(), MVPC);
+        _retract(judge1(), choice1(), MVPC / 2);
+        _retract(judge1(), choice1(), MVPC / 2);
+
+        assertEq(votesModule().votes(choice1(), address(judge1())), 0);
+        assertEq(votesModule().totalVotesForChoice(choice1()), 0);
+    }
+
+    function test_batchVote() public {
+        _standardChoices();
+
+        bytes32[] memory choiceIds = new bytes32[](3);
+        choiceIds[0] = choice1();
+        choiceIds[1] = choice2();
+        choiceIds[2] = choice3();
+
+        uint256[] memory amounts = new uint256[](3);
+        amounts[0] = MVPC * 83 / 100;
+        amounts[1] = MVPC * 95 / 100;
+        amounts[2] = MVPC * 72 / 100;
+
+        uint256 totalAmount = MVPC * 83 / 100 + MVPC * 95 / 100 + MVPC * 72 / 100;
+
+        bytes[] memory data = new bytes[](3);
+        data[0] = abi.encode(_mockMetadata);
+        data[1] = abi.encode(_mockMetadata);
+        data[2] = abi.encode(_mockMetadata);
+
+        _batchVote(judge1(), choiceIds, amounts, data, totalAmount);
+
+        assertEq(votesModule().votes(choice1(), address(judge1())), MVPC * 83 / 100);
+        assertEq(votesModule().votes(choice2(), address(judge1())), MVPC * 95 / 100);
+        assertEq(votesModule().votes(choice3(), address(judge1())), MVPC * 72 / 100);
+
+        assertEq(votesModule().totalVotesForChoice(choice1()), MVPC * 83 / 100);
+        assertEq(votesModule().totalVotesForChoice(choice2()), MVPC * 95 / 100);
+        assertEq(votesModule().totalVotesForChoice(choice3()), MVPC * 72 / 100);
+    }
+
     //////////////////////////////
     // Reverts
     //////////////////////////////
@@ -155,9 +257,82 @@ contract ReviewVotesTest is RubricVotesSetup {
         _vote(judge1(), choice4(), MVPC);
     }
 
+    function testRevert_vote_beforeVotingPeriod() public {
+        vm.expectRevert("Contest is not in voting state");
+        _vote(judge1(), choice1(), MVPC);
+    }
+
+    function testRevert_retract_overAllocated() public {
+        _standardChoices();
+        _vote(judge1(), choice1(), MVPC / 2);
+
+        vm.expectRevert("Amount exceeds amount already voted");
+        _retract(judge1(), choice1(), MVPC / 2 + 1);
+    }
+
+    function testRevert_retract_overAllocated_double() public {
+        _standardChoices();
+
+        _vote(judge1(), choice1(), MVPC);
+        _retract(judge1(), choice1(), MVPC);
+
+        vm.expectRevert("Amount exceeds amount already voted");
+        _retract(judge1(), choice1(), 1);
+    }
+
+    function testRevert_retract_notWearer() public {
+        _standardChoices();
+        vm.expectRevert("Only wearer");
+        _retract(someGuy(), choice1(), MVPC);
+    }
+
+    function testRevert_retract_zeroAmount() public {
+        _standardChoices();
+        vm.expectRevert("Amount must be greater than 0");
+        _retract(judge1(), choice1(), 0);
+    }
+
+    function testRevert_retract_notContest() public {
+        _standardChoices();
+        vm.expectRevert("Only contest");
+        votesModule().retractVote(someGuy(), choice1(), MVPC, "");
+    }
+
+    function testRevert_retract_choiceDoesNotExist() public {
+        _standardChoices();
+        // contest does not catch this on retract to allow continuous configurations
+        vm.expectRevert("Amount exceeds amount already voted");
+        _retract(judge1(), choice4(), MVPC);
+    }
+
+    function testRevert_retract_beforeVotingPeriod() public {
+        vm.expectRevert("Contest is not in voting state");
+        _retract(judge1(), choice1(), MVPC);
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
+
+    function _batchVote(
+        address _voter,
+        bytes32[] memory _choices,
+        uint256[] memory _amounts,
+        bytes[] memory _batchData,
+        uint256 _totalAmount
+    ) public {
+        vm.startPrank(_voter);
+
+        contest().batchVote(_choices, _amounts, _batchData, _totalAmount, _mockMetadata);
+
+        vm.stopPrank();
+    }
+
+    function _retract(address _voter, bytes32 _choiceId, uint256 _amount) public {
+        vm.startPrank(_voter);
+        contest().retractVote(_choiceId, _amount, "");
+        vm.stopPrank();
+    }
 
     function _vote(address _voter, bytes32 _choiceId, uint256 _amount) public {
         vm.startPrank(_voter);
