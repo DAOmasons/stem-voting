@@ -6,16 +6,16 @@ import {IPoints} from "../../interfaces/IPoints.sol";
 import {ModuleType} from "../../core/ModuleType.sol";
 import {IHats} from "hats-protocol/Interfaces/IHats.sol";
 import {ConditionalAllocator} from "./utils/ConditionalAllocator.sol";
-import {IHatsPoints} from "../../interfaces/IHatsPoints.sol";
+// import {IHatsPoints} from "../../interfaces/IHatsPoints.sol";
 
-contract HatsPoints is ConditionalAllocator, IPoints, IHatsPoints, Initializable {
+contract HatsPoints is IPoints, Initializable {
     /// ===============================
     /// ========== Events =============
     /// ===============================
 
-    event Initialized(
-        address contest, uint256[] hatIds, uint256[] hatPoints, uint256 adminHatId, address hats, bool shouldAccumulate
-    );
+    event Initialized(address contest, uint256 adminHatId, address hats, bool shouldAccumulate);
+
+    event VotePass(uint256 hatId, uint256 points);
 
     /// ===============================
     /// ========== Storage ============
@@ -29,6 +29,9 @@ contract HatsPoints is ConditionalAllocator, IPoints, IHatsPoints, Initializable
 
     /// @notice mapping of hat id to points allocated
     mapping(uint256 => uint256) public hatPoints;
+
+    /// @notice mapping of user to points allocated
+    mapping(address => uint256) public points;
 
     /// @notice Reference to the contest contract
     address public contest;
@@ -77,15 +80,15 @@ contract HatsPoints is ConditionalAllocator, IPoints, IHatsPoints, Initializable
 
         require(_hatIds.length == _hatPoints.length, "hatIds and hatPoints must be the same length");
         for (uint256 i = 0; i < _hatIds.length; i++) {
-            hatPoints[_hatIds[i]] = _hatPoints[i];
+            _createVotePass(_hatIds[i], _hatPoints[i]);
         }
 
         hats = IHats(_hats);
         adminHatId = _adminHatId;
-        shouldAccumulate = _shouldAccumulate;
+
         contest = _contest;
 
-        emit Initialized(_contest, _hatIds, _hatPoints, _adminHatId, _hats, _shouldAccumulate);
+        emit Initialized(_contest, _adminHatId, _hats, _shouldAccumulate);
     }
 
     /// ===============================
@@ -102,14 +105,14 @@ contract HatsPoints is ConditionalAllocator, IPoints, IHatsPoints, Initializable
     /// @param _voter who is allocating their funds
     /// @param _amount of token allocated
     function allocatePoints(address _voter, uint256 _amount, bytes memory) external onlyContest {
-        _allocatePoints(_voter, _amount);
+        // _allocatePoints(_voter, _amount);
     }
 
     /// @notice This function checks if the user has enough allocated points and subtracts them from allocation
     /// @param _voter who is releasing their funds
     /// @param _amount of token released
     function releasePoints(address _voter, uint256 _amount, bytes memory) external onlyContest {
-        _releasePoints(_voter, _amount);
+        // _releasePoints(_voter, _amount);
     }
 
     /// ===============================
@@ -120,31 +123,45 @@ contract HatsPoints is ConditionalAllocator, IPoints, IHatsPoints, Initializable
     /// @param _voter who is checking their voting power
     /// @param _amount of token to be allocated
     function hasVotingPoints(address _voter, uint256 _amount, bytes memory _data) external view returns (bool) {
-        (uint256 _hatId) = abi.decode(_data, (uint256));
+        (, bytes memory _pointsParams) = abi.decode(_data, (bytes, bytes));
 
-        require(isValidWearer(_voter, _hatId), "Caller is not wearer or in good standing");
+        (uint256[] memory _hatIds) = abi.decode(_pointsParams, (uint256[]));
 
-        require(hatPoints[_hatId] > 0, "Invalid hat id");
+        uint256 totalVoterPoints = getTotalPointsByUser(_voter, _hatIds);
 
-        return hatPoints[_hatId] >= _amount + points[_voter];
+        return totalVoterPoints >= _amount;
     }
 
     /// @notice This function returns the allocated points of the user
     /// @param _voter who is checking their allocated points
     /// @param _amount of token to be allocated
     function hasAllocatedPoints(address _voter, uint256 _amount, bytes memory _data) external view returns (bool) {
-        (uint256 _hatId) = abi.decode(_data, (uint256));
+        // return hatPoints[_hatId] + points[_voter] >= _amount;
+    }
 
-        require(isValidWearer(_voter, _hatId), "Caller is not wearer or in good standing");
+    function createVotePass(uint256 _hatId, uint256 _points) external onlyAdmin {
+        _createVotePass(_hatId, _points);
+    }
 
-        return hatPoints[_hatId] + points[_voter] >= _amount;
+    function _createVotePass(uint256 _hatId, uint256 _points) private {
+        hatPoints[_hatId] = _points;
+
+        emit VotePass(_hatId, _points);
+    }
+
+    function getPointsByHat(uint256 _hatId) public view returns (uint256) {
+        return hatPoints[_hatId];
+    }
+
+    function getTotalPointsByUser(address _user, uint256[] memory _hatIds) public view returns (uint256 totalPoints) {
+        for (uint256 i = 0; i < _hatIds.length; i++) {
+            if (!isValidWearer(_user, _hatIds[i])) continue;
+            totalPoints += getPointsByHat(_hatIds[i]);
+        }
+        return totalPoints;
     }
 
     function isValidWearer(address _voter, uint256 _hatId) public view returns (bool) {
         return hats.isWearerOfHat(_voter, _hatId) && hats.isInGoodStanding(_voter, _hatId);
-    }
-
-    function getPointsByHat(uint256 _hatId) external view returns (uint256) {
-        return hatPoints[_hatId];
     }
 }
