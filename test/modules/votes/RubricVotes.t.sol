@@ -118,7 +118,7 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
         assertEq(rubricVotes.totalVotesForChoice(choice3()), MVPC * 74 / 100 + MVPC * 56 / 100 + MVPC * 55 / 100);
     }
 
-    function testRectract() public {
+    function testRetract() public {
         _init();
 
         _vote(judge1(), choice1(), MVPC);
@@ -126,6 +126,29 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
 
         assertEq(rubricVotes.votes(choice1(), address(judge1())), 0);
         assertEq(rubricVotes.totalVotesForChoice(choice1()), 0);
+    }
+
+    function testAdjust() public {
+        _init();
+
+        _vote(judge1(), choice1(), MVPC * 89 / 100);
+        _retractVote(judge1(), choice1(), MVPC * 89 / 100);
+        _vote(judge1(), choice1(), MVPC * 90 / 100);
+
+        assertEq(rubricVotes.votes(choice1(), address(judge1())), MVPC * 90 / 100);
+        assertEq(rubricVotes.totalVotesForChoice(choice1()), MVPC * 90 / 100);
+    }
+
+    function testFinalize() public {
+        _init();
+
+        _vote(judge1(), choice1(), MVPC * 89 / 100);
+        _vote(judge1(), choice2(), MVPC * 10 / 100);
+        _vote(judge1(), choice3(), MVPC * 74 / 100);
+
+        _finalizeVotes();
+
+        assertEq(uint8(mockContest().getStatus()), uint8(ContestStatus.Finalized));
     }
 
     ///////////////////////////////////
@@ -205,9 +228,51 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
         rubricVotes.vote(judge1(), choice1(), MVPC / 2 + 1, "");
     }
 
+    function testRevert_retractVote_notContest() public {
+        _init();
+
+        vm.prank(someGuy());
+        vm.expectRevert("Only contest");
+        rubricVotes.retractVote(judge1(), choice1(), MVPC, "");
+    }
+
+    function testRevert_retractVote_notJudge() public {
+        _init();
+
+        vm.prank(address(mockContest()));
+        vm.expectRevert("Only wearer");
+        rubricVotes.retractVote(someGuy(), choice1(), MVPC, "");
+    }
+
+    function testRevert_retractVote_zeroAmount() public {
+        _init();
+
+        vm.prank(address(mockContest()));
+        vm.expectRevert("Amount must be greater than 0");
+        rubricVotes.retractVote(judge1(), choice1(), 0, "");
+    }
+
+    function testRevert_retractVote_retractExceedsVotes() public {
+        _init();
+
+        _vote(judge1(), choice1(), MVPC * 89 / 100);
+
+        vm.prank(address(mockContest()));
+
+        vm.expectRevert("Amount exceeds amount already voted");
+
+        rubricVotes.retractVote(judge1(), choice1(), MVPC * 89 / 100 + 1, "");
+    }
+
     ///////////////////////////////////
     //// Helpers
     ///////////////////////////////////
+
+    function _finalizeVotes() private {
+        vm.prank(admin1());
+
+        rubricVotes.finalizeVotes();
+    }
 
     function _retractVote(address _voter, bytes32 _choiceId, uint256 _amount) private {
         vm.prank(address(mockContest()));
