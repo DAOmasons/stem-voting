@@ -8,12 +8,13 @@ import {MockContestSetup} from "../../setup/MockContest.sol";
 
 import {RubricVotes} from "../../../src/modules/votes/RubricVotes.sol";
 import {ContestStatus} from "../../../src/core/ContestStatus.sol";
+import {Metadata} from "../../../src/core/Metadata.sol";
 
 contract RubricVotesTest is Test, Accounts, MockContestSetup {
     error InvalidInitialization();
 
     event Initialized(address _contest, uint256 _adminHatId);
-    event VoteCast(address voter, bytes32 choiceId, uint256 amount);
+    event VoteCast(address voter, bytes32 choiceId, uint256 amount, Metadata reason);
     event VoteRetracted(address voter, bytes32 choiceId, uint256 amount);
 
     Hats hats;
@@ -23,6 +24,8 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
     address[] admins;
     address[] judges;
     RubricVotes rubricVotes;
+
+    Metadata _mockMetadata = Metadata(1, "qm....");
 
     ///max votes per choice
     uint256 constant MVPC = 1e18;
@@ -190,7 +193,7 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
 
         vm.prank(someGuy());
         vm.expectRevert("Only contest");
-        rubricVotes.vote(judge1(), choice1(), MVPC, "");
+        rubricVotes.vote(judge1(), choice1(), MVPC, abi.encode(_mockMetadata));
     }
 
     function testRevert_vote_notJudge() public {
@@ -199,7 +202,7 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
         vm.prank(address(mockContest()));
         vm.expectRevert("Only wearer");
 
-        rubricVotes.vote(someGuy(), choice1(), MVPC, "");
+        rubricVotes.vote(someGuy(), choice1(), MVPC, abi.encode(_mockMetadata));
     }
 
     function testRevert_vote_zeroAmount() public {
@@ -207,7 +210,7 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
 
         vm.prank(address(mockContest()));
         vm.expectRevert("Amount must be greater than 0");
-        rubricVotes.vote(judge1(), choice1(), 0, "");
+        rubricVotes.vote(judge1(), choice1(), 0, abi.encode(_mockMetadata));
     }
 
     function testRevert_vote_overMVPC() public {
@@ -215,7 +218,7 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
 
         vm.prank(address(mockContest()));
         vm.expectRevert("Amount exceeds maxVotesForChoice");
-        rubricVotes.vote(judge1(), choice1(), MVPC + 1, "");
+        rubricVotes.vote(judge1(), choice1(), MVPC + 1, abi.encode(_mockMetadata));
     }
 
     function testRevert_vote_overMVPC_doubleVote() public {
@@ -225,7 +228,7 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
 
         vm.prank(address(mockContest()));
         vm.expectRevert("Amount exceeds maxVotesForChoice");
-        rubricVotes.vote(judge1(), choice1(), MVPC / 2 + 1, "");
+        rubricVotes.vote(judge1(), choice1(), MVPC / 2 + 1, abi.encode(_mockMetadata));
     }
 
     function testRevert_retractVote_notContest() public {
@@ -323,8 +326,8 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
     function _vote(address _voter, bytes32 _choiceId, uint256 _amount) private {
         vm.prank(address(mockContest()));
         vm.expectEmit(true, false, false, true);
-        emit VoteCast(_voter, _choiceId, _amount);
-        rubricVotes.vote(_voter, _choiceId, _amount, "");
+        emit VoteCast(_voter, _choiceId, _amount, _mockMetadata);
+        rubricVotes.vote(_voter, _choiceId, _amount, abi.encode(_mockMetadata));
     }
 
     function _init() private {

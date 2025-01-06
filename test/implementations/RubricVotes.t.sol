@@ -100,9 +100,70 @@ contract ReviewVotesTest is RubricVotesSetup {
         assertTrue(_exists3);
     }
 
+    function test_vote() public {
+        _standardChoices();
+
+        _vote(judge1(), choice1(), MVPC);
+
+        assertEq(votesModule().votes(choice1(), address(judge1())), MVPC);
+        assertEq(votesModule().totalVotesForChoice(choice1()), MVPC);
+    }
+
+    //////////////////////////////
+    // Reverts
+    //////////////////////////////
+
+    function testRevert_vote_overMvpc() public {
+        _standardChoices();
+
+        vm.expectRevert("Amount exceeds maxVotesForChoice");
+        _vote(judge1(), choice1(), MVPC + 1);
+    }
+
+    function testRevert_vote_overMvpc_doubleVote() public {
+        _standardChoices();
+
+        _vote(judge1(), choice1(), MVPC);
+        vm.expectRevert("Amount exceeds maxVotesForChoice");
+        _vote(judge1(), choice1(), 1);
+
+        vm.expectRevert("Amount exceeds maxVotesForChoice");
+        _vote(judge1(), choice1(), MVPC);
+    }
+
+    function testRevert_vote_notWearer() public {
+        _standardChoices();
+        vm.expectRevert("Only wearer");
+        _vote(someGuy(), choice1(), MVPC);
+    }
+
+    function testRevert_vote_zeroAmount() public {
+        _standardChoices();
+        vm.expectRevert("Amount must be greater than 0");
+        _vote(judge1(), choice1(), 0);
+    }
+
+    function testRevert_vote_notContest() public {
+        _standardChoices();
+        vm.expectRevert("Only contest");
+        votesModule().vote(someGuy(), choice1(), MVPC, abi.encode(_mockMetadata));
+    }
+
+    function testRevert_vote_choiceDoesNotExist() public {
+        _standardChoices();
+        vm.expectRevert("Choice does not exist");
+        _vote(judge1(), choice4(), MVPC);
+    }
+
     //////////////////////////////
     // Helpers
     //////////////////////////////
+
+    function _vote(address _voter, bytes32 _choiceId, uint256 _amount) public {
+        vm.startPrank(_voter);
+        contest().vote(_choiceId, _amount, abi.encode(_mockMetadata));
+        vm.stopPrank();
+    }
 
     function _removeChoice(bytes32 _choiceId) public {
         vm.startPrank(admin1());
@@ -116,9 +177,17 @@ contract ReviewVotesTest is RubricVotesSetup {
         vm.stopPrank();
     }
 
+    function finalizeChoices() public {
+        vm.startPrank(admin1());
+        choicesModule().finalizeChoices();
+        vm.stopPrank();
+    }
+
     function _standardChoices() public {
         _registerChoice(choice1(), choiceData1, metadata1);
         _registerChoice(choice2(), choiceData2, metadata2);
         _registerChoice(choice3(), choiceData3, metadata3);
+
+        finalizeChoices();
     }
 }

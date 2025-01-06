@@ -16,7 +16,7 @@ contract RubricVotes is IVotes, Initializable {
     event Initialized(address _contest, uint256 _adminHatId, uint256 _judgeHatId);
 
     /// @notice Emitted when a vote is cast
-    event VoteCast(address voter, bytes32 choiceId, uint256 amount);
+    event VoteCast(address voter, bytes32 choiceId, uint256 amount, Metadata reason);
 
     /// @notice Emitted when a vote is retracted
     event VoteRetracted(address voter, bytes32 choiceId, uint256 amount);
@@ -102,7 +102,7 @@ contract RubricVotes is IVotes, Initializable {
     /// @param _voter The address of the voter
     /// @param _choiceId The unique identifier for the choice
     /// @param _amount The amount of votes to cast
-    function vote(address _voter, bytes32 _choiceId, uint256 _amount, bytes memory)
+    function vote(address _voter, bytes32 _choiceId, uint256 _amount, bytes memory _data)
         external
         onlyContest
         onlyWearer(judgeHatId, _voter)
@@ -115,7 +115,8 @@ contract RubricVotes is IVotes, Initializable {
         votes[_choiceId][_voter] += _amount;
         totalVotesForChoice[_choiceId] += _amount;
 
-        emit VoteCast(_voter, _choiceId, _amount);
+        (Metadata memory _reason) = abi.decode(_data, (Metadata));
+        emit VoteCast(_voter, _choiceId, _amount, _reason);
     }
 
     /// @notice Retracts a vote for a choice
