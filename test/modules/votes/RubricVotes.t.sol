@@ -264,6 +264,45 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
         rubricVotes.retractVote(judge1(), choice1(), MVPC * 89 / 100 + 1, "");
     }
 
+    function testRevert_finalizeVotes_notVotingPeriod() public {
+        _init();
+
+        mockContest().cheatStatus(ContestStatus.Finalized);
+
+        vm.expectRevert("Contest is not in voting state");
+        _finalizeVotes();
+
+        mockContest().cheatStatus(ContestStatus.None);
+
+        vm.expectRevert("Contest is not in voting state");
+        _finalizeVotes();
+
+        mockContest().cheatStatus(ContestStatus.Populating);
+
+        vm.expectRevert("Contest is not in voting state");
+        _finalizeVotes();
+
+        mockContest().cheatStatus(ContestStatus.Continuous);
+
+        vm.expectRevert("Contest is not in voting state");
+        _finalizeVotes();
+
+        mockContest().cheatStatus(ContestStatus.Executed);
+        vm.expectRevert("Contest is not in voting state");
+        _finalizeVotes();
+
+        mockContest().cheatStatus(ContestStatus.Voting);
+        _finalizeVotes();
+    }
+
+    function testRevert_finalize_notAdmin() public {
+        _init();
+
+        vm.prank(someGuy());
+        vm.expectRevert("Only wearer");
+        rubricVotes.finalizeVotes();
+    }
+
     ///////////////////////////////////
     //// Helpers
     ///////////////////////////////////

@@ -140,10 +140,7 @@ contract RubricVotes is IVotes, Initializable {
 
     /// @notice Finalizes the voting period
     function finalizeVotes() external onlyWearer(adminHatId, msg.sender) {
-        require(
-            contest.isStatus(ContestStatus.Voting) || contest.isStatus(ContestStatus.Continuous),
-            "Contest is not in voting state"
-        );
+        require(contest.isStatus(ContestStatus.Voting), "Contest is not in voting state");
         contest.finalizeVoting();
     }
 
