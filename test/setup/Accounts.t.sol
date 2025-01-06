@@ -24,6 +24,30 @@ contract Accounts is StdCheats {
         return makeAddr("admin_3");
     }
 
+    function judge1() public returns (address) {
+        return makeAddr("judge_1");
+    }
+
+    function judge2() public returns (address) {
+        return makeAddr("judge_2");
+    }
+
+    function judge3() public returns (address) {
+        return makeAddr("judge_3");
+    }
+
+    function judge4() public returns (address) {
+        return makeAddr("judge_4");
+    }
+
+    function judge5() public returns (address) {
+        return makeAddr("judge_5");
+    }
+
+    function judge6() public returns (address) {
+        return makeAddr("judge_6");
+    }
+
     function sbtMinter() public returns (address) {
         return makeAddr("sbt_minter");
     }

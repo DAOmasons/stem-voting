@@ -25,7 +25,7 @@ contract RubricVotes is IVotes, Initializable {
     Contest public contest;
 
     /// @notice The name and version of the module
-    string public constant MODULE_NAME = "RubricVotes_v0.2.0";
+    string public constant MODULE_NAME = "RubricVotes_v0.1.0";
 
     /// @notice The type of module
     ModuleType public constant MODULE_TYPE = ModuleType.Votes;
