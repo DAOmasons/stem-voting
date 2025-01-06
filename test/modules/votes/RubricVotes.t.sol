@@ -4,20 +4,38 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {Hats} from "lib/hats-protocol/src/Hats.sol";
 import {Accounts} from "../../setup/Accounts.t.sol";
+import {MockContestSetup} from "../../setup/MockContest.sol";
 
-contract RubricVotesTest is Test, Accounts {
+import {RubricVotes} from "../../../src/modules/votes/RubricVotes.sol";
+
+contract RubricVotesTest is Test, Accounts, MockContestSetup {
     Hats hats;
     uint256 topHatId;
     uint256 adminHatId;
     uint256 judgeHatId;
     address[] admins;
     address[] judges;
+    RubricVotes rubricVotes;
 
     function setUp() public {
+        rubricVotes = new RubricVotes();
+        __setupMockContest();
         _setupHats();
     }
 
-    function test() public {}
+    function testInit() public {
+        _init();
+
+        assert(rubricVotes.adminHatId() == adminHatId);
+        assert(rubricVotes.judgeHatId() == judgeHatId);
+
+        assert(address(rubricVotes.contest()) == address(mockContest()));
+    }
+
+    function _init() private {
+        bytes memory data = abi.encode(adminHatId, judgeHatId, address(hats));
+        rubricVotes.initialize(address(mockContest()), data);
+    }
 
     function _setupHats() private {
         hats = new Hats("", "");
