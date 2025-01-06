@@ -108,7 +108,6 @@ contract RubricVotes is IVotes, Initializable {
         onlyWearer(judgeHatId, _voter)
     {
         require(_amount != 0, "Amount must be greater than 0");
-        require(_amount <= maxVotesForChoice, "Amount must be less than or equal to maxVotesForChoice");
 
         uint256 amountAlreadyVoted = votes[_choiceId][_voter];
         require(amountAlreadyVoted + _amount <= maxVotesForChoice, "Amount exceeds maxVotesForChoice");

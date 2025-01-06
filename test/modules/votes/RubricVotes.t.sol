@@ -13,6 +13,8 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
     error InvalidInitialization();
 
     event Initialized(address _contest, uint256 _adminHatId);
+    event VoteCast(address voter, bytes32 choiceId, uint256 amount);
+    event VoteRetracted(address voter, bytes32 choiceId, uint256 amount);
 
     Hats hats;
     uint256 topHatId;
@@ -54,6 +56,76 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
 
     function testVote_max() public {
         _init();
+
+        _vote(judge1(), choice1(), MVPC);
+
+        assertEq(rubricVotes.votes(choice1(), address(judge1())), MVPC);
+    }
+
+    function testVote_partial() public {
+        _init();
+
+        _vote(judge1(), choice1(), MVPC * 89 / 100);
+
+        assertEq(rubricVotes.votes(choice1(), address(judge1())), MVPC * 89 / 100);
+    }
+
+    function testVote_many() public {
+        _init();
+
+        _vote(judge1(), choice1(), MVPC * 89 / 100);
+        _vote(judge1(), choice2(), MVPC * 10 / 100);
+        _vote(judge1(), choice3(), MVPC * 74 / 100);
+
+        assertEq(rubricVotes.votes(choice1(), address(judge1())), MVPC * 89 / 100);
+        assertEq(rubricVotes.votes(choice2(), address(judge1())), MVPC * 10 / 100);
+        assertEq(rubricVotes.votes(choice3(), address(judge1())), MVPC * 74 / 100);
+
+        assertEq(rubricVotes.totalVotesForChoice(choice1()), MVPC * 89 / 100);
+        assertEq(rubricVotes.totalVotesForChoice(choice2()), MVPC * 10 / 100);
+        assertEq(rubricVotes.totalVotesForChoice(choice3()), MVPC * 74 / 100);
+    }
+
+    function testVote_many_allJudges() public {
+        _init();
+
+        _vote(judge1(), choice1(), MVPC * 89 / 100);
+        _vote(judge1(), choice2(), MVPC * 10 / 100);
+        _vote(judge1(), choice3(), MVPC * 74 / 100);
+
+        assertEq(rubricVotes.votes(choice1(), address(judge1())), MVPC * 89 / 100);
+        assertEq(rubricVotes.votes(choice2(), address(judge1())), MVPC * 10 / 100);
+        assertEq(rubricVotes.votes(choice3(), address(judge1())), MVPC * 74 / 100);
+
+        _vote(judge2(), choice1(), MVPC * 74 / 100);
+        _vote(judge2(), choice2(), MVPC * 45 / 100);
+        _vote(judge2(), choice3(), MVPC * 56 / 100);
+
+        assertEq(rubricVotes.votes(choice1(), address(judge2())), MVPC * 74 / 100);
+        assertEq(rubricVotes.votes(choice2(), address(judge2())), MVPC * 45 / 100);
+        assertEq(rubricVotes.votes(choice3(), address(judge2())), MVPC * 56 / 100);
+
+        _vote(judge3(), choice1(), MVPC * 33 / 100);
+        _vote(judge3(), choice2(), MVPC * 44 / 100);
+        _vote(judge3(), choice3(), MVPC * 55 / 100);
+
+        assertEq(rubricVotes.votes(choice1(), address(judge3())), MVPC * 33 / 100);
+        assertEq(rubricVotes.votes(choice2(), address(judge3())), MVPC * 44 / 100);
+        assertEq(rubricVotes.votes(choice3(), address(judge3())), MVPC * 55 / 100);
+
+        assertEq(rubricVotes.totalVotesForChoice(choice1()), MVPC * 89 / 100 + MVPC * 74 / 100 + MVPC * 33 / 100);
+        assertEq(rubricVotes.totalVotesForChoice(choice2()), MVPC * 10 / 100 + MVPC * 45 / 100 + MVPC * 44 / 100);
+        assertEq(rubricVotes.totalVotesForChoice(choice3()), MVPC * 74 / 100 + MVPC * 56 / 100 + MVPC * 55 / 100);
+    }
+
+    function testRectract() public {
+        _init();
+
+        _vote(judge1(), choice1(), MVPC);
+        _retractVote(judge1(), choice1(), MVPC);
+
+        assertEq(rubricVotes.votes(choice1(), address(judge1())), 0);
+        assertEq(rubricVotes.totalVotesForChoice(choice1()), 0);
     }
 
     ///////////////////////////////////
@@ -90,12 +162,65 @@ contract RubricVotesTest is Test, Accounts, MockContestSetup {
         rubricVotes.initialize(address(0), data);
     }
 
+    function testRevert_vote_notContest() public {
+        _init();
+
+        vm.prank(someGuy());
+        vm.expectRevert("Only contest");
+        rubricVotes.vote(judge1(), choice1(), MVPC, "");
+    }
+
+    function testRevert_vote_notJudge() public {
+        _init();
+
+        vm.prank(address(mockContest()));
+        vm.expectRevert("Only wearer");
+
+        rubricVotes.vote(someGuy(), choice1(), MVPC, "");
+    }
+
+    function testRevert_vote_zeroAmount() public {
+        _init();
+
+        vm.prank(address(mockContest()));
+        vm.expectRevert("Amount must be greater than 0");
+        rubricVotes.vote(judge1(), choice1(), 0, "");
+    }
+
+    function testRevert_vote_overMVPC() public {
+        _init();
+
+        vm.prank(address(mockContest()));
+        vm.expectRevert("Amount exceeds maxVotesForChoice");
+        rubricVotes.vote(judge1(), choice1(), MVPC + 1, "");
+    }
+
+    function testRevert_vote_overMVPC_doubleVote() public {
+        _init();
+
+        _vote(judge1(), choice1(), MVPC / 2);
+
+        vm.prank(address(mockContest()));
+        vm.expectRevert("Amount exceeds maxVotesForChoice");
+        rubricVotes.vote(judge1(), choice1(), MVPC / 2 + 1, "");
+    }
+
     ///////////////////////////////////
     //// Helpers
     ///////////////////////////////////
 
-    function _vote(address _voter, uint256 _amount) private {
-        rubricVotes.vote(_voter, choice1(), _amount, "");
+    function _retractVote(address _voter, bytes32 _choiceId, uint256 _amount) private {
+        vm.prank(address(mockContest()));
+        vm.expectEmit(true, false, false, true);
+        emit VoteRetracted(_voter, _choiceId, _amount);
+        rubricVotes.retractVote(_voter, _choiceId, _amount, "");
+    }
+
+    function _vote(address _voter, bytes32 _choiceId, uint256 _amount) private {
+        vm.prank(address(mockContest()));
+        vm.expectEmit(true, false, false, true);
+        emit VoteCast(_voter, _choiceId, _amount);
+        rubricVotes.vote(_voter, _choiceId, _amount, "");
     }
 
     function _init() private {
