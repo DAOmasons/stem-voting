@@ -57,7 +57,6 @@ contract RunFactory is Script {
     string DEPLOYMENTS_DIR = string.concat(root, "/deployments/factory.json");
 
     function run() external {
-        console2.log("Deploying factory...");
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address deployer = vm.rememberKey(pk);
 
