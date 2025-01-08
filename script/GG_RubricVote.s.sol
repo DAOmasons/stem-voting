@@ -53,7 +53,8 @@ contract Deploy is Script {
 
         vm.startBroadcast(deployer);
 
-        _deployAll();
+        // _deployAll();
+        _registerAll();
 
         vm.stopBroadcast();
     }
@@ -70,10 +71,18 @@ contract Deploy is Script {
 
     function _deployAll() internal {
         // _deployContest();
-        // _deployRubricVotes();
+        _deployRubricVotes();
         // _deployEmptyExecution();
         // _deployEmptyPoints();
         // _deployHatsAllowList();
+    }
+
+    function _registerAll() internal {
+        // _registerContest();
+        // _registerModule(rubricVotesTag, _rubricVotesMetadata);
+        _registerModule(emptyExecutionTag, _executionMetadata);
+        // _registerModule(emptyPointTag, _pointsMetadata);
+        // _registerModule(hatsAllowListTag, _hatsAllowListMetadata);
     }
 
     function _deployContest() internal {
@@ -132,6 +141,22 @@ contract Deploy is Script {
         bytes memory jsonBytes = vm.parseJson(jsonString, string.concat(".", _network, ".", _key));
 
         return jsonBytes;
+    }
+
+    function _registerModule(string memory _moduleTag, Metadata memory _metadata) internal {
+        (address _moduleAddress) = abi.decode(_getDeployment(_moduleTag), (address));
+
+        IModule _module = IModule(_moduleAddress);
+
+        factory().setModuleTemplate(_module.MODULE_NAME(), _moduleAddress, _metadata);
+    }
+
+    function _registerContest() internal {
+        (address _templateAddress) = abi.decode(_getDeployment("contest_v0_2_0"), (address));
+
+        Contest _contest = new Contest();
+
+        factory().setContestTemplate(_contest.CONTEST_VERSION(), _templateAddress, _contestMetadata);
     }
 
     function factory() internal view returns (FastFactory) {
