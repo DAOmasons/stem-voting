@@ -6,7 +6,7 @@
 	url = https://github.com/Hats-Protocol/hats-protocol
 [submodule "lib/governance"]
 	path = lib/governance
-	url = https://github.com/ArbitrumFoundation/governance
+	url = https://github.com/gitcoinco/governance
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
@@ -16,3 +16,6 @@
 [submodule "lib/Baal"]
 	path = lib/Baal
 	url = https://github.com/HausDAO/Baal
+[submodule "lib/gtc-gov"]
+	path = lib/gtc-gov
+	url = https://github.com/gitcoinco/governance

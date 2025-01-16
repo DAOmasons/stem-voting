@@ -8,6 +8,10 @@ contract Accounts is StdCheats {
     // Vote Admins
     // //////////////////////
 
+    function dummyDao() public returns (address) {
+        return makeAddr("dummy_dao");
+    }
+
     function admin1() public returns (address) {
         return makeAddr("admin_1");
     }
@@ -18,6 +22,30 @@ contract Accounts is StdCheats {
 
     function admin3() public returns (address) {
         return makeAddr("admin_3");
+    }
+
+    function judge1() public returns (address) {
+        return makeAddr("judge_1");
+    }
+
+    function judge2() public returns (address) {
+        return makeAddr("judge_2");
+    }
+
+    function judge3() public returns (address) {
+        return makeAddr("judge_3");
+    }
+
+    function judge4() public returns (address) {
+        return makeAddr("judge_4");
+    }
+
+    function judge5() public returns (address) {
+        return makeAddr("judge_5");
+    }
+
+    function judge6() public returns (address) {
+        return makeAddr("judge_6");
     }
 
     function sbtMinter() public returns (address) {
@@ -131,5 +159,21 @@ contract Accounts is StdCheats {
 
     function stemAdmin2() public returns (address) {
         return makeAddr("stem_admin2");
+    }
+
+    function nominee1() public returns (address) {
+        return makeAddr("nominee1");
+    }
+
+    function nominee2() public returns (address) {
+        return makeAddr("nominee2");
+    }
+
+    function nominee3() public returns (address) {
+        return makeAddr("nominee3");
+    }
+
+    function nominee4() public returns (address) {
+        return makeAddr("nominee4");
     }
 }

@@ -14,3 +14,7 @@ docs/
 
 # Dotenv file
 .env
+node_modules
+*.csv
+
+ts-scripts/merklePoints/json/*

@@ -11,7 +11,6 @@ contract ARBTokenSetupLive {
 
     function __setupArbToken() public {
         _arbToken = ERC20Votes(0x912CE59144191C1204E64559FE8253a0e49E6548);
-
         // Binance Wallet on Arbitrum.
         // EOA with lots of ARB for testing live
         _arbWhale = 0xB38e8c17e38363aF6EbdCb3dAE12e0243582891D;

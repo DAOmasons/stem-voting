@@ -1,0 +1,29 @@
+{
+  "name": "stem-voting",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node --loader ts-node/esm ts-scripts/merklePoints/merkle-test.ts",
+    "convert": "node --loader ts-node/esm ts-scripts/merklePoints/csvTotree.ts",
+    "gen": "node --loader ts-node/esm ts-scripts/merklePoints/generate-merkle-tree.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@openzeppelin/merkle-tree": "^1.0.7",
+    "@types/papaparse": "^5.3.15",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
+    "viem": "^2.21.55"
+  },
+  "dependencies": {
+    "papaparse": "^5.4.1"
+  }
+}
