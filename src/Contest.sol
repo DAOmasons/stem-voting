@@ -66,7 +66,7 @@ contract Contest is ReentrancyGuard, Initializable {
     /// @notice Current status of the Contest.
     ContestStatus public contestStatus;
 
-    /// @notice Flag to determine if the contest is continuous.
+    /// @notice Flag to determine if the round is continuous.
     bool public isContinuous;
 
     /// @notice Flag to determine if voting is retractable.
